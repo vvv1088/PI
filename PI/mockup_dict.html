@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hypothesis · 终点版(Dict 背书 + 分家)</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#56616e;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--red:#d23f4a;--red-bg:#fdecec;--teal:#0d7490;--teal-bg:#e6f6fa}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;font-size:13px;line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto}
+  .banner{border-radius:10px;padding:13px 16px;margin-bottom:16px;font-size:12.5px;background:var(--accent-soft);border:1px solid #c9c5f5;color:#3b3590}
+  .banner b{color:var(--accent)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 18px;margin-bottom:13px}
+  .card.setup{border:1px dashed var(--accent);background:#fbfbff}
+  h3{margin:0 0 10px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+  h3 small{font-weight:400;color:var(--ink3);font-size:11.5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .fld{flex:1;min-width:140px;margin-bottom:6px}
+  label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  select,input,textarea{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  input:disabled{background:var(--bg2);color:var(--ink3)}
+  textarea[readonly]{background:var(--bg2);color:var(--ink2)}
+  .note{font-size:11.5px;color:var(--ink3);margin-top:6px}
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:12px 14px;font-size:14px;line-height:2}
+  .slot{display:inline-block;border-radius:5px;padding:1px 8px;margin:0 2px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .slot.v{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent)}
+  .opts{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line2);border-radius:8px;padding:9px;background:#fff}
+  .opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;user-select:none}
+  .opt:hover{border-color:var(--accent)}
+  .opt.on{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent);font-weight:600}
+  .opt .tag{font-size:10px;color:#fff;background:var(--accent);border-radius:4px;padding:0 5px;margin-left:2px}
+  .addbar{display:flex;gap:6px;margin-top:8px}.addbar input{flex:1;font-size:12px;padding:6px 9px}
+  .btnq{padding:6px 11px;border:1px solid var(--line2);background:#fff;border-radius:7px;font-size:12px;cursor:pointer;color:var(--ink2);white-space:nowrap}
+  .btnq:hover{border-color:var(--accent);color:var(--accent)}
+  .big{font-weight:700;font-size:17px;color:var(--accent)}
+  .countbox{background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;color:var(--ink3);font-weight:600;background:var(--bg2)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2)}
+  .lvtag{background:var(--accent-soft);color:var(--accent);border:1px solid #c9c5f5;border-radius:5px;padding:1px 7px;font-weight:600;font-size:11.5px}
+  .pending{color:var(--ink3)}
+  .light{border-radius:8px;padding:10px 12px;font-size:12.5px;font-weight:600}
+  .light.green{background:var(--green-bg);color:var(--green)}.light.amber{background:var(--amber-bg);color:var(--amber)}.light.red{background:var(--red-bg);color:var(--red)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;margin:0}
+  .kv dt{color:var(--ink2);font-weight:600}.kv dd{margin:0}
+  .flash{font-size:11.5px;color:var(--green);margin-top:6px;min-height:16px}
+  .divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:var(--accent);font-size:13px;font-weight:600}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line2)}
+  .imgbox{width:64px;height:64px;border:1.5px dashed var(--line2);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:11px;background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">🎯 <b>终点版 · Dict 背书 + 测试设计/素材属性 分家</b> —— 独立 demo,<b>不影响现有系统</b>。变量 / 层级 <b>都从 Dictionary 词表选</b>(标准化、Results 能聚合);词表没有的 <b>受控加进词表</b>(灵活);素材属性全在 Creative Setup。试试切维度、加新值。</div>
+
+  <div class="card"><div class="sentence" id="sentence"></div></div>
+
+  <!-- 1 测什么 -->
+  <div class="card">
+    <h3><span class="n">1</span>这次测什么 <small>· 一条假设只测一个变量</small></h3>
+    <div class="row">
+      <div class="fld" style="flex:2"><label>改变 X(一句话)</label><input id="x" value="把卖点换成「提款秒到账」信任角度" oninput="render()"></div>
+      <div class="fld"><label>本次变量(维度 · 来自词表)</label>
+        <select id="dim" onchange="onDim()"></select>
+        <div class="addbar"><input id="dim-new" placeholder="新维度(如 代言人 / 落地页)"><button class="btnq" onclick="addDim()">➕ 加维度进词表</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 层级 -->
+  <div class="card">
+    <h3><span class="n">2</span>层级 · 从「<span id="dim-name"></span>」词表多选 <small>· 至少 2 个,第一个当对照</small></h3>
+    <div class="opts" id="lv-opts"></div>
+    <div class="addbar"><input id="lv-new" placeholder="词表里没有?在这加一个新值,自动进 Dictionary" onkeydown="if(event.key==='Enter')addTerm()"><button class="btnq" onclick="addTerm()">➕ 加进词表</button></div>
+    <div class="flash" id="flash"></div>
+    <div class="row" style="margin-top:8px">
+      <div class="fld" style="max-width:120px"><label>每格变体</label><input type="number" id="variants" value="3" min="1" oninput="render()"></div>
+      <div class="fld"><div class="countbox" id="count"></div></div>
+    </div>
+  </div>
+
+  <!-- 3 指标 -->
+  <div class="card">
+    <h3><span class="n">3</span>指标 · 目标 · 基准</h3>
+    <div class="row">
+      <div class="fld"><label>品牌</label><select id="b-brand" onchange="render()"><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option></select></div>
+      <div class="fld"><label>主指标</label><select id="metric" onchange="render()"><option value="FDC">FDC 首存人数</option><option value="REG">REG 注册数</option><option value="AFDA">AFDA 平均首存额</option></select></div>
+      <div class="fld"><label>基准(自动)</label><input id="baseline" disabled></div>
+      <div class="fld"><label>目标值</label><input type="number" id="target" value="35" oninput="render()"></div>
+      <div class="fld"><label>防守底线</label><select><option>CPA ≤ 30</option><option>AFDA ≥ 4</option></select></div>
+    </div>
+  </div>
+
+  <!-- 4 容量 -->
+  <div class="card">
+    <h3><span class="n">4</span>容量体检</h3>
+    <div class="row" style="align-items:flex-end">
+      <div class="fld" style="max-width:120px"><label>日预算 $</label><input type="number" id="budget" value="30" oninput="render()"></div>
+      <div class="fld" style="max-width:120px"><label>周期(天)</label><input type="number" id="days" value="7" oninput="render()"></div>
+      <div class="fld" style="flex:2"><div class="light" id="cap"></div></div>
+    </div>
+  </div>
+
+  <!-- 5 生成预览 -->
+  <div class="card">
+    <h3><span class="n">5</span>生成预览</h3>
+    <div class="note" style="margin:0 0 6px">骨架只带<b>层级标签(标准词)+ 变体编号</b>;素材属性在下面 Setup。层级是标准词 → Results 能干净地按它聚合。</div>
+    <div id="gen"></div>
+  </div>
+
+  <!-- 6 判定 -->
+  <div class="card">
+    <h3><span class="n">6</span>判定规则</h3>
+    <dl class="kv" id="rules"></dl>
+  </div>
+
+  <div class="divider">↓ 之后,每支骨架在 Creative 这边 Setup(素材属性也从词表选)</div>
+  <div class="card setup">
+    <h3><span class="n">＋</span>Creative · Setup 一支素材</h3>
+    <div class="row">
+      <div class="fld" style="max-width:300px"><label>选骨架</label><select id="sk" onchange="renderSetup()"></select></div>
+      <div class="fld"><label>层级(只读,跟假设走)</label><input id="sk-lv" disabled></div>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <div class="fld" style="max-width:90px"><label>图 / 视频</label><div class="imgbox">上传</div></div>
+      <div style="flex:3">
+        <div class="row">
+          <div class="fld"><label>Format(词表)</label><select id="s-fmt"></select></div>
+          <div class="fld"><label>Hook(词表)</label><select id="s-hook"></select></div>
+          <div class="fld"><label>视觉(词表)</label><select id="s-vs"></select></div>
+        </div>
+        <div class="fld"><label>Primary text(文案)</label><input placeholder="这支素材真实文案"></div>
+      </div>
+    </div>
+    <div class="note">⚠️ Format/Hook/视觉 也<b>从同一份 Dictionary 词表选</b> → 假设的层级 和 素材的属性 用<b>同一套标准词</b>,Results 才聚合得起来。</div>
+  </div>
+</div>
+
+<script>
+const DICT={
+  'Hook（卖点）':['提款到账','名人背书','大赢展示','痛点反转','客服对话'],
+  'Format（形式）':['视频','静态图','多图轮播','动态创意'],
+  '视觉风格':['真人出镜','用户自拍感','游戏画面','中奖展示'],
+  '人群':['高价值型','信任敏感型','理性长期型','娱乐冲动型'],
+  'Offer':['首存红利','分层红利','返水'],
+  '代言人':['周杰伦','本地网红','无代言人']
+};
+const BASE={'OK188KH':{FDC:{base:27,cost:24,unit:'周均'},REG:{base:281,cost:9.9,unit:'月'},AFDA:{base:5.09,cost:null,unit:'$'}},'17WINKH':{FDC:{base:7,cost:76,unit:'周均'},REG:{base:97,cost:25,unit:'月'},AFDA:{base:5.73,cost:null,unit:'$'}},'SBKH':{FDC:{base:1,cost:472,unit:'周均'},REG:{base:20,cost:71,unit:'月'},AFDA:{base:6,cost:null,unit:'$'}},'INZ9':{FDC:{base:25,cost:17,unit:'周均'},REG:{base:166,cost:11,unit:'月'},AFDA:{base:165,cost:null,unit:'RM'}}};
+let dim='Hook（卖点）';
+let picked={'Hook（卖点）':['提款到账','名人背书']};
+let skeletons=[];
+
+function fillSel(id,arr,keep){const s=document.getElementById(id);const cur=keep?s.value:null;s.innerHTML=arr.map(v=>`<option>${v}</option>`).join('');if(cur&&arr.includes(cur))s.value=cur;}
+function onDim(){dim=document.getElementById('dim').value;if(!picked[dim])picked[dim]=[];render();}
+function addDim(){const el=document.getElementById('dim-new');const v=(el.value||'').trim();if(v&&!DICT[v]){DICT[v]=[];dim=v;picked[v]=[];el.value='';flash('已把维度「'+v+'」加进 Dictionary');}render();}
+function togLevel(v){const arr=picked[dim]||(picked[dim]=[]);const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);render();}
+function addTerm(){const el=document.getElementById('lv-new');const v=(el.value||'').trim();if(v){if(!DICT[dim].includes(v))DICT[dim].push(v);if(!picked[dim].includes(v))picked[dim].push(v);el.value='';flash('「'+v+'」已加进「'+dim+'」词表,全系统通用');}render();}
+function flash(m){document.getElementById('flash').textContent='✓ '+m;}
+
+function render(){
+  fillSel('dim',Object.keys(DICT),true);document.getElementById('dim').value=dim;
+  document.getElementById('dim-name').textContent=dim;
+  const sel=picked[dim]||[];
+  document.getElementById('lv-opts').innerHTML=DICT[dim].map(v=>{const on=sel.includes(v);const isCtrl=on&&sel.indexOf(v)===0;return `<span class="opt ${on?'on':''}" onclick="togLevel('${v}')">${on?'✓ ':''}${v}${isCtrl?'<span class="tag">对照</span>':''}</span>`;}).join('')||'<span class="note" style="margin:0">这个维度词表还空 — 用下面加几个</span>';
+
+  const brand=document.getElementById('b-brand').value,metric=document.getElementById('metric').value;
+  const n=parseInt(document.getElementById('variants').value)||1;const total=sel.length*n;
+  document.getElementById('count').innerHTML=`矩阵 = <b>层级 ${sel.length}</b> × <b>每格变体 ${n}</b> = <span class="big">${total} 支</span> <span class="note">(${sel.join(' / ')||'—'})</span>`;
+
+  const bd=(BASE[brand]||{})[metric];
+  document.getElementById('baseline').value=bd?`${bd.base} ${bd.unit}`:'无基准·探索';
+  const t=parseFloat(document.getElementById('target').value)||0;
+  document.getElementById('sentence').innerHTML=`<b>我相信</b> <span class="slot v">${document.getElementById('x').value||'…'}</span> <b>会让</b> <span class="slot">${metric}</span> 从 <span class="slot">${bd?bd.base+' '+bd.unit:'—'}</span> 变为 <span class="slot">${t||'—'}</span>`;
+
+  skeletons=[];let rows='',idx=0;
+  (sel.length?sel:['(未选层级)']).forEach(lv=>{for(let k=1;k<=n;k++){idx++;const id='HYP-001-V'+idx;skeletons.push({id,lv,k});
+    rows+=`<tr><td class="code">${id}</td><td><span class="lvtag">${lv}</span></td><td class="code">变体 ${k}</td><td class="pending">→ Setup</td></tr>`;}});
+  document.getElementById('gen').innerHTML=`<table><tr><th>编号</th><th>层级(标准词 · ${dim})</th><th>变体</th><th>属性</th></tr>${rows}</table>`;
+
+  const bud=parseFloat(document.getElementById('budget').value)||0,days=parseFloat(document.getElementById('days').value)||0;
+  const cost=bd&&bd.cost?bd.cost:null;const have=bud*days;const cap=document.getElementById('cap');
+  if(!cost){cap.className='light amber';cap.textContent='该指标无单位成本 → 手填参考成本';}
+  else{const weeks=days/7,need=Math.round(t*weeks),needSpend=Math.round(need*cost),ratio=have/needSpend;
+    if(ratio>=1.5){cap.className='light green';cap.innerHTML=`🟢 充足 · 余量 ${Math.round(ratio*100)}% — $${have} / ~$${needSpend}`;}
+    else if(ratio>=1){cap.className='light amber';cap.innerHTML=`🟡 刚够 — $${have} / ~$${needSpend}`;}
+    else{cap.className='light red';cap.innerHTML=`🔴 够不到成功线 — $${have} / ~$${needSpend}`;}}
+
+  document.getElementById('rules').innerHTML=`<dt>成功线</dt><dd>${metric} ≥ ${t}</dd><dt>失败线</dt><dd>${metric} ≤ ${bd?bd.base:'基准'}</dd><dt>观察期</dt><dd>${days} 天</dd><dt>分层判读</dt><dd>某层 ${n} 支全败=方向错;1 支跑出=方向对</dd>`;
+
+  fillSel('s-fmt',DICT['Format（形式）']);fillSel('s-hook',DICT['Hook（卖点）']);fillSel('s-vs',DICT['视觉风格']);
+  const sk=document.getElementById('sk');const cur=sk.value;
+  sk.innerHTML=skeletons.map(s=>`<option value="${s.id}">${s.id} · 层级「${s.lv}」· 变体${s.k}</option>`).join('');
+  if([...sk.options].some(o=>o.value===cur))sk.value=cur;
+  renderSetup();
+}
+function renderSetup(){const id=document.getElementById('sk').value;const s=skeletons.find(x=>x.id===id);document.getElementById('sk-lv').value=s?s.lv:'';
+  const hk=document.getElementById('s-hook');if(s&&DICT['Hook（卖点）'].includes(s.lv))hk.value=s.lv;}
+render();
+</script>
+</body>
+</html>

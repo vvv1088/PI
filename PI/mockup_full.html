@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hypothesis · 完整版(重构 · 目标保留原格式)</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#56616e;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--violet:#7a4fd6;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--red:#d23f4a;--red-bg:#fdecec}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:22px;font-size:13px;line-height:1.5}
+  .wrap{max-width:1000px;margin:0 auto}
+  .banner{border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12.5px;background:var(--accent-soft);border:1px solid #c9c5f5;color:#3b3590}
+  .banner b{color:var(--accent)}
+  .grid{display:flex;gap:14px;align-items:flex-start}
+  .main{flex:2;min-width:0}.side{flex:1;min-width:230px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+  h3{margin:0 0 10px;font-size:13px;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+  h3 small{font-weight:400;color:var(--ink3);font-size:11px}
+  .row,.row2{display:flex;gap:10px;flex-wrap:wrap}.row2>.fld{flex:1;min-width:150px}
+  .fld{flex:1;min-width:120px;margin-bottom:5px}
+  label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  select,input,textarea{width:100%;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;font-size:12.5px;background:#fff;color:var(--ink);font-family:inherit}
+  input:disabled{background:var(--bg2);color:var(--ink3)}
+  .note{font-size:11px;color:var(--ink3);margin-top:5px}
+  /* —— 目标部分:照搬 index.html 的 sentence / slot / baseline / light —— */
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:12px 15px;font-size:14px;line-height:2.1}
+  .sentence .sl{display:grid;grid-template-columns:54px 1fr;align-items:baseline}
+  .sentence .sl .lab{color:var(--ink2);font-weight:600;white-space:nowrap}
+  .slot{display:inline-block;border-radius:5px;padding:2px 8px;margin:0 3px;font-weight:600;border:1px solid transparent;line-height:1.5;vertical-align:middle}
+  .slot.empty{background:#fff;border:1px dashed var(--line2);color:var(--ink3);font-weight:400;padding:2px 8px}
+  .slot.fill{background:#fff;border-color:var(--line2);color:var(--ink)}
+  .slot.auto{background:var(--accent-soft);border-color:#c4d2f7;color:var(--accent)}
+  .suffix{position:relative}.suffix::after{content:attr(data-s);position:absolute;right:9px;top:7px;color:var(--ink3);font-size:11px}
+  .baseline b{font-size:15px}.baseline .note{margin-top:3px}
+  .light{border-radius:8px;padding:10px 12px}
+  .light .tt{font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:6px}
+  .light .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .light.green{background:var(--green-bg)}.light.green .tt,.light.green .dot{color:var(--green);background:}.light.green .dot{background:var(--green)}
+  .light.amber{background:var(--amber-bg)}.light.amber .tt{color:var(--amber)}.light.amber .dot{background:var(--amber)}
+  .light.red{background:var(--red-bg)}.light.red .tt{color:var(--red)}.light.red .dot{background:var(--red)}
+  .ccgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+  .ccgrid div{background:#fff;border-radius:6px;padding:6px;text-align:center}.ccgrid label{font-size:10px}.ccgrid b{font-size:14px}
+  .calc{font-size:11px;color:var(--ink3);margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;margin:0}.kv dt{color:var(--ink2);font-weight:600}.kv dd{margin:0}
+  /* —— 素材 + 裁判 —— */
+  table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:560px}
+  th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:10px;color:var(--ink3);background:var(--bg2)}th.dim{background:var(--accent-soft);color:var(--accent)}
+  td select{font-size:11px;padding:3px 4px}td.dim select{border-color:#c9c5f5;background:#faf9ff}
+  .btn{padding:6px 11px;border:0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer}.btn.g{background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .x{cursor:pointer;color:var(--red);font-weight:700}
+  .verdict{border-radius:8px;padding:11px 13px;margin-top:8px}.verdict.ok{background:var(--green-bg);border:1px solid #bfe5cf}.verdict.bad{background:var(--red-bg);border:1px solid #f3c4c4}
+  .vtitle{font-size:13.5px;font-weight:700;margin-bottom:6px}.vtitle.ok{color:var(--green)}.vtitle.bad{color:var(--red)}
+  .chk{font-size:12px;padding:2px 0}.chk b{font-weight:600}
+  .okx{color:var(--green);font-weight:700}.badx{color:var(--red);font-weight:700}
+  .fix{font-size:11.5px;color:var(--ink2);margin-top:6px;background:#fff;border-radius:6px;padding:7px 9px;border:1px dashed var(--line2)}
+  .h1{font-size:16px;font-weight:700;margin:0 0 2px}.sub{font-size:11.5px;color:var(--ink3);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">🧩 <b>完整版预览 · 重构后的 New Hypothesis</b> —— 独立 demo,不碰 index.html。<b>「目标」那一套(指标/防守底线/slot 句子/目标值绝对+%/Baseline/容量/判定)保留现有原格式</b>;新的只有左边「本次测的维度」+ 下面「素材标签 + 裁判」。删掉了旧的素材矩阵。</div>
+  <div class="h1">New Hypothesis</div>
+  <div class="sub">从 Idea「立假设」带入 · 一条假设只测一个维度</div>
+
+  <div class="grid">
+    <div class="main">
+      <!-- 1 这次测什么(新) -->
+      <div class="card">
+        <h3><span class="n">1</span>这次测什么 <small>· 新:声明一个维度(替代旧的素材矩阵)</small></h3>
+        <div class="row2">
+          <div class="fld" style="flex:2"><label>改变 X — 这次唯一要动的东西</label><input id="x" value="测「合法执照(展示牌照)」卖点" oninput="render()"></div>
+          <div class="fld"><label>本次测的维度 ⭐(词表)</label><select id="dim" onchange="render()"></select></div>
+        </div>
+        <div class="note">想测 licensing → 选 Hook,素材里比「合法执照」vs 别的;代言人 → Hook 比「名人背书」。其余属性是控制项(下面素材里对齐)。</div>
+      </div>
+
+      <!-- 2 指标(原格式) -->
+      <div class="card">
+        <h3><span class="n">2</span>指标 <small>· 原格式保留</small></h3>
+        <div class="row2">
+          <div class="fld"><label>主指标(唯一判定权)</label>
+            <select id="metric" onchange="syncFromBase()">
+              <option value="FDC">FDC 首存人数</option><option value="REG">REG 注册数</option><option value="AFDA">AFDA 平均首存金额</option><option value="FDAMT">FDAMT 首存总金额</option>
+            </select></div>
+          <div class="fld"><label>防守底线</label>
+            <div style="display:flex;gap:6px">
+              <select id="g-m" style="flex:1.4"><option>AFDA</option><option>FDC</option><option>CPA</option><option>D7CR</option></select>
+              <select id="g-op" style="width:56px"><option>≥</option><option>≤</option></select>
+              <input type="number" id="g-v" value="4" style="width:64px">
+            </div></div>
+        </div>
+      </div>
+
+      <!-- 3 假设:句子 + 目标值 + 理由(原格式) -->
+      <div class="card">
+        <h3><span class="n">3</span>假设 <small>· slot 句子 / 目标值 绝对+% / 理由 —— 原格式</small></h3>
+        <div class="sentence" id="sentence"></div>
+        <div class="row2" style="margin-top:10px">
+          <div class="fld"><label>目标值</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" id="target" value="35" style="width:80px" oninput="targetAbs()">
+              <span class="suffix" data-s="%"><input type="number" id="pct" value="30" style="width:80px" oninput="targetPct()"></span>
+            </div></div>
+          <div class="fld"><label>理由(从 Idea 自动带,锁定)</label><textarea id="why" rows="1" readonly>BK8 同类信任素材连投 9 周</textarea></div>
+        </div>
+      </div>
+
+      <!-- 4 素材 + 裁判(新) -->
+      <div class="card">
+        <h3><span class="n">4</span>素材标签 + 裁判 <small>· 新:每条打词表标签,系统查一致性</small></h3>
+        <div style="overflow-x:auto"><table id="tbl"></table></div>
+        <div style="margin-top:9px;display:flex;gap:8px">
+          <button class="btn g" onclick="addClean()">＋ 加素材(对齐其它维度)</button>
+          <button class="btn g" style="border-color:#f3c4c4;color:var(--red)" onclick="addDirty()">＋ 故意加一条混的</button>
+        </div>
+        <div id="verdict"></div>
+      </div>
+    </div>
+
+    <!-- 侧栏:Baseline / 容量 / 判定(原格式) -->
+    <div class="side">
+      <div class="card"><h3>Baseline · 基准值</h3><div class="baseline" id="baseline"></div></div>
+      <div class="card"><h3>Capacity Check · 容量体检</h3>
+        <div class="row" style="margin-bottom:4px">
+          <div class="fld" style="max-width:96px"><label>日预算 $</label><input type="number" id="budget" value="30" oninput="render()"></div>
+          <div class="fld" style="max-width:96px"><label>周期(天)</label><input type="number" id="days" value="7" oninput="render()"></div>
+        </div>
+        <div id="cc-out"></div>
+      </div>
+      <div class="card" style="background:var(--bg2)"><h3>判定规则 · 自动预填</h3>
+        <dl class="kv" id="rules"></dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DIMS=[['fmt','Format'],['hook','Hook'],['vs','视觉'],['offer','Offer'],['aud','人群'],['age','年龄段'],['game','游戏类型']];
+const OPTS={fmt:['视频','静态图','多图轮播','动态创意'],hook:['合法执照','优惠直给','提款到账','大赢展示','名人背书','信任安全','痛点反转','玩家见证','返水'],vs:['真人出镜','用户自拍感','游戏画面截图','中奖展示','动画动效','官方平面设计','数字人'],offer:['首存红利','分层红利','保险机制','复存激活','VIP','返水','无'],aud:['高价值型','信任敏感型','理性长期型','娱乐冲动型','奖金猎人型','体育竞猜型','回流唤醒型','Broad'],age:['25-44','18-24','25-34','35-44','45+','全年龄'],game:['真人娱乐','老虎机','体育','彩票/4D','捕鱼','斗鸡']};
+const BASE={OK188KH:{FDC:{base:27,cost:24,unit:'周均'},REG:{base:281,cost:9.9,unit:'月'},AFDA:{base:5.09,cost:null,unit:'$'},FDAMT:{base:138,cost:null,unit:'$/周'}}};
+const BRAND='OK188KH';
+const CONST={fmt:'视频',vs:'真人出镜',offer:'首存红利',aud:'高价值型',age:'25-44',game:'真人娱乐'};
+let dimSel='hook';
+let rows=[{id:'V1',hook:'合法执照',...CONST},{id:'V2',hook:'合法执照',...CONST},{id:'V3',hook:'优惠直给',...CONST},{id:'V4',hook:'优惠直给',...CONST}];
+let seq=5;
+function addClean(){rows.push({id:'V'+(seq++),hook:'优惠直给',...CONST});render();}
+function addDirty(){rows.push({id:'V'+(seq++),hook:'大赢展示',fmt:'静态图',vs:'真人出镜',offer:'分层红利',aud:'高价值型',age:'25-44',game:'真人娱乐'});render();}
+function rm(i){rows.splice(i,1);render();}
+function setv(i,k,v){rows[i][k]=v;render();}
+function distinct(k){return [...new Set(rows.map(r=>r[k]))];}
+function getBase(){return BASE[BRAND][document.getElementById('metric').value];}
+function syncFromBase(){targetPct();}
+function targetAbs(){const b=getBase();if(b){document.getElementById('pct').value=Math.round((document.getElementById('target').value/b.base-1)*100);}render();}
+function targetPct(){const b=getBase();if(b){document.getElementById('target').value=Math.round(b.base*(1+(+document.getElementById('pct').value)/100)*10)/10;}render();}
+
+function render(){
+  document.getElementById('dim').innerHTML=DIMS.map(d=>`<option value="${d[0]}"${d[0]===dimSel?' selected':''}>${d[1]}</option>`).join('');
+  dimSel=document.getElementById('dim').value;
+  const metric=document.getElementById('metric').value,b=getBase();const t=+document.getElementById('target').value||0;
+  // sentence(原格式)
+  const s=(v,c)=>`<span class="slot ${v?c:'empty'}">${v||'…'}</span>`;
+  const baseTxt=b?(b.unit==='周均'?'周均 '+b.base:b.base):'(无基准)';
+  document.getElementById('sentence').innerHTML=`<div class="sl"><span class="lab">我相信</span><span>${s(document.getElementById('x').value.trim(),'fill')}</span></div><div class="sl"><span class="lab">会让</span><span>${s(metric,'auto')} 从 ${s(baseTxt,'auto')} 变为 ${s(t||'','fill')}</span></div><div class="sl"><span class="lab">因为</span><span>${s('竞品同类素材连投 9 周','fill')}</span></div>`;
+  // baseline
+  document.getElementById('baseline').innerHTML=b?`<b>${b.unit==='周均'?'周均 ':''}${b.base}</b> <span style="color:var(--ink3)">${metric} · ${BRAND} · 近 30 天</span><div class="note">数据管道自动填充(Meta × 后台 API)</div>`:'<b style="color:var(--violet)">无基准</b>';
+  // capacity(原格式)
+  const bud=+document.getElementById('budget').value||0,days=+document.getElementById('days').value||0,have=bud*days,out=document.getElementById('cc-out');
+  if(!b||!b.cost){out.innerHTML='<div class="light amber"><div class="tt"><span class="dot"></span>该指标无单位成本</div><p class="note">左侧手填参考成本即可体检</p></div>';}
+  else{const weeks=days/7,need=Math.round(t*weeks),needSpend=Math.round(need*b.cost),ratio=have/needSpend,can=Math.floor(have/b.cost);let cls='green',tt='🟢 预算充足',ad=`余量 ${Math.round(ratio*100)}%`;if(ratio<1){cls='red';tt='🔴 物理上够不到成功线';ad=`建议预算提至 $${Math.ceil(needSpend/days)}/日 或降目标`;}else if(ratio<1.5){cls='amber';tt='🟡 刚好够,没有容错';ad='建议留 1.5 倍余量';}
+    out.innerHTML=`<div class="light ${cls}"><div class="tt"><span class="dot"></span>${tt}</div><div class="ccgrid"><div><label>预算可支撑</label><b>${can}</b></div><div><label>成功线需要</label><b>${need}</b></div><div><label>单位成本</label><b>$${b.cost}</b></div></div><p class="note">${ad}</p></div><div class="calc">需求 ≈ ${t}/周 × ${weeks.toFixed(1)} × $${b.cost} = $${needSpend}<br>持有 = $${bud}/日 × ${days} = $${have}</div>`;}
+  // 判定规则(原格式)
+  document.getElementById('rules').innerHTML=`<dt>成功线</dt><dd>观察期内 ${metric} ≥ ${t}</dd><dt>失败线</dt><dd>${metric} ≤ ${b?b.base:'基准'}</dd><dt>观察期</dt><dd>7 天(素材类默认)</dd><dt>分层判读</dt><dd>某层全败=方向错;1 支跑出=方向对</dd>`;
+
+  // 素材表 + 裁判
+  let h='<thead><tr><th>素材</th>'+DIMS.map(d=>`<th class="${d[0]===dimSel?'dim':''}">${d[1]}${d[0]===dimSel?' ⭐':''}</th>`).join('')+'<th></th></tr></thead><tbody>';
+  rows.forEach((r,i)=>{h+='<tr><td>'+r.id+'</td>'+DIMS.map(d=>`<td class="${d[0]===dimSel?'dim':''}"><select onchange="setv(${i},'${d[0]}',this.value)">${OPTS[d[0]].map(o=>`<option${o===r[d[0]]?' selected':''}>${o}</option>`).join('')}</select></td>`).join('')+`<td><span class="x" onclick="rm(${i})">✕</span></td></tr>`;});
+  document.getElementById('tbl').innerHTML=h+'</tbody>';
+  const dimName=DIMS.find(d=>d[0]===dimSel)[1],varied=distinct(dimSel),changeOK=varied.length>=2,confs=DIMS.filter(d=>d[0]!==dimSel).map(d=>({name:d[1],vals:distinct(d[0])})).filter(o=>o.vals.length>1),clean=changeOK&&confs.length===0;
+  let v=`<div class="verdict ${clean?'ok':'bad'}"><div class="vtitle ${clean?'ok':'bad'}">${clean?'✅ 干净可比 — 能测出「'+dimName+'」的功劳':'🔴 被污染 — 测不出「'+dimName+'」的功劳'}</div>`;
+  v+=`<div class="chk"><span class="${changeOK?'okx':'badx'}">${changeOK?'✓':'!'}</span> <b>该变的(${dimName})</b>:${changeOK?'有差异（'+varied.join(' / ')+'）':'只有一个值,没在测它'}</div>`;
+  DIMS.filter(d=>d[0]!==dimSel).forEach(d=>{const vl=distinct(d[0]),bad=vl.length>1;v+=`<div class="chk"><span class="${bad?'badx':'okx'}">${bad?'✕':'✓'}</span> <b>${d[1]}</b>:${bad?'<span style="color:var(--red)">混了 '+vl.join(' / ')+'</span>':'一致（'+vl[0]+'）'}</div>`;});
+  if(!clean)v+=`<div class="fix">${!changeOK?'• 「'+dimName+'」没差异 → 加几条不同值的素材。<br>':''}${confs.length?'• 还混了 <b style="color:var(--red)">'+confs.map(c=>c.name).join('、')+'</b> → 对齐它们,或拆成多条假设(一条只测一个维度)。':''}</div>`;
+  document.getElementById('verdict').innerHTML=v+'</div>';
+}
+render();
+</script>
+</body>
+</html>

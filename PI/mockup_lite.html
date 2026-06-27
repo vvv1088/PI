@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hypothesis · 轻量版预览</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#56616e;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--red:#d23f4a;--red-bg:#fdecec;--teal:#0d7490;--teal-bg:#e6f6fa}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;font-size:13px;line-height:1.5}
+  .wrap{max-width:920px;margin:0 auto}
+  .banner{border-radius:10px;padding:13px 16px;margin-bottom:16px;font-size:12.5px}
+  .banner.lite{background:var(--teal-bg);border:1px solid #bfe5ee;color:#0a5566}
+  .banner b{color:var(--teal)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 18px;margin-bottom:13px}
+  h3{margin:0 0 6px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+  h3 small{font-weight:400;color:var(--ink3);font-size:11.5px}
+  .sub{font-size:11.5px;color:var(--ink3);margin:0 0 12px 28px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .fld{flex:1;min-width:140px;margin-bottom:6px}
+  label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  select,input,textarea{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  input:disabled{background:var(--bg2);color:var(--ink3)}
+  .note{font-size:11.5px;color:var(--ink3);margin-top:6px}
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:12px 14px;font-size:14px;line-height:2}
+  .slot{display:inline-block;border-radius:5px;padding:1px 8px;margin:0 2px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .slot.v{background:var(--teal-bg);border-color:#bfe5ee;color:var(--teal)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:20px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--teal-bg);color:var(--teal);border:1px solid #bfe5ee;border-radius:6px;padding:3px 9px}
+  .chip .x{cursor:pointer;font-weight:700;opacity:.6}.chip .x:hover{opacity:1}
+  .chip.ctrl{background:var(--accent-soft);color:var(--accent);border-color:#c9c5f5}
+  .addbar{display:flex;gap:6px}.addbar input{flex:1}
+  .btnq{padding:6px 10px;border:1px solid var(--line2);background:#fff;border-radius:7px;font-size:12px;cursor:pointer;color:var(--ink2);white-space:nowrap}
+  .btnq:hover{border-color:var(--teal);color:var(--teal)}
+  .quick{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .quick span{font-size:11px;color:var(--ink3);background:var(--bg2);border:1px solid var(--line);border-radius:5px;padding:2px 8px;cursor:pointer}
+  .quick span:hover{border-color:var(--teal);color:var(--teal)}
+  .big{font-weight:700;font-size:17px;color:var(--teal)}
+  .countbox{background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;color:var(--ink3);font-weight:600;background:var(--bg2)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2)}
+  .lvtag{background:var(--teal-bg);color:var(--teal);border:1px solid #bfe5ee;border-radius:5px;padding:1px 7px;font-weight:600;font-size:11.5px}
+  .pending{color:var(--ink3);font-style:italic}
+  .light{border-radius:8px;padding:10px 12px;font-size:12.5px;font-weight:600}
+  .light.green{background:var(--green-bg);color:var(--green)}.light.amber{background:var(--amber-bg);color:var(--amber)}.light.red{background:var(--red-bg);color:var(--red)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;margin:0}
+  .kv dt{color:var(--ink2);font-weight:600}.kv dd{margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner lite">🪶 <b>New Hypothesis · 轻量版预览</b> —— 独立 demo,<b>不影响现有系统</b>。和"完整版"的区别:<b>不强制控制置灰、不自动编造素材属性</b>;只把「本次变量 + 层级」当<b>元数据</b>记下来 + 给每支素材<b>挂一个层级标签</b>(供 Results 聚合)。变量/层级<b>全部自由文字</b>,代言人 / 落地页 / CTA 都填得了。</div>
+
+  <div class="card"><div class="sentence" id="sentence"></div></div>
+
+  <!-- 1 这次测什么 -->
+  <div class="card">
+    <h3><span class="n">1</span>这次测什么 <small>· 一条假设只测一个变量</small></h3>
+    <div class="row">
+      <div class="fld" style="flex:2"><label>改变 X(一句话:这次唯一要动的东西)</label><input id="x" value="找周杰伦做代言人" oninput="render()"></div>
+      <div class="fld"><label>本次变量(随便填,只当标签)</label>
+        <input id="dim" list="dimlist" value="代言人" oninput="render()">
+        <datalist id="dimlist"><option>卖点 / Hook</option><option>素材形式 / Format</option><option>视觉风格</option><option>人群</option><option>Offer</option><option>代言人</option><option>落地页</option><option>CTA 文案</option><option>开头 3 秒钩子</option></datalist>
+      </div>
+    </div>
+    <div class="note">💡 这里不强制绑系统维度——填什么都行(代言人、落地页…)。它只是给 Results 聚合用的标签。</div>
+  </div>
+
+  <!-- 2 层级 -->
+  <div class="card">
+    <h3><span class="n">2</span>层级 · 你要比的方向 <small>· 至少 2 个,建议含一个「对照/现状」</small></h3>
+    <div class="chips" id="lv-chips"></div>
+    <div class="addbar">
+      <input id="lv-input" placeholder="输入一个要比的方向,如「周杰伦代言」/「不用代言人」" onkeydown="if(event.key==='Enter')addLevel()">
+      <button class="btnq" onclick="addLevel()">＋ 加层级</button>
+    </div>
+    <div class="quick" id="quick"></div>
+    <div class="row" style="margin-top:10px">
+      <div class="fld" style="max-width:120px"><label>每格变体</label><input type="number" id="variants" value="3" min="1" oninput="render()"><div class="note">同方向几支不同执行</div></div>
+      <div class="fld"><div class="countbox" id="count"></div></div>
+    </div>
+  </div>
+
+  <!-- 3 生成预览 -->
+  <div class="card">
+    <h3><span class="n">3</span>生成预览 <small>· 存假设后生成的素材骨架</small></h3>
+    <div class="note" style="margin:0 0 6px">骨架只挂<b>层级标签 + 变体编号</b>;图 / 文案 / 实际属性 <b>团队在 Creative 那边 Setup 时做</b>(系统不替你编)。层级标签让以后 Results 能按层级看胜率。</div>
+    <div id="gen"></div>
+  </div>
+
+  <!-- 4 描述标签 -->
+  <div class="card">
+    <h3><span class="n">4</span>基础属性 <small>· 描述标签,供筛选 + Results 聚合(非强制控制)</small></h3>
+    <div class="row">
+      <div class="fld"><label>品牌</label><select id="b-brand" onchange="render()"><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option></select></div>
+      <div class="fld"><label>Format</label><select id="b-fmt"><option>视频</option><option>静态图</option><option>多图轮播</option></select></div>
+      <div class="fld"><label>Hook</label><select id="b-hook"><option>提款到账</option><option>名人背书</option><option>大赢展示</option></select></div>
+      <div class="fld"><label>Visual Style</label><select id="b-vs"><option>真人出镜</option><option>用户自拍感</option><option>游戏画面</option></select></div>
+      <div class="fld"><label>人群</label><select id="b-aud"><option>高价值型</option><option>信任敏感型</option><option>娱乐冲动型</option></select></div>
+    </div>
+    <div class="note">⚠️ 不置灰、不假装"控制住"——因为维度互相绑(名人背书自带名人画面),硬说"只动一个"是骗自己。这些就当**描述这条假设大概在做什么**。</div>
+  </div>
+
+  <!-- 5 指标 baseline -->
+  <div class="card">
+    <h3><span class="n">5</span>指标 · 目标 · 基准(真实近 30 天)</h3>
+    <div class="row">
+      <div class="fld"><label>主指标</label><select id="metric" onchange="render()"><option value="FDC">FDC 首存人数</option><option value="REG">REG 注册数</option><option value="AFDA">AFDA 平均首存额</option></select></div>
+      <div class="fld"><label>基准(自动)</label><input id="baseline" disabled></div>
+      <div class="fld"><label>目标值</label><input type="number" id="target" value="35" oninput="render()"></div>
+      <div class="fld"><label>防守底线(必填)</label><select id="guard"><option>CPA ≤ 30</option><option>AFDA ≥ 4</option></select></div>
+    </div>
+  </div>
+
+  <!-- 6 容量 -->
+  <div class="card">
+    <h3><span class="n">6</span>容量体检</h3>
+    <div class="row" style="align-items:flex-end">
+      <div class="fld" style="max-width:120px"><label>日预算 $</label><input type="number" id="budget" value="30" oninput="render()"></div>
+      <div class="fld" style="max-width:120px"><label>周期(天)</label><input type="number" id="days" value="7" oninput="render()"></div>
+      <div class="fld" style="flex:2"><div class="light" id="cap"></div></div>
+    </div>
+  </div>
+
+  <!-- 7 判定 -->
+  <div class="card">
+    <h3><span class="n">7</span>判定规则(自动预填)</h3>
+    <dl class="kv" id="rules"></dl>
+  </div>
+
+  <div style="display:flex;gap:8px;margin:8px 0 24px">
+    <button style="padding:9px 18px;border:1px solid var(--line2);border-radius:8px;background:#fff;color:var(--ink2);font-size:13px;cursor:default">Draft</button>
+    <button style="padding:9px 18px;border:0;border-radius:8px;background:var(--teal);color:#fff;font-size:13px;font-weight:600;cursor:default">Save（必填齐 + ≥2 层级）</button>
+  </div>
+</div>
+
+<script>
+const BASE={
+  'OK188KH':{FDC:{base:27,cost:24,unit:'周均'},REG:{base:281,cost:9.9,unit:'月'},AFDA:{base:5.09,cost:null,unit:'$'}},
+  '17WINKH':{FDC:{base:7,cost:76,unit:'周均'},REG:{base:97,cost:25,unit:'月'},AFDA:{base:5.73,cost:null,unit:'$'}},
+  'SBKH':{FDC:{base:1,cost:472,unit:'周均'},REG:{base:20,cost:71,unit:'月'},AFDA:{base:6,cost:null,unit:'$'}},
+  'INZ9':{FDC:{base:25,cost:17,unit:'周均'},REG:{base:166,cost:11,unit:'月'},AFDA:{base:165,cost:null,unit:'RM'}}
+};
+const QUICK=['周杰伦代言','不用代言人','本地网红','提款秒到账','高额红利','视频','静态图'];
+let levels=['周杰伦代言','不用代言人'];
+
+function addLevel(){const el=document.getElementById('lv-input');const v=(el.value||'').trim();if(v&&!levels.includes(v))levels.push(v);el.value='';render();el.focus();}
+function quickAdd(v){if(!levels.includes(v))levels.push(v);render();}
+function rmLevel(i){levels.splice(i,1);render();}
+
+function render(){
+  const dim=document.getElementById('dim').value||'变量';
+  const brand=document.getElementById('b-brand').value;
+  const metric=document.getElementById('metric').value;
+  const n=parseInt(document.getElementById('variants').value)||1;
+  const total=Math.max(levels.length,0)*n;
+
+  document.getElementById('lv-chips').innerHTML=levels.length?levels.map((v,i)=>`<span class="chip">${v}${i===0?' · 对照':''} <span class="x" onclick="rmLevel(${i})">✕</span></span>`).join(''):'<span class="note" style="margin:0">还没加层级 — 至少 2 个才有得比</span>';
+  document.getElementById('quick').innerHTML='常用:'+QUICK.map(q=>`<span onclick="quickAdd('${q}')">+ ${q}</span>`).join('');
+  document.getElementById('count').innerHTML=`矩阵 = <b>层级 ${levels.length}</b> × <b>每格变体 ${n}</b> = <span class="big">${total} 支素材</span> <span class="note" style="margin-left:6px">(${levels.join(' / ')||'—'})</span>`;
+
+  const bd=(BASE[brand]||{})[metric];
+  document.getElementById('baseline').value=bd?`${bd.base} ${bd.unit}（${metric}·近30天）`:'无基准·探索';
+  const t=parseFloat(document.getElementById('target').value)||0;
+  const x=document.getElementById('x').value||'…';
+  document.getElementById('sentence').innerHTML=`<b>我相信</b> <span class="slot v">${x}</span> <b>会让</b> <span class="slot">${metric}</span> 从 <span class="slot">${bd?bd.base+' '+bd.unit:'—'}</span> 变为 <span class="slot">${t||'—'}</span>，<b>因为</b> <span class="slot">竞品同类素材连投 9 周</span>`;
+
+  // 生成预览:只挂层级标签 + 变体
+  let rows='',idx=0;
+  (levels.length?levels:['(未设层级)']).forEach(lv=>{for(let k=1;k<=n;k++){idx++;
+    rows+=`<tr><td class="code">HYP-001-V${idx}</td><td><span class="lvtag">${lv}</span></td><td class="code">变体 ${k}</td><td class="pending">待 Setup(图/文案)</td></tr>`;
+  }});
+  document.getElementById('gen').innerHTML=`<table><tr><th>编号</th><th>层级标签(本次变量:${dim})</th><th>变体</th><th>素材内容</th></tr>${rows}</table>`;
+
+  // 容量
+  const bud=parseFloat(document.getElementById('budget').value)||0,days=parseFloat(document.getElementById('days').value)||0;
+  const cost=bd&&bd.cost?bd.cost:null;const have=bud*days;const cap=document.getElementById('cap');
+  if(!cost){cap.className='light amber';cap.textContent='该指标无单位成本 → 走"手填参考成本"';}
+  else{const weeks=days/7,need=Math.round(t*weeks),needSpend=Math.round(need*cost),ratio=have/needSpend;
+    if(ratio>=1.5){cap.className='light green';cap.innerHTML=`🟢 充足 · 余量 ${Math.round(ratio*100)}% — 持有 $${have} / 需要 ~$${needSpend}`;}
+    else if(ratio>=1){cap.className='light amber';cap.innerHTML=`🟡 刚够,没容错 — 持有 $${have} / 需要 ~$${needSpend}`;}
+    else{cap.className='light red';cap.innerHTML=`🔴 够不到成功线 — 持有 $${have} / 需要 ~$${needSpend}。加预算 / 降目标 / 延周期`;}}
+
+  document.getElementById('rules').innerHTML=
+    `<dt>成功线</dt><dd>观察期内 ${metric} ≥ ${t}</dd>`+
+    `<dt>失败线</dt><dd>${metric} ≤ ${bd?bd.base:'基准'}</dd>`+
+    `<dt>观察期</dt><dd>${days} 天</dd>`+
+    `<dt>分层判读</dt><dd>某层 ${n} 支全败 = 方向错;有 1 支跑出 = 方向对,放大</dd>`;
+}
+render();
+</script>
+</body>
+</html>

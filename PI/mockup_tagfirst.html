@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标签优先 · 新地基预览</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#56616e;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--red:#d23f4a;--red-bg:#fdecec;--teal:#0d7490;--teal-bg:#e6f6fa}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;font-size:13px;line-height:1.5}
+  .wrap{max-width:920px;margin:0 auto}
+  .banner{border-radius:10px;padding:13px 16px;margin-bottom:16px;font-size:12.5px;background:var(--green-bg);border:1px solid #bfe5cf;color:#155f3a}
+  .banner b{color:var(--green)}
+  .sec{margin-bottom:14px}
+  .seclabel{font-size:12px;font-weight:700;color:var(--accent);margin:0 0 8px 2px;letter-spacing:.3px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 18px}
+  .card.lite{border-style:dashed}
+  h3{margin:0 0 10px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  h3 small{font-weight:400;color:var(--ink3);font-size:11.5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .fld{flex:1;min-width:120px;margin-bottom:6px}
+  label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  .req{color:var(--red)}
+  select,input{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  input:disabled{background:var(--bg2);color:var(--ink3)}
+  .note{font-size:11.5px;color:var(--ink3);margin-top:6px}
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.9}
+  .slot{display:inline-block;border-radius:5px;padding:1px 7px;margin:0 2px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .light{border-radius:8px;padding:8px 11px;font-size:12px;font-weight:600;display:inline-block}
+  .light.green{background:var(--green-bg);color:var(--green)}.light.red{background:var(--red-bg);color:var(--red)}.light.amber{background:var(--amber-bg);color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;color:var(--ink3);font-weight:600;background:var(--bg2)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2)}
+  .tg{display:inline-block;font-size:10.5px;background:var(--bg2);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin:0 2px 0 0;color:var(--ink2)}
+  .tg.hk{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent)}
+  .btn{padding:7px 13px;border:0;border-radius:7px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}
+  .bar{height:16px;border-radius:4px;background:var(--accent);display:inline-block;vertical-align:middle}
+  .wr{font-weight:700}
+  .pill{font-size:10.5px;border-radius:4px;padding:0 6px}
+  .pill.g{background:var(--green-bg);color:var(--green)}.pill.r{background:var(--red-bg);color:var(--red)}.pill.a{background:var(--amber-bg);color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">🧱 <b>标签优先 · 新地基</b> —— 独立 demo,不影响现有系统。<b>假设变轻、矩阵删掉</b>;<b>每条素材打词表标签(人做得到)</b>;<b>Results 跨全部素材按标签自动挖规律(价值在这)</b>。下面三段就是整条闭环,重点看第 ③ 段。</div>
+
+  <!-- ① Hypothesis 轻 -->
+  <div class="sec">
+    <div class="seclabel">① HYPOTHESIS · 轻(只记"赌什么 + 目标",没有矩阵)</div>
+    <div class="card lite">
+      <div class="sentence" id="sentence"></div>
+      <div class="row" style="margin-top:10px">
+        <div class="fld" style="flex:2"><label>我这批赌哪个角度(一句话)</label><input id="x" value="提款信任角度能拉高价值玩家首存" oninput="render()"></div>
+        <div class="fld"><label>品牌</label><select id="h-brand" onchange="render()"><option>OK188KH</option><option>17WINKH</option></select></div>
+      </div>
+      <div class="row">
+        <div class="fld"><label>主指标</label><select id="h-metric"><option>FDC</option></select></div>
+        <div class="fld"><label>基准(自动)</label><input id="h-base" disabled></div>
+        <div class="fld"><label>目标</label><input id="h-target" value="35"></div>
+        <div class="fld"><label>容量体检</label><div class="light green" style="margin-top:2px">🟢 预算够</div></div>
+      </div>
+      <div class="note">没有了:变量 / 层级 / 变体 / 控制 —— 那些是逼操作手当实验设计师。这里只问"赌什么、目标多少"。</div>
+    </div>
+  </div>
+
+  <!-- ② Creative 打标签 -->
+  <div class="sec">
+    <div class="seclabel">② CREATIVE · 打标签(标准化的命门,人做得到的就是"给素材分类")</div>
+    <div class="card">
+      <h3>录入一条素材 <small>· 在 Meta 做完素材后,回来记一条 + 打标签</small></h3>
+      <div class="row">
+        <div class="fld" style="max-width:130px"><label>Ads Code</label><input id="c-code" placeholder="meta 广告码"></div>
+        <div class="fld"><label>Format <span class="req">*</span></label><select id="c-fmt"></select></div>
+        <div class="fld"><label>Hook <span class="req">*</span></label><select id="c-hook"></select></div>
+        <div class="fld"><label>视觉</label><select id="c-vs"></select></div>
+        <div class="fld"><label>人群</label><select id="c-aud"></select></div>
+        <div class="fld" style="max-width:90px"><label>花费 $</label><input id="c-spend" type="number" value="300"></div>
+        <div class="fld" style="max-width:80px"><label>FDC</label><input id="c-fdc" type="number" value="14"></div>
+        <div class="fld" style="max-width:90px;display:flex;align-items:flex-end"><button class="btn" onclick="addCr()">＋ 加入</button></div>
+      </div>
+      <div class="note" style="margin-bottom:8px">标签全是 Dictionary 词表下拉(标准化);Hook/Format 必填。表现(花费/FDC)真做时从 Supabase 按 Ads Code 自动拉,这里先手填示意。</div>
+      <table><thead><tr><th>素材</th><th>品牌</th><th>标签</th><th>花费</th><th>FDC</th><th>CPA</th></tr></thead><tbody id="ledger"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ③ Results 挖规律 -->
+  <div class="sec">
+    <div class="seclabel">③ RESULTS · 按标签挖规律(价值搬到这里 — 操作手不碰,系统自动算)</div>
+    <div class="card">
+      <h3>跨全部素材,按维度看胜率 <small>· 不需要任何人"设计实验",对比从标签里自己长出来</small></h3>
+      <div class="row" style="margin-bottom:10px">
+        <div class="fld" style="max-width:160px"><label>按哪个维度看</label><select id="r-dim" onchange="renderResults()"><option value="hook">Hook(卖点)</option><option value="fmt">Format</option><option value="vs">视觉</option><option value="aud">人群</option></select></div>
+        <div class="fld" style="max-width:160px"><label>切片(看更干净的比)</label><select id="r-brand" onchange="renderResults()"><option value="">全部品牌</option><option>OK188KH</option><option>17WINKH</option></select></div>
+        <div class="fld" style="flex:2;display:flex;align-items:flex-end"><div class="note" id="r-caveat" style="margin:0"></div></div>
+      </div>
+      <table><thead><tr><th id="r-h">取值</th><th>素材数</th><th>总花费</th><th>总 FDC</th><th>平均 CPA</th><th>胜率(低于基准)</th><th>CPA(越短越好)</th></tr></thead><tbody id="r-body"></tbody></table>
+      <div class="note" id="r-learn" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DICT={fmt:['视频','静态图','多图轮播','动态创意'],hook:['提款到账','红利','名人背书','大赢展示','痛点反转'],vs:['真人出镜','用户自拍感','游戏画面','中奖展示','官方设计'],aud:['高价值型','信任敏感型','娱乐冲动型','理性长期型']};
+const BASECPA={'OK188KH':24,'17WINKH':76};
+let LEDGER=[
+ {id:'V1',brand:'OK188KH',fmt:'视频',hook:'提款到账',vs:'真人出镜',aud:'高价值型',spend:380,fdc:21},
+ {id:'V2',brand:'OK188KH',fmt:'视频',hook:'提款到账',vs:'真人出镜',aud:'高价值型',spend:300,fdc:15},
+ {id:'V3',brand:'OK188KH',fmt:'静态图',hook:'提款到账',vs:'游戏画面',aud:'信任敏感型',spend:260,fdc:11},
+ {id:'V4',brand:'OK188KH',fmt:'视频',hook:'红利',vs:'官方设计',aud:'高价值型',spend:420,fdc:9},
+ {id:'V5',brand:'OK188KH',fmt:'静态图',hook:'红利',vs:'官方设计',aud:'娱乐冲动型',spend:350,fdc:8},
+ {id:'V6',brand:'OK188KH',fmt:'视频',hook:'名人背书',vs:'真人出镜',aud:'高价值型',spend:500,fdc:18},
+ {id:'V7',brand:'OK188KH',fmt:'视频',hook:'大赢展示',vs:'中奖展示',aud:'娱乐冲动型',spend:280,fdc:14},
+ {id:'V8',brand:'OK188KH',fmt:'视频',hook:'提款到账',vs:'用户自拍感',aud:'高价值型',spend:330,fdc:16},
+ {id:'V9',brand:'OK188KH',fmt:'多图轮播',hook:'红利',vs:'官方设计',aud:'娱乐冲动型',spend:300,fdc:7},
+ {id:'V10',brand:'17WINKH',fmt:'视频',hook:'大赢展示',vs:'中奖展示',aud:'娱乐冲动型',spend:300,fdc:5}
+];
+let seq=11;
+const cpa=c=>c.spend/c.fdc;
+function fill(id,arr){document.getElementById(id).innerHTML=arr.map(v=>`<option>${v}</option>`).join('');}
+function addCr(){const code=document.getElementById('c-code').value.trim()||('V'+seq);LEDGER.push({id:code,brand:document.getElementById('h-brand').value,fmt:document.getElementById('c-fmt').value,hook:document.getElementById('c-hook').value,vs:document.getElementById('c-vs').value,aud:document.getElementById('c-aud').value,spend:+document.getElementById('c-spend').value||0,fdc:+document.getElementById('c-fdc').value||0});seq++;document.getElementById('c-code').value='';render();}
+
+function render(){
+  fill('c-fmt',DICT.fmt);fill('c-hook',DICT.hook);fill('c-vs',DICT.vs);fill('c-aud',DICT.aud);
+  const brand=document.getElementById('h-brand').value;
+  document.getElementById('h-base').value=BASECPA[brand]?('CPA $'+BASECPA[brand]+' · 周均 FDC'):'—';
+  document.getElementById('sentence').innerHTML=`<b>我相信</b> <span class="slot" style="background:var(--green-bg);border-color:#bfe5cf;color:var(--green)">${document.getElementById('x').value||'…'}</span> <b>会让</b> <span class="slot">FDC</span> 变为 <span class="slot">${document.getElementById('h-target').value||'—'}</span>（${brand}）`;
+  document.getElementById('ledger').innerHTML=LEDGER.map(c=>`<tr><td class="code">${c.id}</td><td>${c.brand}</td><td><span class="tg hk">${c.hook}</span><span class="tg">${c.fmt}</span><span class="tg">${c.vs}</span><span class="tg">${c.aud}</span></td><td class="code">$${c.spend}</td><td class="code">${c.fdc}</td><td class="code">$${cpa(c).toFixed(1)}</td></tr>`).join('');
+  renderResults();
+}
+function renderResults(){
+  const dim=document.getElementById('r-dim').value;const brand=document.getElementById('r-brand').value;
+  const rows=LEDGER.filter(c=>!brand||c.brand===brand);
+  const base=brand&&BASECPA[brand]?BASECPA[brand]:24;
+  const groups={};rows.forEach(c=>{(groups[c[dim]]=groups[c[dim]]||[]).push(c);});
+  const arr=Object.keys(groups).map(k=>{const g=groups[k];const spend=g.reduce((s,c)=>s+c.spend,0),fdc=g.reduce((s,c)=>s+c.fdc,0);const avgcpa=spend/fdc;const wins=g.filter(c=>cpa(c)<=base).length;const fmts=new Set(g.map(c=>c.fmt)).size;return {k,n:g.length,spend,fdc,avgcpa,wr:Math.round(wins/g.length*100),fmts};});
+  arr.sort((a,b)=>a.avgcpa-b.avgcpa);
+  const maxcpa=Math.max(...arr.map(a=>a.avgcpa),1);
+  const label={hook:'Hook(卖点)',fmt:'Format',vs:'视觉',aud:'人群'}[dim];
+  document.getElementById('r-h').textContent=label;
+  document.getElementById('r-body').innerHTML=arr.map(a=>{const w=Math.round(a.avgcpa/maxcpa*180);const cls=a.avgcpa<=base?'g':(a.avgcpa<=base*1.3?'a':'r');return `<tr><td><b>${a.k}</b>${a.fmts>1?' <span class="tg" title="跨多种format">混 '+a.fmts+' 形式</span>':''}</td><td class="code">${a.n}</td><td class="code">$${a.spend}</td><td class="code">${a.fdc}</td><td class="code">$${a.avgcpa.toFixed(1)}</td><td class="wr"><span class="pill ${a.wr>=60?'g':a.wr<=40?'r':'a'}">${a.wr}%</span></td><td><span class="bar" style="width:${w}px;background:${cls==='g'?'var(--green)':cls==='r'?'var(--red)':'var(--amber)'}"></span> <span class="code">$${a.avgcpa.toFixed(0)}</span></td></tr>`;}).join('');
+  const best=arr[0],worst=arr[arr.length-1];
+  document.getElementById('r-learn').innerHTML=arr.length>1?`📌 <b>学到</b>:在「${label}」维度,<b style="color:var(--green)">${best.k}</b>(CPA $${best.avgcpa.toFixed(0)})明显优于 <b style="color:var(--red)">${worst.k}</b>(CPA $${worst.avgcpa.toFixed(0)})${brand?' · 仅看 '+brand:''} —— 这条结论<b>没有任何人填矩阵</b>,纯靠标签聚合出来。`:'';
+  const mixed=arr.filter(a=>a.fmts>1).length;
+  document.getElementById('r-caveat').innerHTML=mixed&&dim!=='fmt'?`⚠️ 有 ${mixed} 组跨多种 format(混淆)→ 用上面「切片」或换个维度看更干净`:'✓ 切片可让对比更干净(如只看 OK188KH)';
+}
+render();
+</script>
+</body>
+</html>

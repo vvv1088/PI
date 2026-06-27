@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Marketing Intelligent System</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f8f9fb; --line:#e6e8ec; --line2:#d6dae1;
+    --ink:#161b22; --ink2:#4b5563; --ink3:#8b93a1;
+    --accent:#1f4fd8; --accent-soft:#eef2fe;
+    --red:#d23b3b; --red-bg:#fdecec;
+    --amber:#b97d10; --amber-bg:#fdf4e3;
+    --green:#1a7f4b; --green-bg:#e8f6ee;
+    --violet:#6d4fc4; --violet-bg:#f1edfb;
+    --side:#fbfcfd;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    /* CI 变量别名 → 全部指向 PI 调色板,使旧 CI 组件 CSS 自动套 PI 皮肤 */
+    --panel:#fff; --panel2:var(--bg2); --border:var(--line); --text:var(--ink);
+    --muted:var(--ink3); --tert:var(--ink3); --good:var(--green); --bad:var(--red);
+    --gold:var(--amber); --new:#be185d; --accent2:var(--accent);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);display:flex;min-height:100vh}
+  a{color:var(--accent);text-decoration:none}
+  aside.nav{width:248px;flex:none;background:var(--side);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow-y:auto;padding:18px 12px;display:flex;flex-direction:column}
+  .brand{padding:4px 10px 18px}
+  .brand b{font-size:13.5px;display:block;white-space:nowrap}
+  .grp{margin-bottom:6px}
+  .grp-h{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:10.5px;letter-spacing:.6px;font-weight:700;color:var(--ink2);text-transform:uppercase;cursor:pointer;border-radius:6px;user-select:none;white-space:nowrap}
+  .grp-h:hover{background:#f0f2f5}
+  .grp-h .car{color:var(--ink3);font-size:10px;transition:transform .15s;margin-left:8px}
+  .grp.closed .car{transform:rotate(-90deg)}
+  .grp.closed .grp-items{display:none}
+  .grp-items{padding:2px 0 6px}
+  .nitem{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 18px;border-radius:6px;color:var(--ink2);cursor:pointer;font-size:13px;margin:1px 0}
+  .nitem:hover{background:#f0f2f5;color:var(--ink)}
+  .nitem.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .nitem.stub{color:var(--ink3)}
+  .user{margin-top:auto;border-top:1px solid var(--line);padding:12px 10px 4px;display:flex;align-items:center;gap:9px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+  .user small{display:block;color:var(--ink3);font-size:10.5px}
+  .wrap{flex:1;min-width:0}
+  main{max-width:1760px;margin:0 auto;padding:26px 36px 60px}
+  #v-gallery thead th{white-space:nowrap}
+  .view{display:none}.view.on{display:block}
+  h1{font-size:18px;font-weight:700}
+  .sub{color:var(--ink3);font-size:12px;margin-top:2px}
+  .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;gap:16px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:#fff;color:var(--ink2);border:1px solid var(--line2)}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--ink3)}
+  .btn.danger{background:#fff;color:var(--red);border:1px solid #f3c2c2}
+  .btn.danger:hover{background:var(--red-bg)}
+  .btn.sm{padding:3px 10px;font-size:12px}
+  .strip{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;background:#fff}
+  .stat{flex:1;padding:10px 16px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat b{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat label{display:block;font-size:11px;color:var(--ink3)}
+  .stat.click{cursor:pointer}.stat.click:hover{background:var(--bg2)}
+  .alertbar{display:flex;align-items:center;gap:10px;background:var(--red-bg);border:1px solid #f3c2c2;border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:12.5px;color:#8c2626}
+  .alertbar b{color:var(--red)}
+  .alertbar .act{margin-left:auto;white-space:nowrap}
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .tablebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  select,input[type=text],input[type=number]{font:inherit;border:1px solid var(--line2);border-radius:6px;padding:6px 9px;background:#fff;color:var(--ink)}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  thead th{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);font-weight:600;text-align:left;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line)}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fbfcfe}
+  tr.click{cursor:pointer}
+  tr.overdue{background:var(--red-bg)}
+  tr.overdue:hover{background:#fbe1e1}
+  tr.archived{opacity:.5}
+  tr.inactive{opacity:.45}
+  .code{font-family:var(--mono);font-size:11.5px;color:var(--ink2)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .pri-高{background:var(--red-bg);color:var(--red)}
+  .pri-中{background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+  .pri-低{background:var(--bg2);color:var(--ink3)}
+  .overdue-badge{display:inline-block;background:var(--red);color:#fff;font-size:10.5px;border-radius:4px;padding:2px 8px;font-weight:700;white-space:nowrap}
+  .src{display:inline-block;font-size:11px;border-radius:4px;padding:1px 7px;border:1px solid;white-space:nowrap}
+  .src-竞品情报{color:#1f4fd8;border-color:#c4d2f7;background:#f2f6fe}
+  .src-市场研究{color:#0d7490;border-color:#bfe5ee;background:#effafc}
+  .src-内部数据{color:#1a7f4b;border-color:#bfe5cf;background:#effaf3}
+  .src-一线反馈{color:#b03a64;border-color:#f0c6d6;background:#fdf1f6}
+  .src-原创直觉{color:#5a6472;border-color:#d8dde4;background:#f4f6f8}
+  .tag{display:inline-block;font-size:10.5px;font-family:var(--mono);color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:1px 2px 1px 0;white-space:nowrap}
+  .tagpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;border:1px solid var(--line2);border-radius:6px;padding:8px;background:#fff}
+  .tagopt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden}
+  .tagopt input{width:13px;height:13px;margin:0;flex:none}
+  .tagopt .tc{font-family:var(--mono);font-size:11px}
+  .tagopt:has(input:checked){background:var(--accent-soft);border-color:#c4d2f7;color:var(--accent)}
+  .reqstar{color:var(--red);font-weight:700}
+  .reqbad{outline:1.5px solid var(--red);outline-offset:1px;border-radius:4px}
+  .qt{font-family:var(--mono);font-size:11.5px;color:var(--ink2);white-space:nowrap}
+  .hx{font-weight:600}
+  .hmeta{font-size:11.5px;color:var(--ink3);margin-top:2px;font-family:var(--mono);white-space:nowrap}
+  .mode{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:1px 8px;white-space:nowrap}
+  .mode-新测试{background:var(--accent-soft);color:var(--accent)}
+  .mode-主力运行{background:var(--green-bg);color:var(--green)}
+  .st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .st i{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .st-草稿 i{background:#9aa3b0}.st-草稿{color:#5a6472}
+  .st-待锁定 i{background:#b8a3d8}.st-待锁定{color:#7c6b98}
+  .st-已锁定 i{background:var(--accent)}.st-已锁定{color:var(--accent)}
+  .st-测试中 i{background:var(--amber)}.st-测试中{color:var(--amber)}
+  .st-待判定 i{background:var(--violet)}.st-待判定{color:var(--violet)}
+  .st-已沉淀 i{background:var(--green)}.st-已沉淀{color:var(--green)}
+  .st-搁置 i{background:#cfd5dc}.st-搁置{color:var(--ink3)}
+  .st-已归档 i{background:#cfd5dc}.st-已归档{color:var(--ink3)}
+  .cst{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:3px 10px;white-space:nowrap;text-align:center;min-width:92px}
+  .cst-prod{background:var(--accent-soft);color:var(--accent)}
+  .cst-live{background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+  .cst-scale{background:var(--green-bg);color:var(--green)}
+  .cst-done{background:var(--bg2);color:var(--ink2)}
+  .cst-alarm{background:var(--red-bg);color:var(--red)}
+  .cst-paused{background:#fff;color:var(--ink3);border:1px solid var(--line2)}
+  .conf-充分{color:var(--green);background:var(--green-bg);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600}
+  .conf-勉强{color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600}
+  .res-成立{color:var(--green);font-weight:700}.res-不成立{color:var(--red);font-weight:700}.res-不确定{color:var(--ink2);font-weight:700}
+  .formwrap{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:20px;align-items:start}
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+  .card h3{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h3 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;align-items:center;justify-content:center}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .row:last-child{margin-bottom:0}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:10px}
+  .row2:last-child{margin-bottom:0}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px;margin-bottom:10px}
+  .row3:last-child{margin-bottom:0}
+  .fld{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+  .fld>label{font-size:12px;color:var(--ink2);font-weight:600}
+  .fld small{color:var(--ink3);font-size:11px}
+  .acform h2{margin:0 0 20px}
+  .acform .row{margin-bottom:18px}
+  .acform .row2{margin-bottom:18px;gap:18px 20px}
+  .acform .fld{gap:7px}
+  .acform .fld>label{font-size:12.5px}
+  .acform #ac-submit,.acform .btn{margin-top:6px}
+  .acform .msg{margin-top:2px}
+  textarea{font:inherit;border:1px solid var(--line2);border-radius:6px;padding:7px 9px;resize:vertical;min-height:50px}
+  .suffix{position:relative;display:inline-flex;align-items:center}
+  .suffix input{padding-right:26px}
+  .suffix:after{content:attr(data-s);position:absolute;right:9px;color:var(--ink3);font-size:12px;pointer-events:none}
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:13px 16px;font-size:14.5px;line-height:2.2}
+  .sentence .sl{display:grid;grid-template-columns:58px 1fr;align-items:baseline}
+  .sentence .sl .lab{color:var(--ink2);font-weight:600;white-space:nowrap}
+  .slot{display:inline-block;border-radius:5px;padding:2px 8px;margin:0 3px;font-weight:600;border:1px solid transparent;line-height:1.5;vertical-align:middle}
+  .slot.empty{background:#fff;border:1px dashed var(--line2);color:var(--ink3);font-weight:400;padding:2px 8px}
+  .slot.fill{background:#fff;border-color:var(--line2);color:var(--ink)}
+  .slot.auto{background:var(--accent-soft);border-color:#c4d2f7;color:var(--accent)}
+  .side{position:sticky;top:20px}
+  .baseline b{font-size:20px}
+  .note{font-size:11.5px;color:var(--ink3);margin-top:6px}
+  .remark{background:var(--bg2);border-left:3px solid var(--line2);border-radius:0 6px 6px 0;padding:10px 14px;font-size:12px;color:var(--ink2);margin-top:12px;line-height:1.9}
+  .explore{background:var(--violet-bg);border:1px solid #ddd3f5;color:var(--violet);border-radius:6px;padding:8px 10px;font-size:12px;margin-top:8px}
+  .light{border-radius:8px;padding:12px 14px;margin-top:4px}
+  .light .tt{display:flex;gap:9px;align-items:center;font-size:13px;font-weight:700;margin-bottom:8px}
+  .light .dot{width:13px;height:13px;border-radius:50%;flex:none}
+  .light.red{background:var(--red-bg)}.light.red .dot{background:var(--red)}
+  .light.amber{background:var(--amber-bg)}.light.amber .dot{background:var(--amber)}
+  .light.green{background:var(--green-bg)}.light.green .dot{background:var(--green)}
+  .light.gray{background:var(--bg2)}.light.gray .dot{background:#cfd5dc}
+  .light p{font-size:12px;color:var(--ink2)}
+  .ccgrid{display:flex;gap:0;background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:8px}
+  .ccgrid>div{flex:1;padding:7px 12px;border-right:1px solid var(--line)}
+  .ccgrid>div:last-child{border-right:none}
+  .ccgrid label{display:block;font-size:10.5px;color:var(--ink3)}
+  .ccgrid b{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .calc{font-family:var(--mono);font-size:11.5px;color:var(--ink3);margin-top:8px;line-height:1.7}
+  .borrow{display:inline-block;font-size:10.5px;background:#fff;border:1px solid var(--line2);border-radius:4px;padding:0 6px;color:var(--ink3);margin-left:6px;font-weight:500}
+  .drawer{position:fixed;top:0;right:-580px;width:580px;height:100vh;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 32px rgba(20,30,50,.08);z-index:40;transition:right .22s;overflow-y:auto}
+  .drawer.open{right:0}
+  .drawer .inner{padding:20px 22px 40px}
+  .drawer h2{font-size:15px;line-height:1.5;margin-bottom:4px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 12px;font-size:12.5px;margin:12px 0}
+  .cphead,.cprow{display:grid;grid-template-columns:92px 1fr 1fr;gap:6px 12px}
+  .cphead{font-size:11px;color:var(--ink3);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line);margin-top:6px}
+  .cprow{font-size:12.5px;padding:8px 4px;border-bottom:1px solid var(--line);align-items:start}
+  .cplab{color:var(--ink2);font-weight:600}
+  .cpcell{line-height:1.55;word-break:break-word}
+  .cpcell.muted{color:var(--ink3);font-style:italic}
+  .cprow.drift{background:var(--amber-bg);border-radius:6px}
+  .driftflag{display:inline-block;background:var(--amber);color:#fff;font-size:9px;padding:1px 6px;border-radius:6px;margin-left:5px;font-weight:700;vertical-align:1px}
+  .vcard{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fff}
+  .vcard.vcur{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+  .vhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .vno{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:13px}
+  .vb{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:2px 8px}
+  .vb-rej{background:var(--red-bg);color:var(--red)}
+  .vb-live{background:var(--green-bg);color:var(--green)}
+  .vb-ret{background:var(--bg2);color:var(--ink2)}
+  .vb-draft{background:var(--accent-soft);color:var(--accent)}
+  .vreason{font-size:12.5px;color:var(--ink2);margin:8px 0;padding-left:2px}
+  .vbody{display:flex;gap:12px;align-items:flex-start}
+  .vcopy{flex:1;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.5;min-width:0}
+  .vcopy>div{word-break:break-word}
+  .vk{display:inline-block;min-width:64px;color:var(--ink3);font-size:11px;font-weight:600;margin-right:6px}
+  .seclabel{font-size:13px;font-weight:700;color:var(--ink);margin:6px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  .rb-test{background:var(--accent-soft);color:var(--accent)}
+  .rb-scale{background:var(--green-bg);color:var(--green)}
+  .kv dt{color:var(--ink3)}
+  .x{position:sticky;top:0;background:#fff;padding:14px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:2}
+  .x button{background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink3)}
+  .overlay{position:fixed;inset:0;background:rgba(15,20,30,.18);z-index:35;display:none}
+  .overlay.show{display:block}
+  .barrow{display:grid;grid-template-columns:170px 1fr 140px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+  .barrow:last-child{border-bottom:none}
+  .track{height:9px;background:var(--bg2);border-radius:5px;overflow:hidden}
+  .fillb{height:100%;background:var(--accent);border-radius:5px}
+  .locked{color:var(--ink3);font-size:11.5px}
+  .stub-page{border:1px dashed var(--line2);border-radius:10px;padding:48px;text-align:center;color:var(--ink3)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;transition:transform .25s;z-index:60}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .ctx{background:var(--accent-soft);border:1px solid #c4d2f7;border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:14px;color:var(--ink2)}
+  .ctx b{color:var(--accent)}
+  .asset-cell{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+  .thumb{width:56px;height:56px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;text-align:center;line-height:1.3;padding:4px;flex:none}
+  .thumb.empty{border:1.5px dashed var(--line2);background:var(--bg2);color:var(--ink3);font-weight:500;font-size:10px}
+  .th-wd{background:linear-gradient(135deg,#1a7f4b,#34b97a)}
+  .th-slt{background:linear-gradient(135deg,#b97d10,#e2aa3a)}
+  .th-ai{background:linear-gradient(135deg,#6d4fc4,#9d83e6)}
+  .th-cs{background:linear-gradient(135deg,#b03a64,#dd6f96)}
+  .th-lcn{background:linear-gradient(135deg,#1f4fd8,#5b82ec)}
+  .vid{position:relative}
+  .vid:after{content:'▶';position:absolute;right:4px;bottom:2px;font-size:10px;opacity:.85}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+  .tabbtn{padding:8px 16px;font-size:13px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;font-weight:500}
+  .tabbtn:hover{color:var(--ink)}
+  .tabbtn.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  @media(max-width:1000px){body{flex-direction:column}aside.nav{width:100%;height:auto;position:static}.formwrap{grid-template-columns:1fr}.side{position:static}.drawer{width:100vw;right:-100vw}.row2{grid-template-columns:1fr}.row3{grid-template-columns:1fr}}
+  /* ===== 侧栏 live 数据状态条 ===== */
+  .cistatus{display:flex;align-items:center;gap:8px;padding:8px 10px 2px;font-size:11px;color:var(--ink3)}
+  .cistatus span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cistatus button{background:#fff;color:var(--ink2);border:1px solid var(--line2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:11px}
+  .cistatus button:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ===== Competitor Intelligence 页面组件(全部套 PI token) ===== */
+  .ci .tablewrap{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:auto}
+  .ci table{border-collapse:collapse;width:100%;font-size:13px;table-layout:fixed}
+  .ci th,.ci td{border-bottom:1px solid var(--line);padding:9px 9px;text-align:left;vertical-align:top;overflow:hidden}
+  .ci th{background:var(--bg2);color:var(--ink3);font-weight:600;font-size:11px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0;z-index:2}
+  .ci tbody tr:hover td{background:#fbfcfe}
+  .kpis{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:9px 16px;min-width:120px}
+  .kpi .v{font-size:21px;font-weight:700;letter-spacing:.3px}.kpi .l{font-size:11.5px;color:var(--ink3);margin-top:1px}
+  .controls{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .mtab{background:#fff;border:1px solid var(--line2);color:var(--ink2);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600}
+  .mtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .mtab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+  .th{width:52px;height:52px;object-fit:cover;border-radius:6px;background:var(--bg2);display:block;cursor:pointer}
+  .thx{width:52px;height:52px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:10px}
+  .op{font-weight:600;font-size:13px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--ink)}
+  .op:hover{color:var(--accent)}
+  .cn{line-height:1.4;color:var(--ink)}
+  .sm{font-size:12px;color:var(--ink3);word-break:break-all;line-height:1.35}
+  .pl{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:500;white-space:nowrap;margin:1px 0}
+  .life{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10.5px;font-weight:600;white-space:nowrap;line-height:1.5}
+  .life.la{background:var(--green-bg);color:var(--green)}
+  .life.ld{background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+  .life.lx{background:#eef0f2;color:var(--ink3)}
+  .susp{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+  .pl.hook{background:var(--violet-bg);color:var(--violet);white-space:normal;text-align:left;word-break:break-word}
+  .pl.style{background:var(--green-bg);color:var(--green)}
+  .pl.cta{background:var(--accent-soft);color:var(--accent);white-space:normal;word-break:break-word}
+  .pl.kh{background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}.pl.my{background:var(--accent-soft);color:var(--accent)}
+  .pl.dur{background:var(--bg2);color:var(--ink3)}.pl.win{background:var(--amber-bg);color:var(--amber)}
+  .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}.pl.new{background:#fbe3ee;color:#be185d}
+  .hooks{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+  .fb{color:var(--accent);text-decoration:none}
+  .link{color:var(--accent);cursor:pointer;text-decoration:none}
+  .cbtn{border:none;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;margin:1px 3px 1px 0}
+  .cbtn.ok{background:var(--green-bg);color:var(--green)}.cbtn.no{background:var(--red-bg);color:var(--red)}
+  .cbtn.rescan{background:var(--accent-soft);color:var(--accent)}
+  .cbtn.rescan:disabled{opacity:.5;cursor:default}
+  .pill2{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;margin:1px}
+  .son{background:var(--green-bg);color:var(--green);cursor:pointer}.soff{background:var(--red-bg);color:var(--red);cursor:pointer}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media(max-width:720px){.statgrid{grid-template-columns:1fr}}
+  .chartbox{position:relative;height:300px}
+  .report h1,.report h2,.report h3{color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:6px;margin-top:20px;font-weight:600}
+  .report table{margin:12px 0;border-collapse:collapse;width:100%;table-layout:fixed}.report th,.report td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;word-break:break-word}.report th:first-child,.report td:first-child{width:22%}.report code{background:var(--bg2);padding:2px 5px;border-radius:4px}
+  .report hr{border:0;border-top:1px solid var(--line);margin:24px 0}.report table+p{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+  .form{max-width:520px;flex:1;min-width:280px}
+  .form label{display:block;font-size:12px;color:var(--ink3);margin:10px 0 4px}.form input,.form select{width:100%;font:inherit;border:1px solid var(--line2);border-radius:6px;padding:7px 9px;background:#fff;color:var(--ink)}
+  .form button{margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer}
+  .form button:disabled{opacity:.5}
+  .msg{margin-top:10px;font-size:13px}.msg.ok{color:var(--green)}.msg.err{color:var(--red)}
+  .empty{color:var(--ink3);padding:40px;text-align:center}
+  .err{color:#991b1b;padding:14px;background:var(--red-bg);border-radius:8px;margin-bottom:14px}
+  .hidden{display:none}
+  #addForms{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  #addForms.hidden{display:none}
+  .opbanner{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  #lb{position:fixed;inset:0;background:rgba(20,22,26,.88);display:none;align-items:center;justify-content:center;z-index:50}
+  #lb.show{display:flex}#lb img,#lb video{max-width:90vw;max-height:90vh;border-radius:8px}#lb .x{position:absolute;top:18px;right:26px;color:#fff;font-size:30px;cursor:pointer}  #loginGate{position:fixed;inset:0;background:linear-gradient(135deg,#1a1d24,#11141a);display:none;align-items:center;justify-content:center;z-index:200}
+  .lgcard{background:var(--bg);border-radius:14px;padding:32px 30px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .lgbrand{font-weight:700;font-size:16px;color:var(--ink)}
+  .lgsub{color:var(--ink3);font-size:13px;margin:2px 0 22px}
+  .lglbl{display:block;font-size:12px;color:var(--ink2);font-weight:600;margin:0 0 5px}
+  .lgin{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-bottom:14px;font-family:inherit}
+  .lgin:focus{outline:none;border-color:var(--accent)}
+  .lgmsg{color:var(--red);font-size:12px;min-height:16px;margin-bottom:6px}
+  .lgbtn{width:100%;justify-content:center}
+  .lghint{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:11px;line-height:1.6}
+  .permtable{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  .permtable th{text-align:center;padding:7px 6px;border-bottom:1px solid var(--line);color:var(--ink3);font-weight:600;font-size:11.5px}
+  .permtable th:first-child{text-align:left}
+  .permtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center}
+  .permtable td:first-child{text-align:left}
+  .permtable .grouprow td{background:var(--bg2);font-weight:700;font-size:11px;color:var(--ink2);text-align:left;padding:5px 8px}
+  .permcell{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;user-select:none}
+  .permcell.pyes{background:var(--green-bg);color:var(--green)}
+  .permcell.pno{background:#eef0f2;color:#b6bcc4}
+  .permcell:hover{outline:2px solid var(--accent);outline-offset:1px}
+  .permna{color:#cfd4da}
+  .re-admin{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);background:var(--bg2);padding:9px 12px;border-radius:8px;margin-bottom:14px;cursor:pointer}
+  .re-admin input{width:15px;height:15px}
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="lgcard">
+    <div class="lgbrand">Marketing Intelligent System</div>
+    <div class="lgsub">Sign in</div>
+    <label class="lglbl">Username</label>
+    <input id="lg-user" class="lgin" placeholder="Username" onkeydown="lgKey(event)" autocomplete="off">
+    <label class="lglbl">Password</label>
+    <input id="lg-pwd" type="password" class="lgin" placeholder="Password" onkeydown="lgKey(event)">
+    <div id="lg-msg" class="lgmsg"></div>
+    <button class="btn lgbtn" onclick="doLogin()">Sign in</button>
+    <div class="lghint">Use your assigned username &amp; password · Issues? Contact your admin</div>
+  </div>
+</div>
+
+<aside class="nav">
+  <div class="brand"><b>Marketing Intelligent System</b></div>
+
+  <div class="grp">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Competitor Intelligence <span class="car">▾</span></div>
+    <div class="grp-items">
+      <div class="nitem on" data-v="reports" onclick="go('reports',this)">Weekly Summary</div>
+      <div class="nitem" data-v="gallery" onclick="go('gallery',this)">Ads Library</div>
+      <div class="nitem" data-v="operators" onclick="go('operators',this)">Operators</div>
+      <div class="nitem" data-v="funnel" onclick="go('funnel',this)">Funnels</div>
+      <div class="nitem" data-v="candidates" onclick="go('candidates',this)">Pending List</div>
+      <div class="nitem" data-v="watch" onclick="go('watch',this)">Watchlist</div>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Planning Intelligence <span class="car">▾</span></div>
+    <div class="grp-items">
+      <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
+      <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
+      <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
+      <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
+      <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
+    </div>
+  </div>
+
+  <div class="grp" id="adminGrp" style="display:none">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
+    <div class="grp-items">
+      <div class="nitem" data-v="roles" onclick="go('roles',this)">Roles & Permissions</div>
+      <div class="nitem" data-v="users" onclick="go('users',this)">Users</div>
+      <div class="nitem" data-v="audit" onclick="go('audit',this)">Activity Log</div>
+    </div>
+  </div>
+
+  <div class="user">
+    <div class="avatar" id="uc-avatar">?</div>
+    <div style="flex:1;min-width:0"><b style="font-size:12.5px" id="uc-name">—</b><small id="uc-role">—</small></div>
+    <button class="cbtn" onclick="logout()" title="Log out">Log out</button>
+  </div>
+  <div class="cistatus"><span id="status">加载中…</span><button onclick="loadAll()">刷新</button></div>
+</aside>
+
+<div class="wrap">
+<main>
+<div id="errbox"></div>
+
+<!-- ============ IDEA POOL ============ -->
+<section class="view" id="v-pool">
+  <div class="head">
+    <div>
+      <h1>Idea Pool</h1>
+      <div class="sub">全月敞开,随时入池 · 想法不绑品牌,立假设时才选品牌 · Tag 永不强制</div>
+    </div>
+    <div class="filters">
+      <button class="btn ghost" data-perm="idea:add" onclick="openIdeaEditor()">+ 新增想法</button>
+    </div>
+  </div>
+
+  <div class="alertbar" id="overdueBar">
+    ⚠️ <b id="overdueN">2 个想法躺池超过 60 天</b> — 月会处理:立假设 / 继续躺 / 归档。n8n 每周扫描,月会前 3 天自动推 Slack 提醒提出人。
+    <a href="javascript:filterOverdue()" class="act">只看超期 →</a>
+  </div>
+
+  <div class="strip">
+    <div class="stat"><b>12</b><label>本月入池 In Pool (Jun)</label></div>
+    <div class="stat"><b id="stat-promoted">—</b><label>已立假设 With Hypothesis</label></div>
+    <div class="stat"><b id="stat-rate">—</b><label>立假设率 Hypothesis Rate</label></div>
+    <div class="stat"><b id="stat-fromci">—</b><label>竞品情报来源 From CI</label></div>
+    <div class="stat click" onclick="filterOverdue()"><b style="color:var(--red)" id="overdueStat">2</b><label>躺池 &gt;60 天 · 点击查看</label></div>
+  </div>
+
+  <div class="tablebar">
+    <select id="f-src" onchange="renderPool()">
+      <option value="">All Sources</option><option>竞品情报</option><option>市场研究</option><option>内部数据</option><option>一线反馈</option><option>原创直觉</option>
+    </select>
+    <label style="font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:5px"><input type="checkbox" id="f-arch" onchange="renderPool()"> 显示已归档</label>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:36%">Idea</th><th>Source</th><th>Tags</th><th>Priority</th><th>By</th><th>Added On</th><th>Age</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody id="poolBody"></tbody>
+  </table>
+</section>
+
+<!-- ============ HYPOTHESES ============ -->
+<section class="view" id="v-hypo">
+  <div class="head">
+    <div>
+      <h1>Hypotheses</h1>
+      <div class="sub">Capacity = 创建时容量体检:🔴 预算不够出结论 / 🟡 刚好够无容错 / 🟢 有 1.5 倍余量(定义见 Dictionary)</div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="stat"><b>7</b><label>本月假设 Total</label></div>
+    <div class="stat"><b style="color:var(--amber)">3</b><label>测试中 Testing</label></div>
+    <div class="stat"><b style="color:var(--violet)">1</b><label>待判定 Pending Verdict</label></div>
+    <div class="stat"><b style="color:var(--green)">2</b><label>已沉淀 Settled</label></div>
+    <div class="stat"><b>2</b><label>主力运行 Scaling Runs</label></div>
+  </div>
+
+  <div class="tablebar">
+    <select id="f-market" onchange="marketChange()">
+      <option value="">All Markets</option><option value="KH">KH</option><option value="MY">MY</option>
+    </select>
+    <select id="f-hbrand" onchange="renderHypo()">
+      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+    </select>
+    <select id="f-month" onchange="renderHypo()">
+      <option value="">All Months</option><option selected>Jun 2026</option><option>May 2026</option>
+    </select>
+    <select id="f-mode" onchange="renderHypo()">
+      <option value="">All Modes</option><option>新测试</option><option>主力运行</option>
+    </select>
+    <select id="f-hst" onchange="renderHypo()">
+      <option value="">All Status</option><option>草稿</option><option>已锁定</option><option>测试中</option><option>待判定</option><option>已沉淀</option><option>搁置</option>
+    </select>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:32%">Hypothesis(改变 X)</th><th>Metric · 基准 → 目标</th><th>Mode</th><th>Market</th><th>Brand</th><th>Type</th><th>Owner</th><th>Capacity</th><th>Status</th>
+    </tr></thead>
+    <tbody id="hypoBody"></tbody>
+  </table>
+</section>
+
+<!-- ============ NEW HYPOTHESIS ============ -->
+<section class="view" id="v-form">
+  <div class="head">
+    <div>
+      <h1>New Hypothesis</h1>
+    </div>
+    <div class="filters">
+      <button class="btn ghost" data-perm="hypo:add" onclick="saveHypothesis('草稿')">Draft</button>
+      <button class="btn" data-perm="hypo:add" onclick="saveHypothesis('待锁定')">Save</button>
+    </div>
+  </div>
+
+  <div class="ctx" id="formCtx">先从 Idea Pool 选一条想法，点「立假设」带入。</div>
+
+  <div class="formwrap">
+    <div>
+      <div class="card">
+        <h3><span class="n">1</span>基础</h3>
+        <div class="row3">
+          <div class="fld"><label>品牌</label>
+            <select id="hf-brand" onchange="updateAll()">
+              <option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+            </select>
+          </div>
+          <div class="fld"><label>Format</label>
+            <select id="hf-format">
+              <option selected>VIDEO 单一视频</option>
+              <option>IMAGE 单一静态图</option>
+              <option>CAROUSEL 多图轮播</option>
+              <option>DCO 动态创意优化</option>
+            </select>
+          </div>
+          <div class="fld"><label>测试类型</label>
+            <select id="hf-type" onchange="updateAll()">
+              <option>素材</option><option>受众</option><option>结构</option><option>Promotion</option>
+            </select>
+          </div>
+          <div class="fld"><label>起因</label>
+            <select id="hf-trigger">
+              <option selected>直觉驱动</option><option>节点驱动</option><option>数据驱动</option><option>战略驱动</option><option>环境驱动</option>
+            </select>
+          </div>
+          <div class="fld"><label>人群原型</label>
+            <select id="hf-persona">
+              <option>信任敏感型</option>
+              <option>理性长期型</option>
+              <option>娱乐冲动型</option>
+              <option>奖金猎人型</option>
+              <option>体育竞猜型</option>
+              <option>高价值型</option>
+              <option>回流唤醒型</option>
+              <option>Broad 算法定向</option>
+            </select>
+          </div>
+          <div class="fld"><label>年龄段</label>
+            <select id="hf-age">
+              <option>18-24</option><option>25-34</option><option>35-44</option><option>45+</option><option selected>25-44(跨档)</option><option>全年龄</option>
+            </select>
+          </div>
+          <div class="fld"><label>游戏类型</label>
+            <select id="hf-game">
+              <option>slots 老虎机</option>
+              <option>live_casino 真人娱乐</option>
+              <option>sports 体育</option>
+              <option>lottery 彩票 / 4D</option>
+              <option>fishing 捕鱼</option>
+              <option>cockfight 斗鸡</option>
+            </select>
+          </div>
+          <div class="fld"><label>Visual Style</label>
+            <select id="hf-vs">
+              <option>real_person 真人出镜</option>
+              <option>ugc 用户自拍感</option>
+              <option>game_screenshot 游戏画面截图</option>
+              <option>winner_showcase 中奖/赢钱展示</option>
+              <option>animation 动画/动效</option>
+              <option>official_design 官方平面设计</option>
+              <option>ai_avatar 数字人</option>
+            </select>
+          </div>
+          <div class="fld"><label>Hook</label>
+            <select id="hf-hook" onchange="hookChange()">
+              <option value="withdrawal_proof" selected>withdrawal_proof 提款到账</option>
+              <option value="big_win">big_win 大赢展示</option>
+              <option value="pain_reversal">pain_reversal 痛点反转</option>
+              <option value="edu_compare">edu_compare 科普对比</option>
+              <option value="cs_convo">cs_convo 客服对话</option>
+              <option value="testimonial">testimonial 玩家见证</option>
+              <option value="celebrity">celebrity 名人背书</option>
+              <option value="promo_direct">promo_direct 优惠直给</option>
+              <option value="trust_safety">trust_safety 信任安全</option>
+              <option value="fast_payout">fast_payout 提款速度</option>
+              <option value="service">service 服务质量</option>
+              <option value="game_variety">game_variety 游戏种类</option>
+              <option value="promo_value">promo_value 优惠力度</option>
+              <option value="high_odds">high_odds 高赔率</option>
+              <option value="license">license 合法执照</option>
+              <option value="urgency">urgency 限时紧迫</option>
+              <option value="luck">luck 招财好运</option>
+              <option value="prediction">prediction 必中贴士</option>
+            </select>
+          </div>
+          <div class="fld"><label>证据</label>
+            <select id="hf-evi">
+              <option selected>竞品信号(自动带入)</option><option>历史数据</option><option>一线反馈</option><option>平台与行业信号</option><option>纯直觉</option>
+            </select>
+          </div>
+          <div></div>
+          <div></div>
+        </div>
+        <div class="row" id="offerRow" style="display:none;margin-top:10px">
+          <div class="fld"><label>Offer(Hook 为「优惠直给」时填写)</label>
+            <select id="hf-offer">
+              <option>fd_bonus 首存红利</option><option>tier_bonus 分层红利</option><option>insurance 保险机制</option><option>free_reg 免费注册</option><option>redeposit 复存激活</option><option>vip VIP 权益</option><option>rebate 返水 / 返现</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="n">2</span>指标</h3>
+        <div class="row2">
+          <div class="fld"><label>主指标(唯一判定权)</label>
+            <select id="hf-metric" onchange="updateAll()">
+              <option value="FDC" selected>FDC 首存人数</option>
+              <option value="REG">REG 注册数</option>
+              <option value="AFDA">AFDA 平均首存金额</option>
+              <option value="FDAMT">FDAMT 首存总金额(合成)</option>
+            </select>
+          </div>
+          <div class="fld"><label>防守底线</label>
+            <div style="display:flex;gap:6px">
+              <select id="hf-guard-m" style="flex:1.4"><option>AFDA</option><option>FDC</option><option>CPA</option><option>D7CR</option></select>
+              <select id="hf-guard-op" style="width:60px"><option>≥</option><option>≤</option></select>
+              <input type="number" id="hf-guard-v" value="4" style="width:80px">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="n">3</span>假设</h3>
+        <div class="sentence" id="sentence"></div>
+        <div class="row2" style="margin-top:12px">
+          <div class="fld"><label>改变 X — 这次唯一要动的东西</label>
+            <input type="text" id="hf-x" value="提款实拍视频替代静态 bonus 图" placeholder="例:提款实拍视频替代静态图" oninput="updateAll()">
+          </div>
+          <div class="fld"><label>目标值</label>
+            <div style="display:flex;gap:6px">
+              <input type="number" id="hf-target" value="19" style="width:84px" oninput="targetAbs()">
+              <span class="suffix" data-s="%"><input type="number" id="hf-pct" value="90" style="width:84px" oninput="targetPct()"></span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="fld"><label>理由 — 凭什么相信会成立</label>
+            <textarea id="hf-why" placeholder="例:竞品同类素材连投 9 周" oninput="updateAll()">BK8 同类素材连投 9 周;WD3 5/23 单日 D1A $80,信任类内容能吸引高价值玩家</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="n">4</span>素材矩阵</h3>
+        <div class="row">
+          <div class="fld" style="max-width:130px"><label>变量数</label>
+            <select id="am-v" onchange="matrix()"><option value="1" selected>1(常态)</option><option value="2">2</option></select>
+          </div>
+          <div class="fld" style="max-width:150px"><label>变量 A 层级</label><input type="number" id="am-la" value="2" min="2" oninput="matrix()"></div>
+          <div class="fld" style="max-width:150px;display:none" id="am-lb-fld"><label>变量 B 层级</label><input type="number" id="am-lb" value="2" min="2" oninput="matrix()"></div>
+          <div class="fld" style="max-width:150px"><label>每格变体</label><input type="number" id="am-n" value="3" min="1" oninput="matrix()"></div>
+          <div class="fld"><label>&nbsp;</label><div id="am-out" style="font-weight:700;font-size:15px"></div></div>
+        </div>
+        <div class="remark">
+          📌 以本条假设为例:测「提款实拍视频 vs 静态图」<br>
+          <b>变量</b> = 这次测的东西 → 素材形式,<b>1 个</b>(就是上面的「改变 X」)<br>
+          <b>层级</b> = 这个变量有几个版本互相比 → 视频 vs 静态图,<b>2 个</b><br>
+          <b>变体</b> = 同一个版本做几支不同的执行 → 每个版本 <b>3 支</b>,共 2 × 3 = <b>6 支</b><br>
+          为什么要变体:只做 1 支,它输了你分不清是「方向错」还是「这支做得差」。同方向 3 支 — 三支全败 = 方向错,放心关;一支跑出 = 方向没错,是执行差异。
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="card">
+        <h3>Baseline · 基准值</h3>
+        <div class="baseline" id="baseline"></div>
+      </div>
+      <div class="card">
+        <h3>Capacity Check · 容量体检</h3>
+        <div class="row">
+          <div class="fld" style="max-width:110px"><label>日预算 $</label><input type="number" id="cc-budget" value="20" oninput="updateAll()"></div>
+          <div class="fld" style="max-width:110px"><label>周期(天)</label><input type="number" id="cc-days" value="7" oninput="updateAll()"></div>
+        </div>
+        <div id="cc-out"></div>
+      </div>
+      <div class="card" style="background:var(--bg2)">
+        <h3>判定规则 · 自动预填</h3>
+        <div class="kv" style="margin:0">
+          <dt>成功线</dt><dd id="rule-win">—</dd>
+          <dt>失败线</dt><dd id="rule-lose">—</dd>
+          <dt>观察期</dt><dd>7 天(素材类默认)</dd>
+          <dt>中途暂停</dt><dd>连续 3 天有花费 · 累计 &gt;$50 且 FDC=0</dd>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ CREATIVES ============ -->
+<section class="view" id="v-creatives">
+  <div id="cv-list">
+  <div class="head">
+    <div>
+      <h1>Creatives</h1>
+      <div class="sub">保存假设 → 自动生成骨架行 → 行内上传(Supabase Storage) → 上线回填 ads_code → 数据自动回写</div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="stat"><b>23</b><label>素材总数 Total</label></div>
+    <div class="stat"><b style="color:var(--amber)">9</b><label>投放中 Live</label></div>
+    <div class="stat"><b style="color:var(--green)">2</b><label>主力运行 Scaling</label></div>
+    <div class="stat"><b>5</b><label>制作中 In Production</label></div>
+    <div class="stat click" onclick="toast('筛选:待人工确认暂停的素材')"><b style="color:var(--red)">1</b><label>🔔 规则触发 · 待暂停</label></div>
+  </div>
+
+  <div class="tablebar">
+    <select id="f-cbrand" onchange="renderCreatives()">
+      <option value="">All Brands</option><option>OK188</option><option>17WIN</option><option>SBKH</option><option>INZ9</option>
+    </select>
+    <select id="f-chyp" onchange="renderCreatives()">
+      <option value="">All Hypotheses</option><option>HYP-012</option><option>HYP-011</option><option>HYP-010</option><option>HYP-005</option>
+    </select>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
+    </tr></thead>
+    <tbody id="creativeBody"></tbody>
+  </table>
+  <p class="note" style="margin-top:10px">规则触发 ≠ 已暂停:系统推 Slack 通知 → 人在 Ads Manager 手动暂停 → 回来点「确认已暂停」。</p>
+  </div>
+  <div id="cv-detail" class="hidden"></div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="view" id="v-results">
+  <div class="head">
+    <div>
+      <h1>Results & Win Rates</h1>
+      <div class="sub">只统计「数据充分」的结论 · 案例数 &lt;5 不显示百分比</div>
+    </div>
+  </div>
+  <div id="resultsBody"></div>
+</section>
+
+<!-- ============ DICTIONARY ============ -->
+<section class="view" id="v-dict">
+  <div class="head">
+    <div>
+      <h1>Dictionary</h1>
+      <div class="sub">全系统词表的唯一来源 · 所有下拉框从这里读 · CI 解析流程动态读取同一张表</div>
+    </div>
+    <div class="filters">
+      <button class="btn" data-perm="dict:add" onclick="addDict()">+ 新增词条</button>
+    </div>
+  </div>
+  <div class="tabs" id="dictTabs"></div>
+  <table>
+    <thead><tr><th style="width:170px">Code</th><th style="width:160px">中文名</th><th>定义 / 说明</th><th style="width:140px">使用次数</th><th style="width:100px">操作</th></tr></thead>
+    <tbody id="dictBody"></tbody>
+  </table>
+  <p class="note" id="dictNote" style="margin-top:10px"></p>
+</section>
+
+<!-- ============ CI: WEEKLY SUMMARY ============ -->
+<section class="view ci on" id="v-reports">
+  <div class="head">
+    <div><h1>Weekly Summary</h1><div class="sub">每周 AI 综合分析:创意方向 + 本周该测什么,分市场。先选周,再切市场。</div></div>
+  </div>
+  <div class="tablebar">
+    <select id="reportWeek" onchange="renderReportTabs()"></select>
+    <div id="reportTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div class="card report" id="reportBody"><div class="empty">暂无周报。</div></div>
+</section>
+
+<!-- ============ CI: ADS LIBRARY ============ -->
+<section class="view ci" id="v-gallery">
+  <div class="head">
+    <div><h1>Ads Library</h1><div class="sub">每条竞品素材:图/视频、钩子、说什么、跑多久。默认按投放最久排序(🏆 = 验证过的赢家)。</div></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div id="opBanner"></div>
+  <div class="tablebar">
+    <select id="fMarket" onchange="buildFilters();renderGallery()"><option value="">All Markets</option><option value="KH">KH (USC)</option><option value="MY">MY (INZ9)</option></select>
+    <select id="fOperator" onchange="renderGallery()"><option value="">All Operators</option></select>
+    <select id="fHook" onchange="renderGallery()"><option value="">All Hooks</option></select>
+    <select id="fStyle" onchange="renderGallery()"><option value="">All Styles</option></select>
+    <select id="fFormat" onchange="renderGallery()"><option value="">All Formats</option><option value="VIDEO">VIDEO</option><option value="IMAGE">IMAGE</option><option value="DCO">DCO</option><option value="CAROUSEL">CAROUSEL</option></select>
+    <select id="fGameType" onchange="renderGallery()"><option value="">All Game Types</option></select>
+    <select id="fStatus" onchange="renderGallery()"><option value="active">Status: Active</option><option value="archive">Status: Inactive</option><option value="all">Status: All</option></select>
+    <select id="fSort" onchange="renderGallery()"><option value="dur">Sort: Longest running</option><option value="new">Sort: Newest</option><option value="recent">Sort: Recently seen</option><option value="op">Sort: Operator</option></select>
+    <input type="text" id="fSearch" placeholder="Search text / selling point / theme…" oninput="renderGallery()" style="min-width:300px">
+    <span class="sub" id="galCount"></span>
+  </div>
+  <div class="tablewrap"><table>
+    <colgroup><col style="width:6%"><col style="width:8.5%"><col style="width:11%"><col style="width:11%"><col style="width:6.5%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:9%"><col style="width:8%"><col style="width:4%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:2.5%"></colgroup>
+    <thead><tr><th>Ad</th><th>Hook</th><th>Selling Point</th><th>Description</th><th>Style</th><th>Game Type</th><th>Active Days</th><th>CTA</th><th>Destination</th><th>Lang</th><th>Running Period</th><th>Page</th><th>Last Seen</th><th>URL</th></tr></thead>
+    <tbody id="galBody"></tbody>
+  </table></div>
+</section>
+
+<!-- ============ CI: OPERATORS ============ -->
+<section class="view ci" id="v-operators">
+  <div class="head">
+    <div><h1>Operators Overview</h1><div class="sub">哪些竞品最活跃、怎么运作。点 operator 看它全部广告。</div></div>
+  </div>
+  <div class="tablebar"><select id="opCountry" onchange="renderOperators()"><option value="">All Markets</option><option value="KH">KH</option><option value="MY">MY</option></select><select id="opStatus" onchange="renderOperators()"><option value="active">Status: Active</option><option value="archive">Status: Inactive</option><option value="all">Status: All</option></select></div>
+  <div class="tablewrap"><table id="opTable"></table></div>
+</section>
+
+<!-- ============ CI: FUNNELS ============ -->
+<section class="view ci" id="v-funnel">
+  <div class="head">
+    <div><h1>Funnels Overview</h1><div class="sub">竞品把流量导去哪——Telegram / 域名 / referral。</div></div>
+  </div>
+  <div class="tablebar"><select id="fFunnelCountry" onchange="renderFunnel()"><option value="">All Markets</option><option value="KH">KH</option><option value="MY">MY</option></select><select id="fFunnelStatus" onchange="renderFunnel()"><option value="active">Status: Active</option><option value="archive">Status: Inactive</option><option value="all">Status: All</option></select></div>
+  <div class="tablewrap"><table id="funnelTable"></table></div>
+</section>
+
+<!-- ============ CI: PENDING LIST ============ -->
+<section class="view ci" id="v-candidates">
+  <div class="head">
+    <div><h1>Pending List</h1><div class="sub">新发现的竞品/页,确认 → 进监测;拒绝 → 移出。</div></div>
+  </div>
+  <div class="tablebar"><span class="sub" id="candCount"></span></div>
+  <div class="tablewrap"><table id="candTable"></table></div>
+</section>
+
+<!-- ============ CI: WATCHLIST ============ -->
+<section class="view ci" id="v-watch">
+  <div class="head">
+    <div><h1>Watchlist</h1><div class="sub">当前在抓的竞品 + 关键词,点状态可开/关。↻ Rescan = 立刻单独重抓这个竞品(约 3–10 分钟)。</div></div>
+    <div class="filters"><button class="btn ghost" data-perm="watchlist:add" onclick="openAddCompetitor()">＋ Add</button></div>
+  </div>
+  <div class="msg" id="rescanMsg"></div>
+  <div class="tablebar"><select id="fWatchMarket" onchange="renderBrands()"><option value="">All Markets</option><option value="KH">KH (USC)</option><option value="MY">MY (INZ9)</option></select></div>
+  <div class="tablewrap"><table id="brandTable"></table></div>
+</section>
+<section class="view" id="v-roles">
+  <div class="head"><div><h1>Roles &amp; Permissions</h1><div class="sub">Permissions are set per section × action (Add / Edit / Delete), by role — not per person. Duplicate a role to reuse a setup.</div></div></div>
+  <div id="rolesBody"></div>
+</section>
+
+<section class="view" id="v-users">
+  <div class="head"><div><h1>Users</h1><div class="sub">Each user is assigned one role; permissions follow the role. Five people, same setup = same role.</div></div></div>
+  <div id="usersBody"></div>
+</section>
+
+<section class="view" id="v-audit">
+  <div class="head"><div><h1>Activity Log</h1><div class="sub">Who did what — every add / edit / delete on a section is logged automatically.</div></div></div>
+  <div id="auditBody"></div>
+</section>
+
+</main>
+</div>
+
+<div class="overlay" id="ov" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="x"><b id="d-title">Hypothesis</b><button onclick="closeDrawer()">✕</button></div>
+  <div class="inner" id="d-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="lb" onclick="closeLb()"><span class="x">&times;</span><div id="lbInner"></div></div>
+
+<script>
+const ZH={'withdrawal_proof':'提款到账','big_win':'大赢展示','pain_reversal':'痛点反转','edu_compare':'科普对比','cs_convo':'客服对话','testimonial':'玩家见证','celebrity':'名人背书','promo_direct':'优惠直给','trust_safety':'信任安全','fast_payout':'提款速度','service':'服务质量','game_variety':'游戏种类','promo_value':'优惠力度','high_odds':'高赔率','license':'合法执照','real_person':'真人出镜','ugc':'用户自拍感','game_screenshot':'游戏画面截图','winner_showcase':'中奖/赢钱展示','animation':'动画/动效','official_design':'官方平面设计','ai_avatar':'数字人','VIDEO':'单一视频','IMAGE':'单一静态图','CAROUSEL':'多图轮播','DCO':'动态创意优化','tier_bonus':'分层红利','urgency':'限时紧迫','luck':'招财好运','prediction':'必中贴士','rebate':'返水 / 返现'};
+let ideas=[];
+let hypos=[];
+let creatives=[];
+let DICT={};
+const DICT_NOTES={
+ 'Game Type':'游戏类型 = 这条素材/广告卖的是哪类产品(老虎机 / 真人 / 体育…)。既是我方素材标签,也是 CI 给竞品广告打的标。按 USC 实际有的玩法在月会增删。',
+ 'Persona':'⚠️ Persona = 人群原型(打给谁看的心理与动机)。仅月度规划会可新增;定向微调记录在测试层,不新建词条。',
+ 'Age Range':'年龄段固定几档,相邻档可多选组合(如 25-34 + 35-44 ≈ 25-44)。不允许自由输入区间,防止 20-40 / 21-41 这类碎片化重复。',
+ 'Capacity':'容量体检在创建测试保存时自动运行,结果(红/黄/绿)存档显示在 Hypotheses 列表。阈值修改权限:月度规划会。',
+ 'Watchlist Source':'竞品监测专用 · 描述一个竞品是「怎么进监测的」。注意:这≠「Idea Source」(想法池来源)——一个讲竞品入库,一个讲营销想法来源。',
+ 'CI Fields':'竞品监测专用 · Ads Library 表格里各列字段的定义,帮助读懂竞品看板。我方规划用不到。',
+ 'default':'词条只增不删(历史数据引用着它);「停用」后新记录不可选,旧记录不受影响,可随时「启用」恢复。增删与启停权限:月度规划会。'
+};
+const data={
+ 'OK188KH':{FDC:{base:10,cost:15,unit:'周均'},REG:{base:97,cost:3.2,unit:'月'},AFDA:{base:6.87,cost:null,unit:'$'},FDAMT:{base:68,cost:null,unit:'$/周'}},
+ 'INZ9':{FDC:{base:14,cost:11,unit:'周均'},REG:{base:140,cost:2.4,unit:'月'},AFDA:{base:9.2,cost:null,unit:'$'},FDAMT:{base:128,cost:null,unit:'$/周'}},
+ '17WINKH':null,'SBKH':null
+};
+const sibling={'17WINKH':'OK188KH','SBKH':'OK188KH'};
+let overdueOnly=false,dictTab='Metrics';
+
+function go(v,el){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.querySelectorAll('.nitem').forEach(t=>t.classList.remove('on'));
+  if(el)el.classList.add('on');
+  if(currentUser)applyPerms();
+  window.scrollTo(0,0);
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+function filterOverdue(){overdueOnly=!overdueOnly;renderPool();}
+async function archiveIdea(id){
+  if(!confirm(id+' 确认归档?\n归档 = 存档不删除,但不会再做。区别于「搁置」(以后可能做)。'))return;
+  try{const {error}=await db.from('ideas').update({status:'已归档',updated_at:new Date().toISOString()}).eq('code',id);if(error)throw error;}
+  catch(e){alert('Archive failed: '+rpcErr(e));return;}
+  logAction('idea','delete',id);await loadIdeas();toast(id+' 已归档');refreshOverdue();renderPool();
+}
+async function delIdea(id){
+  const it=ideas.find(x=>x.id===id);if(!it)return;
+  if(!can('idea','delete')){toast('当前岗位没有「删除想法」权限');return;}
+  if(it.by!==((currentUser&&currentUser.name)||'')){toast('只能删除自己提出的想法');return;}
+  if(hypos.some(h=>(h.idea||'').split(' ')[0]===id)){alert('该想法已衍生假设,不能删除');return;}
+  if(!confirm('删除想法 '+id+'?不可恢复。'))return;
+  try{const {error}=await db.from('ideas').delete().eq('code',id);if(error)throw error;}
+  catch(e){alert('删除失败: '+rpcErr(e));return;}
+  logAction('idea','delete',id);await loadIdeas();if(typeof refreshOverdue==='function')refreshOverdue();renderPool();toast(id+' 已删除');
+}
+function refreshOverdue(){
+  const n=ideas.filter(i=>i.age>60&&i.st!=='已归档').length;
+  document.getElementById('overdueStat').textContent=n;
+  document.getElementById('overdueN').textContent=n+' 个想法躺池超过 60 天';
+  document.getElementById('overdueBar').style.display=n?'flex':'none';
+}
+function renderPool(){
+  const fs=document.getElementById('f-src').value,showArch=document.getElementById('f-arch').checked;
+  const rows=ideas.filter(i=>(!fs||i.src===fs)&&(!overdueOnly||(i.age>60&&i.st!=='已归档'))&&(showArch||i.st!=='已归档')).map(i=>{
+   const over=i.age>60&&i.st!=='已归档';
+   const hc=hypos.filter(h=>(h.idea||'').split(' ')[0]===i.id).length;
+   const spawned=hc>0||i.st==='已立假设'||i.st==='已转正';
+   const stCls=i.st==='搁置'?'搁置':i.st==='已归档'?'已归档':spawned?'已沉淀':'草稿';
+   const stTxt=i.st==='搁置'?'搁置':i.st==='已归档'?'已归档':spawned?('已立假设'+(hc>0?' ×'+hc:'')):'待评估';
+   const canSpawn=i.st!=='搁置'&&i.st!=='已归档';
+   return `
+   <tr class="${over?'overdue':''} ${i.st==='已归档'?'archived':''}">
+    <td><span class="code">${i.id}</span> &nbsp;${i.txt}</td>
+    <td><span class="src src-${i.src}">${i.src}</span></td>
+    <td>${i.tags.length?i.tags.map(t=>`<span class="tag" title="${ZH[t]||t}">${t}</span>`).join(''):'<span class="code" style="color:var(--ink3)">—</span>'}</td>
+    <td><span class="pill pri-${i.pri}">${i.pri}</span></td>
+    <td>${i.by==='AI'?'<span class="byai">AI</span>':esc(i.by)}</td>
+    <td class="code">2026/${i.date}</td>
+    <td>${over?`<span class="overdue-badge">${i.age}d 超期</span>`:`<span class="code">${i.age}d</span>`}</td>
+    <td><span class="st st-${stCls}"><i></i>${stTxt}</span></td>
+    <td style="white-space:nowrap">
+      ${canSpawn?`<button class="btn ghost sm" data-perm="hypo:add" onclick="promote('${i.id}')">立假设</button>`:''}
+      ${(i.st!=='已归档'&&i.by===((currentUser&&currentUser.name)||''))?`<button class="btn ghost sm" style="margin-left:4px" data-perm="idea:edit" onclick="openIdeaEditor('${i.id}')">编辑</button>`:''}
+      ${(i.by===((currentUser&&currentUser.name)||'')&&hc===0&&i.st!=='已归档')?`<button class="btn danger sm" style="margin-left:4px" data-perm="idea:delete" onclick="delIdea('${i.id}')">删除</button>`:''}
+      ${over?`<button class="btn danger sm" style="margin-left:4px" data-perm="idea:delete" onclick="archiveIdea('${i.id}')">归档</button>`:''}
+    </td>
+   </tr>`}).join('');
+  document.getElementById('poolBody').innerHTML=rows||'<tr><td colspan="9" style="text-align:center;color:var(--ink3);padding:28px">没有符合条件的想法</td></tr>';
+  // 统计卡:一个 idea 可对应多个假设 → 立假设率 = 有≥1个假设的 idea / 在池 idea
+  const spawnedN=ideas.filter(i=>{const c=hypos.filter(h=>(h.idea||'').split(' ')[0]===i.id).length;return c>0||i.st==='已立假设'||i.st==='已转正';}).length;
+  const live=ideas.filter(i=>i.st!=='已归档').length;
+  const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setT('stat-promoted',spawnedN);
+  setT('stat-rate',live?Math.round(spawnedN/live*100)+'%':'0%');
+  setT('stat-fromci',ideas.filter(i=>i.src==='竞品情报').length);
+}
+function promote(id){
+  const it=ideas.find(x=>x.id===id);
+  window._promoteIdea=it?{code:it.id,src:it.src,txt:it.txt}:null;window._editHypoCode=null;
+  resetHypoForm();
+  const ctx=document.getElementById('formCtx');
+  if(ctx)ctx.innerHTML=it?('来自想法池:<b>#'+esc(it.id)+' 「'+esc(it.txt)+'」</b> · '+esc(it.src)):'手动新建假设';
+  const xEl=document.getElementById('hf-x');if(xEl)xEl.value='';
+  const whyEl=document.getElementById('hf-why');if(whyEl){whyEl.value=it?it.txt:'';whyEl.readOnly=!!it;whyEl.style.background=it?'var(--bg2)':'';whyEl.title=it?'理由来自 Idea,锁定不可改;要改请去 Idea Pool 改想法':'';}
+  logAction('hypo','add',id);go('form');updateAll();
+}
+function prepHypoSelects(){
+  document.querySelectorAll('#v-form select').forEach(sel=>{
+    if(sel.id==='hf-guard-op')return;
+    if(![...sel.options].some(o=>o.value===''&&/unselected/i.test(o.textContent))){
+      const o=document.createElement('option');o.value='';o.textContent='— unselected —';sel.insertBefore(o,sel.firstChild);
+    }
+  });
+}
+function resetHypoForm(){
+  prepHypoSelects();
+  ['hf-brand','hf-format','hf-type','hf-trigger','hf-persona','hf-age','hf-game','hf-vs','hf-hook','hf-evi','hf-metric','hf-guard-m','hf-offer','am-v'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['hf-x','hf-target','hf-pct','hf-guard-v','am-la','am-lb','am-n','cc-budget','cc-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const w=document.getElementById('hf-why');if(w){w.value='';w.readOnly=false;w.style.background='';w.title='';}
+  const orow=document.getElementById('offerRow');if(orow)orow.style.display='none';
+  document.querySelectorAll('#v-form .reqstar').forEach(s=>s.remove());
+  document.querySelectorAll('#v-form .reqbad').forEach(e=>e.classList.remove('reqbad'));
+}
+function validateHypo(){
+  document.querySelectorAll('#v-form .reqstar').forEach(s=>s.remove());
+  document.querySelectorAll('#v-form .reqbad').forEach(e=>e.classList.remove('reqbad'));
+  const fields=[['hf-brand','品牌'],['hf-format','Format'],['hf-type','测试类型'],['hf-trigger','起因'],['hf-persona','人群原型'],['hf-age','年龄段'],['hf-game','游戏类型'],['hf-vs','Visual Style'],['hf-hook','Hook'],['hf-evi','证据'],['hf-metric','主指标'],['hf-guard-m','防守底线'],['hf-guard-v','防守底线阈值'],['hf-x','改变 X'],['hf-target','目标值'],['am-v','变量数'],['am-la','变量 A 层级'],['am-n','每格变体'],['cc-budget','日预算'],['cc-days','周期']];
+  if((document.getElementById('am-v')||{}).value==='2')fields.push(['am-lb','变量 B 层级']);
+  const offerOn=(()=>{const o=document.getElementById('offerRow');return o&&o.style.display!=='none';})();
+  if(offerOn)fields.push(['hf-offer','Offer']);
+  const miss=[];
+  fields.forEach(([id,name])=>{const el=document.getElementById(id);if(!el)return;if(!(el.value||'').trim()){el.classList.add('reqbad');const fld=el.closest('.fld'),lab=fld&&fld.querySelector('label');if(lab&&!lab.querySelector('.reqstar')){const s=document.createElement('span');s.className='reqstar';s.textContent=' *';lab.appendChild(s);}miss.push(name);}});
+  return miss;
+}
+async function saveHypothesis(status){
+  if(!can('hypo','add')){toast('当前岗位没有「立假设 / 新增假设」权限');return;}
+  if(status==='待锁定'){const miss=validateHypo();if(miss.length){toast('还有 '+miss.length+' 项必填未完成(已标红 *)');return;}}
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const tok=v=>(v||'').trim().split(/\s+/)[0];
+  const brand=g('hf-brand');
+  const x=g('hf-x').trim();
+  const market=(brand==='INZ9')?'MY':'KH';
+  const now=new Date();const month=now.toLocaleString('en-US',{month:'short'})+' '+now.getFullYear();
+  let from='(无基准·探索)';try{const ob=getBase().own;if(ob&&ob.base!=null)from=(ob.unit==='周均'?'周均 ':'')+ob.base;}catch(e){}
+  const gm=g('hf-guard-m');const guard=gm?(gm+' '+g('hf-guard-op')+' '+g('hf-guard-v')):'无';
+  const eviType=(g('hf-evi')||'').replace(/[(（].*$/,'').trim();
+  const why=g('hf-why').trim();const evidence=eviType+(why?(' — '+why):'');
+  const mv=+g('am-v')||1,mla=+g('am-la')||2,mlb=+g('am-lb')||2,mn=+g('am-n')||1;const cells=mv===2?mla*mlb:mla;
+  const matrix={variables:mv,levelsA:mla,levelsB:mv===2?mlb:null,perCell:mn,total:cells*mn};
+  let cap=null;try{const le=document.querySelector('#cc-out .light');if(le)cap=le.classList.contains('red')?'red':le.classList.contains('amber')?'amber':le.classList.contains('green')?'green':'gray';}catch(e){}
+  const offerOn=(function(){const o=document.getElementById('offerRow');return o&&o.style.display!=='none';})();
+  const pi=window._promoteIdea||null;
+  const row={statement:x,metric:g('hf-metric'),val_from:from,val_to:g('hf-target'),mode:'新测试',market:market,month:month,brand:brand,test_type:g('hf-type'),owner:(currentUser&&currentUser.name)||'',capacity:cap,status:status,idea_code:pi?pi.code:null,idea_label:pi?(pi.code+' · '+pi.src):null,evidence:evidence,persona:g('hf-persona'),guard:guard,format:tok(g('hf-format')),trigger_type:g('hf-trigger'),age_range:g('hf-age'),game_type:tok(g('hf-game')),visual_style:tok(g('hf-vs')),hook:g('hf-hook'),offer:offerOn?tok(g('hf-offer')):null,matrix:matrix,created_by:(currentUser&&currentUser.name)||''};
+  let code;
+  const editCode=window._editHypoCode||null;
+  try{
+    if(editCode){
+      const upd=Object.assign({},row);delete upd.idea_code;delete upd.idea_label;delete upd.created_by;
+      const {error}=await db.from('hypotheses').update(upd).eq('code',editCode);
+      if(error)throw error;code=editCode;
+    }else{
+      const {data,error}=await db.from('hypotheses').insert(row).select('code').single();
+      if(error)throw error;code=data.code;
+    }
+  }catch(e){alert('Save failed: '+rpcErr(e));return;}
+  logAction('hypo',editCode?'edit':'add',code+(pi?(' ← '+pi.code):''));
+  window._promoteIdea=null;window._editHypoCode=null;
+  // 自动从素材矩阵生成 creative 行(仅在「完成草稿 → 待锁定」时,且防重复)
+  let madeCr=0;
+  if(status==='待锁定' && matrix && matrix.total>0){
+    try{
+      const exq=await db.from('creatives').select('id').eq('hyp_code',code).limit(1);
+      if(!exq.data||!exq.data.length){
+        const hl=code+' · '+x;const crows=[];
+        for(let i=1;i<=matrix.total;i++){crows.push({gen_code:code+'-V'+i,ads_code:null,hyp_code:code,hyp_label:hl,label:'变体 '+i,format:row.format,hook:row.hook,visual_style:row.visual_style,status:'待上线',created_by:(currentUser&&currentUser.name)||''});}
+        const ciq=await db.from('creatives').insert(crows);
+        if(!ciq.error)madeCr=crows.length;
+      }
+    }catch(e){console.error('creative auto-gen:',e);}
+  }
+  try{await loadHypos();}catch(e){}
+  try{await loadCreatives();}catch(e){}
+  renderHypo();renderCreatives();applyPerms();
+  toast('假设已保存 '+code+' · '+status+(madeCr?(' · 自动生成 '+madeCr+' 个 creative'):''));go('hypo');
+}
+
+const MKT_BRANDS={KH:['OK188KH','17WINKH','SBKH'],MY:['INZ9']};
+function marketChange(){
+  const m=document.getElementById('f-market').value;
+  const bSel=document.getElementById('f-hbrand');
+  const keep=bSel.value;
+  const list=m?MKT_BRANDS[m]:[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
+  bSel.innerHTML='<option value="">All Brands</option>'+list.map(b=>`<option>${b}</option>`).join('');
+  bSel.value=list.includes(keep)?keep:'';
+  renderHypo();
+}
+function renderHypo(){
+  const fm=document.getElementById('f-market').value,fb=document.getElementById('f-hbrand').value,fmo=document.getElementById('f-month').value,fmd=document.getElementById('f-mode').value,f=document.getElementById('f-hst').value;
+  document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)).map(h=>`
+   <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
+    <td><span class="code">${h.id}</span> &nbsp;<span class="hx">${h.x}</span>${h.created?('<br><small class="sm" style="color:var(--ink3)">创建 '+new Date(h.created).toLocaleString('zh-CN')+'</small>'):''}</td>
+    <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
+    <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
+    <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>
+    <td>${h.brand}</td><td>${h.type}</td><td>${h.owner}</td>
+    <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':'绿'}</span></td>
+    <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
+   </tr>`).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
+}
+function editHypothesis(i){
+  const h=hypos[i];if(!h)return;
+  if(!can('hypo','edit')){toast('当前岗位没有「编辑假设」权限');return;}
+  window._editHypoCode=h.id;window._promoteIdea=null;
+  resetHypoForm();
+  const setV=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null&&v!=='')e.value=v;};
+  const setTok=(id,v)=>{const e=document.getElementById(id);if(!e||v==null||v==='')return;const o=[...e.options].find(o=>o.value===v||o.value.split(/\s+/)[0]===v);if(o)e.value=o.value;};
+  setV('hf-brand',h.brand);setV('hf-type',h.type);setTok('hf-format',h.format);setV('hf-trigger',h.trigger);
+  setV('hf-persona',h.persona);setV('hf-age',h.age);setTok('hf-game',h.game);setTok('hf-vs',h.vs);setV('hf-hook',h.hook);setV('hf-metric',h.metric);
+  setV('hf-x',h.x);setV('hf-target',h.to);setTok('hf-offer',h.offer);
+  if(h.guard&&h.guard!=='无'){const g=(''+h.guard).split(/\s+/);setV('hf-guard-m',g[0]);if(g[1])setV('hf-guard-op',g[1]);if(g[2])setV('hf-guard-v',g[2]);}
+  let evi=h.evi||'',eviType=evi,why='';const m=evi.match(/^([\s\S]*?)\s*—\s*([\s\S]*)$/);if(m){eviType=m[1];why=m[2];}
+  const evEl=document.getElementById('hf-evi');if(evEl&&eviType){const o=[...evEl.options].find(o=>o.text.replace(/[(（][\s\S]*$/,'').trim()===eviType.trim());if(o)evEl.value=o.value;}
+  const whyEl=document.getElementById('hf-why');if(whyEl){whyEl.value=why;whyEl.readOnly=false;whyEl.style.background='';whyEl.title='';}
+  if(h.matrix){setV('am-v',h.matrix.variables);setV('am-la',h.matrix.levelsA);if(h.matrix.levelsB)setV('am-lb',h.matrix.levelsB);setV('am-n',h.matrix.perCell);}
+  const ctx=document.getElementById('formCtx');if(ctx)ctx.innerHTML='编辑假设 <b>'+esc(h.id)+'</b> — 改完点下方「存草稿」或「完成草稿 → 待锁定」保存';
+  closeDrawer();go('form');try{hookChange();}catch(e){}try{updateAll(true);}catch(e){}try{matrix();}catch(e){}window.scrollTo(0,0);
+}
+async function delHypothesis(i){
+  const h=hypos[i];if(!h)return;
+  if(!can('hypo','delete')){toast('当前岗位没有「删除假设」权限');return;}
+  const cr=creatives.filter(c=>(c.hyp||'').startsWith(h.id));
+  const worked=cr.filter(c=>(c.versions&&c.versions.length)||(c.runs&&c.runs.length));
+  if(worked.length){alert('该假设已有 '+worked.length+' 条素材在用(填了版本 / 有运行记录),不能删除。请改用 Edit。');return;}
+  if(!confirm('删除假设 '+h.id+'?'+(cr.length?('\n将一并删除 '+cr.length+' 条空骨架 creative。'):'')+'\n不可恢复。'))return;
+  try{
+    if(cr.length){const {error:ce}=await db.from('creatives').delete().eq('hyp_code',h.id);if(ce)throw ce;}
+    const {error}=await db.from('hypotheses').delete().eq('code',h.id);if(error)throw error;
+  }catch(e){alert('删除失败: '+rpcErr(e));return;}
+  logAction('hypo','delete',h.id+(cr.length?(' (+'+cr.length+' 空 creative)'):''));
+  try{await loadHypos();}catch(e){}try{await loadCreatives();}catch(e){}closeDrawer();renderHypo();renderCreatives();toast(h.id+' 已删除');
+}
+function openDrawer(i){
+  const h=hypos[i];
+  document.getElementById('d-title').textContent=h.id+' · '+h.brand+' · '+h.month;
+  let tests=h.tests.length?h.tests.map(t=>`
+    <tr><td>${t.n.includes('主力')?'<b style="color:var(--green)">'+t.n+'</b>':t.n}</td><td class="code">${t.meta}</td><td>${t.bud}</td><td>${t.st.includes('异常')?'<span style="color:var(--red);font-weight:600">'+t.st+'</span>':t.st}</td></tr>`).join('')
+    :'<tr><td colspan="4" style="color:var(--ink3)">暂无测试记录 — 锁定后创建</td></tr>';
+  const cr=creatives.filter(c=>c.hyp.startsWith(h.id));
+  let crHtml=cr.length?`<div class="card" style="margin-top:14px"><h3>Creatives · 关联素材(${cr.length})</h3>
+    ${cr.map(c=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
+      <div class="thumb ${c.empty?'empty':c.th}" style="width:44px;height:44px;font-size:8px">${c.label}</div>
+      <div style="flex:1"><span class="code">${c.code}</span><br><small style="color:var(--ink3)">${c.st}</small></div>
+      <div class="code" style="text-align:right">FDC ${c.fdc}<br>CPA ${c.cpa}</div></div>`).join('')}</div>`:'';
+  let v=h.verdict?`
+    <div class="card" style="margin-top:14px;background:var(--bg2)">
+      <h3>Verdict · 验证结论</h3>
+      <div class="kv" style="margin:0">
+        <dt>结果</dt><dd><span class="res-${h.verdict.res}">${h.verdict.res}</span> <span class="conf-${h.verdict.conf}">数据${h.verdict.conf}</span>${h.verdict.conf==='勉强'?' <small style="color:var(--ink3)">不计入胜率统计</small>':''}</dd>
+        <dt>学到了什么</dt><dd>${h.verdict.learn}</dd>
+        <dt>下月约束</dt><dd><b>${h.verdict.next}</b></dd>
+      </div>
+    </div>`:'';
+  const canDel=cr.every(c=>(!c.versions||c.versions.length===0)&&(!c.runs||c.runs.length===0));
+  document.getElementById('d-body').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <h2 style="margin:0">我相信【${h.x}】<br>会让【${h.metric}】从【${h.from}】变为【${h.to}】</h2>
+      <div style="display:flex;gap:6px;flex:none">
+        <button class="btn ghost sm" data-perm="hypo:edit" onclick="editHypothesis(${i})">Edit</button>
+        ${canDel?`<button class="btn danger sm" data-perm="hypo:delete" onclick="delHypothesis(${i})">Delete</button>`:''}
+      </div>
+    </div>
+    <span class="mode mode-${h.mode}">${h.mode}</span> <span class="st st-${h.st}"><i></i>${h.st}</span>
+    <div class="kv">
+      <dt>来源想法</dt><dd>${h.idea}</dd>
+      <dt>测试类型</dt><dd>${h.type}</dd>
+      <dt>主指标</dt><dd class="code">${h.metric}(唯一判定权)</dd>
+      <dt>防守底线</dt><dd>${h.guard}</dd>
+      <dt>目标人群</dt><dd>${h.persona}</dd>
+      <dt>证据</dt><dd>${h.evi}</dd>
+      <dt>提出人</dt><dd>${h.owner}</dd>
+      <dt>创建时间</dt><dd class="sm">${h.created?new Date(h.created).toLocaleString('zh-CN'):'—'}</dd>
+    </div>
+    <div class="card" style="margin-top:8px">
+      <h3>Tests · 测试记录(T-编号 = 该假设下第几条测试,挂 Meta ID 与预算)</h3>
+      <table><thead><tr><th>Record</th><th>Meta ID</th><th>Budget · Period</th><th>Status</th></tr></thead><tbody>${tests}</tbody></table>
+    </div>${crHtml}${v}`;
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('ov').classList.add('show');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('ov').classList.remove('show');}
+function thumbBox(imgClass,imgSrc,label,px){
+  const sz=px||56;
+  if(imgSrc)return '<img src="'+imgSrc+'" style="width:'+sz+'px;height:'+sz+'px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';
+  return '<div class="thumb '+(imgClass||'empty')+'" style="width:'+sz+'px;height:'+sz+'px">'+(label||'')+'</div>';
+}
+function editCreativeRun(i){
+  const c=creatives[i];
+  document.getElementById('d-title').textContent=c.code+' · 记录搬迁 / 运行';
+  document.getElementById('d-body').innerHTML=`
+    <h2>记录搬迁 / 新运行</h2>
+    <div class="remark" style="margin:6px 0 12px">同一素材换了 campaign/adset 在这记 —— 保存时自动把当前进行中的运行「结束」,再开这条新的。内容(文案/图)不在这变。</div>
+    <div class="row2">
+      <div class="fld"><label>阶段</label><select id="cr-phase"><option value="test">测试 Test</option><option value="scale">放量 Scale</option></select></div>
+      <div class="fld"><label>起始日期</label><input id="cr-start" type="text" placeholder="如 6/16"></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label>Campaign</label><input id="cr-camp" type="text"></div>
+      <div class="fld"><label>Adset</label><input id="cr-adset" type="text"></div>
+    </div>
+    <div class="row"><div class="fld"><label>Meta 广告 id</label><input id="cr-meta" type="text"></div></div>
+    <div class="row"><div class="fld"><label>说明(为什么搬 / 测试胜出等)</label><input id="cr-note" type="text"></div></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" onclick="saveCreativeRun(${i})">保存运行</button>
+      <button class="btn ghost" onclick="openCreative(${i})">取消</button>
+    </div>`;
+  document.getElementById('cr-phase').value='scale';
+}
+function saveCreativeRun(i){
+  const c=creatives[i];c.runs=c.runs||[];
+  const start=document.getElementById('cr-start').value||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  const open=c.runs.find(r=>!r.end);if(open)open.end=start;
+  c.runs.push({r:c.runs.length+1,phase:document.getElementById('cr-phase').value,camp:document.getElementById('cr-camp').value,adset:document.getElementById('cr-adset').value,meta:document.getElementById('cr-meta').value,start:start,end:null,snap:null,note:document.getElementById('cr-note').value});
+  toast('运行记录已加(原型:内存,刷新重置)');
+  openCreative(i);
+}
+function ecImgPick(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{window._ecImgSrc=e.target.result;const p=document.getElementById('ec-imgprev');if(p)p.innerHTML='<img src="'+e.target.result+'" style="width:64px;height:64px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';};r.readAsDataURL(f);}
+function openCreative(i){
+  const c=creatives[i],vs=c.versions||[],cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{},noVer=vs.length===0;
+  const rej=vs.filter(v=>v.status==='rejected'),Mc=rej.filter(v=>v.cause==='copy').length,Mi=rej.filter(v=>v.cause==='image').length;
+  const perf=vs.filter(v=>v.ev==='perf'),K=perf.length,Kc=perf.filter(v=>v.chg==='copy'||v.chg==='both').length,Ki=perf.filter(v=>v.chg==='image'||v.chg==='both').length;
+  const isDraft=cur.status==='draft';
+  const F=[['Primary text','p'],['Headline','h'],['Description','d'],['CTA','c']];
+  const curRows=F.map(([lab,k])=>`<div class="cprow"><div class="cplab">${lab}</div><div class="cpcell" style="grid-column:span 2">${cc[k]||'—'}</div></div>`).join('');
+  const overview=noVer
+    ?`还没有版本 — 填了第一版后这里显示版本数、被拒 / 迭代次数`
+    :isDraft
+    ?`共 <b>1</b> 版 · <span style="color:var(--ink3)">草稿,未提交 Meta</span>`
+    :`共 <b>${vs.length}</b> 版 · 被拒 <b style="color:${rej.length?'var(--red)':'var(--ink2)'}">${rej.length}</b> 次(文案 ${Mc} · 图 ${Mi}) · 效果迭代 <b>${K}</b> 次(文案 ${Kc} · 图 ${Ki})`;
+  document.getElementById('d-title').textContent=c.code;
+  document.getElementById('d-body').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <h2 style="margin:0">素材概览 · Creative Overview</h2>
+      <button class="btn ghost sm" data-perm="creative:add" onclick="editCreativeRun(${i})">＋ 记录搬迁 / 运行</button>
+    </div>
+    <div style="margin:2px 0 6px"><span class="cst cst-${c.stc}">${c.st}</span></div>
+    <div class="kv">
+      <dt>关联假设</dt><dd>${c.hyp}</dd>
+      <dt>Format</dt><dd class="code">${c.fmt}</dd>
+      <dt>Hook</dt><dd>${c.hook} · ${ZH[c.hook]||''}</dd>
+      <dt>Visual Style</dt><dd>${c.vs} · ${ZH[c.vs]||''}</dd>
+    </div>
+    <div class="card" style="margin-top:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">现状 · ${noVer?'还没有版本':'当前版本 '+(isDraft?'(草稿)':'v'+cur.v+'(上线中)')}</h3>
+        ${noVer?`<button class="btn sm" data-perm="creative:edit" onclick="firstVersion(${i})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${i})">Edit</button>`}
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        ${thumbBox(cur.img,cur.imgSrc,c.label,56)}
+        <div class="code">${c.spend} · FDC ${c.fdc} · CPA ${c.cpa}</div>
+      </div>
+      ${curRows}
+    </div>
+    <div class="card" style="margin-top:8px">
+      <h3>历史记录概览</h3>
+      <div style="font-size:13px;line-height:1.9">${overview}</div>
+      <button class="btn ghost sm" style="margin-top:10px" onclick="openCreativeDetail(${i})">查看完整版本记录 →</button>
+      <div class="remark" style="margin-top:10px">每次换版(被拒 / 效果差)都整版留痕 —— 图 + 文案 + 裁决 / 数据,append-only。明细见版本记录页。</div>
+    </div>`;
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('ov').classList.add('show');
+}
+function openCreativeDetail(i){
+  window._vformI=i;
+  const c=creatives[i],vs=c.versions||[],runs=c.runs||[];
+  const evlab={initial:'首次提交',reject:'被拒后换版',perf:'效果差换版',self:'自发优化'};
+  const sb=(v)=>{const m={rejected:['vb-rej','❌ 被拒 · '+(v.cause==='copy'?'文案':'图/视频')],live:['vb-live','✅ 上线中'],retired:['vb-ret','⤓ 已下线 · 效果差'],paused:['vb-ret','⏸ 已暂停'],draft:['vb-draft','草稿 · 未提交']};const x=m[v.status]||['vb-ret',v.status];return `<span class="vb ${x[0]}">${x[1]}</span>`;};
+  const cards=vs.map(v=>{
+    const snap=v.snap?`<span class="code">花费 ${v.snap.spend} · FDC ${v.snap.fdc} · CPA ${v.snap.cpa}</span>`:`<span class="code" style="color:var(--ink3)">未上线 · 无数据</span>`;
+    const co=v.copy||{};
+    return `<div class="vcard${v.status==='live'?' vcur':''}">
+      <div class="vhead">
+        <div><span class="vno">v${v.v}</span> ${sb(v)} <span style="color:var(--ink3);font-size:11px">· ${v.date} · ${evlab[v.ev]||''}</span></div>
+        <div>${snap}</div>
+      </div>
+      <div class="vreason">${v.reason||''}</div>
+      <div class="vbody">
+        ${thumbBox(v.img,v.imgSrc,c.label,64)}
+        <div class="vcopy">
+          <div><span class="vk">Primary</span>${co.p||'—'}</div>
+          <div><span class="vk">Headline</span>${co.h||'—'}</div>
+          <div><span class="vk">Description</span>${co.d||'—'}</div>
+          <div><span class="vk">CTA</span>${co.c||'—'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const pb=(p)=>p==='scale'?'<span class="vb rb-scale">放量 Scale</span>':'<span class="vb rb-test">测试 Test</span>';
+  const runCards=runs.length?runs.map(r=>`<div class="vcard${r.end?'':' vcur'}">
+      <div class="vhead">
+        <div><span class="vno">运行 ${r.r}</span> ${pb(r.phase)} <span style="color:var(--ink3);font-size:11px">· ${r.start} → ${r.end||'至今'}</span></div>
+        <div>${r.snap?`<span class="code">花费 ${r.snap.spend} · FDC ${r.snap.fdc} · CPA ${r.snap.cpa}</span>`:''}</div>
+      </div>
+      <div class="vreason">${r.note||''}</div>
+      <div class="kv" style="margin:6px 0 0">
+        <dt>Campaign</dt><dd class="code">${r.camp}</dd>
+        <dt>Adset</dt><dd class="code">${r.adset}</dd>
+        <dt>Meta 广告 id</dt><dd class="code">${r.meta}</dd>
+      </div>
+    </div>`).join(''):'<div class="remark">尚未上线,无运行记录。</div>';
+  const rej=vs.filter(v=>v.status==='rejected'),Mc=rej.filter(v=>v.cause==='copy').length,Mi=rej.filter(v=>v.cause==='image').length;
+  const perf=vs.filter(v=>v.ev==='perf'),K=perf.length,Kc=perf.filter(v=>v.chg==='copy'||v.chg==='both').length,Ki=perf.filter(v=>v.chg==='image'||v.chg==='both').length;
+  const curRun=runs.find(r=>!r.end);
+  const phaseTag=curRun?(curRun.phase==='scale'?'<span class="vb rb-scale">放量中</span>':'<span class="vb rb-test">测试中</span>'):'';
+  document.getElementById('cv-detail').innerHTML=`
+    <div class="head">
+      <div>
+        <h1>版本记录 · <span class="code" style="font-size:14px">${c.code}</span> ${phaseTag}</h1>
+        <div class="sub">${c.hyp} · ${c.hook} · 内容 ${vs.length} 版(被拒 ${rej.length} · 效果迭代 ${K}) · 运行 ${runs.length} 段</div>
+      </div>
+      <div class="filters"><button class="btn ghost" onclick="closeCreativeDetail()">← 返回 Creatives</button></div>
+    </div>
+
+    <h3 class="seclabel">运行记录 · Placement(测试 ↔ 放量)<span style="font-weight:400;color:var(--ink3);font-size:11px"> — 同一素材换 campaign/adset 在这记;内容不在这变</span></h3>
+    <div class="card hidden" id="rform" style="margin-bottom:14px">
+      <h3>记录搬迁 / 新运行 — 同一素材换了 campaign/adset</h3>
+      <div class="row2">
+        <div class="fld"><label>阶段</label><select id="rf-phase"><option value="test">测试 Test</option><option value="scale">放量 Scale</option></select></div>
+        <div class="fld"><label>起始日期</label><input id="rf-start" type="text" placeholder="如 6/16"></div>
+      </div>
+      <div class="row2">
+        <div class="fld"><label>Campaign</label><input id="rf-camp" type="text"></div>
+        <div class="fld"><label>Adset</label><input id="rf-adset" type="text"></div>
+      </div>
+      <div class="row"><div class="fld"><label>Meta 广告 id</label><input id="rf-meta" type="text"></div></div>
+      <div class="row"><div class="fld"><label>说明(为什么搬 / 测试胜出等)</label><input id="rf-note" type="text"></div></div>
+      <div class="remark">保存时自动把当前进行中的运行「结束」(end = 这条起始日),再开这条新的。同一素材,不新建行。</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" onclick="saveRun()">保存运行</button>
+        <button class="btn ghost" onclick="cancelRun()">取消</button>
+      </div>
+    </div>
+    ${runCards}
+
+    <h3 class="seclabel" style="margin-top:18px">内容版本 · Content Versions<span style="font-weight:400;color:var(--ink3);font-size:11px"> — 文案/图变了才记(被拒 / 效果差);append-only,不覆盖</span></h3>
+    <div style="margin-bottom:10px"></div>
+    <div class="card hidden" id="vform" style="margin-bottom:14px">
+      <h3>新增 / 修改版本 — append,不覆盖历史</h3>
+      <div class="row2">
+        <div class="fld"><label>换版原因(触发)</label>
+          <select id="vf-trig" onchange="vfChgToggle()"><option value="reject">被拒后重投</option><option value="perf">效果差换版</option><option value="self">自发优化</option><option value="initial">首次提交</option></select>
+        </div>
+        <div class="fld"><label>这一版结果</label>
+          <select id="vf-status" onchange="vfCauseToggle()"><option value="live">上线中</option><option value="rejected">被拒</option><option value="retired">已下线</option><option value="draft">草稿</option></select>
+        </div>
+      </div>
+      <div class="row" id="vf-causerow" style="display:none">
+        <div class="fld"><label>拒因(被 Meta 拒的是哪部分)</label>
+          <select id="vf-cause"><option value="copy">文案</option><option value="image">图 / 视频</option></select>
+        </div>
+      </div>
+      <div class="row" id="vf-chgrow" style="display:none">
+        <div class="fld"><label>改了什么(效果迭代:这次动的是文案还是图)</label>
+          <select id="vf-chg"><option value="copy">文案</option><option value="image">图 / 视频</option><option value="both">两者</option></select>
+        </div>
+      </div>
+      <div class="row"><div class="fld"><label>Primary text</label><textarea id="vf-p" rows="2"></textarea></div></div>
+      <div class="row2">
+        <div class="fld"><label>Headline</label><input id="vf-h" type="text"></div>
+        <div class="fld"><label>CTA</label><input id="vf-c" type="text"></div>
+      </div>
+      <div class="row"><div class="fld"><label>Description</label><input id="vf-d" type="text"></div></div>
+      <div class="row"><div class="fld"><label>说明(为什么换 / 拒登原文 / 当时数据)</label><input id="vf-reason" type="text"></div></div>
+      <div class="remark">图:原型沿用当前版本缩略图(不做上传)。真实环境此处接 Supabase Storage,v1 在「上传」那一刻落痕。</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" onclick="saveVersion()">保存版本</button>
+        <button class="btn ghost" onclick="cancelVersion()">取消</button>
+      </div>
+    </div>
+    ${cards}`;
+  document.getElementById('cv-list').classList.add('hidden');
+  document.getElementById('cv-detail').classList.remove('hidden');
+  closeDrawer();
+  window.scrollTo(0,0);
+}
+function closeCreativeDetail(){
+  document.getElementById('cv-detail').classList.add('hidden');
+  document.getElementById('cv-list').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function vfCauseToggle(){document.getElementById('vf-causerow').style.display=document.getElementById('vf-status').value==='rejected'?'flex':'none';}
+function vfChgToggle(){const t=document.getElementById('vf-trig').value;document.getElementById('vf-chgrow').style.display=(t==='perf'||t==='self')?'flex':'none';}
+function openVersionForm(){
+  const i=window._vformI,vs=creatives[i].versions,cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{};
+  const isDraft=cur.status==='draft';
+  document.getElementById('vf-trig').value=isDraft?'initial':'reject';
+  document.getElementById('vf-status').value=isDraft?'draft':'live';
+  document.getElementById('vf-cause').value='copy';
+  document.getElementById('vf-chg').value='copy';
+  document.getElementById('vf-p').value=cc.p||'';
+  document.getElementById('vf-h').value=cc.h||'';
+  document.getElementById('vf-d').value=cc.d||'';
+  document.getElementById('vf-c').value=cc.c||'';
+  document.getElementById('vf-reason').value='';
+  vfCauseToggle();vfChgToggle();
+  const f=document.getElementById('vform');f.classList.remove('hidden');f.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function cancelVersion(){document.getElementById('vform').classList.add('hidden');}
+// 单条素材任一时间只能有一版在线:新版上线 → 之前在线的版本自动「已下线」(被替换)。修掉「衍生新版后旧版仍显示上线中」。
+function retirePriorLive(vs){
+  if(!vs||!vs.length)return;
+  const cur=vs[vs.length-1];
+  if(!cur||cur.status!=='live')return;
+  for(let j=0;j<vs.length-1;j++){if(vs[j].status==='live')vs[j].status='retired';}
+}
+async function saveVersion(){
+  const i=window._vformI,vs=creatives[i].versions;
+  const status=document.getElementById('vf-status').value;
+  const ev=document.getElementById('vf-trig').value;
+  const cause=status==='rejected'?document.getElementById('vf-cause').value:null;
+  const chg=(ev==='perf'||ev==='self')?document.getElementById('vf-chg').value:null;
+  const copy={p:document.getElementById('vf-p').value,h:document.getElementById('vf-h').value,d:document.getElementById('vf-d').value,c:document.getElementById('vf-c').value};
+  const reason=document.getElementById('vf-reason').value;
+  const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  const last=vs[vs.length-1];
+  if(last&&last.status==='draft'){last.status=status;last.ev=ev;last.cause=cause;last.chg=chg;last.copy=copy;last.reason=reason;last.date=today;}
+  else{vs.push({v:vs.length+1,date:today,ev:ev,status:status,cause:cause,chg:chg,reason:reason,snap:null,img:(last&&last.img)||'',copy:copy});}
+  retirePriorLive(vs);
+  try{const {error}=await db.from('creatives').update({versions:vs,updated_at:new Date().toISOString()}).eq('gen_code',creatives[i].gen);if(error)throw error;}
+  catch(e){alert('保存失败: '+rpcErr(e));return;}
+  logAction('creative','edit',(creatives[i].gen||'')+' 换版 v'+vs.length);
+  renderCreatives();openCreativeDetail(i);toast('版本已保存');
+}
+function openRunForm(){
+  document.getElementById('rf-phase').value='scale';
+  document.getElementById('rf-start').value='';
+  document.getElementById('rf-camp').value='';
+  document.getElementById('rf-adset').value='';
+  document.getElementById('rf-meta').value='';
+  document.getElementById('rf-note').value='';
+  const f=document.getElementById('rform');f.classList.remove('hidden');f.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function cancelRun(){document.getElementById('rform').classList.add('hidden');}
+function ecCauseToggle(){const r=document.getElementById('ec-causerow');if(r)r.style.display=document.getElementById('ec-status').value==='rejected'?'flex':'none';}
+function ecChgToggle(){const r=document.getElementById('ec-chgrow'),t=document.getElementById('ec-trig');if(r&&t)r.style.display=(t.value==='perf'||t.value==='self')?'flex':'none';}
+function firstVersion(i){
+  const c=creatives[i];window._fvImgSrc=null;
+  document.getElementById('d-title').textContent=c.code+' · Setup';
+  document.getElementById('d-body').innerHTML=`
+    <h2>Setup · 文案 + 图</h2>
+    <div class="remark" style="margin:6px 0 12px">这是这条素材的第一版 —— 填好文案、放第一张图、设为「上线中」提交。之后再改才走「换版」(被拒重投 / 效果优化)。</div>
+    <div class="row"><div class="fld"><label>图 / 视频(点选 — 原型仅预览,不真存)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div id="fv-imgprev">${thumbBox('','',c.label,64)}</div>
+        <input type="file" id="fv-imgfile" accept="image/*" onchange="fvImgPick(this)">
+      </div></div></div>
+    <div class="row2">
+      <div class="fld"><label>这一版结果</label><select id="fv-status"><option value="live">上线中</option><option value="draft">草稿(先存,未上 Meta)</option></select></div>
+      <div class="fld"><label>Ads Code（团队手动命名,可留空）</label><input id="fv-ads" type="text" value="${(c.ads||'').replace(/"/g,'&quot;')}"></div>
+    </div>
+    <div class="row"><div class="fld"><label>Primary text</label><textarea id="fv-p" rows="2"></textarea></div></div>
+    <div class="row2">
+      <div class="fld"><label>Headline</label><input id="fv-h" type="text"></div>
+      <div class="fld"><label>CTA</label><input id="fv-c" type="text"></div>
+    </div>
+    <div class="row"><div class="fld"><label>Description</label><input id="fv-d" type="text"></div></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" onclick="saveFirstVersion(${i})">Save</button>
+      <button class="btn ghost" onclick="openCreative(${i})">取消</button>
+    </div>`;
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('ov').classList.add('show');
+}
+function fvImgPick(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{window._fvImgSrc=e.target.result;document.getElementById('fv-imgprev').innerHTML=thumbBox('',e.target.result,'',64);};r.readAsDataURL(f);}
+async function saveFirstVersion(i){
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
+  const c=creatives[i],status=document.getElementById('fv-status').value;
+  const copy={p:document.getElementById('fv-p').value,h:document.getElementById('fv-h').value,d:document.getElementById('fv-d').value,c:document.getElementById('fv-c').value};
+  const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  const v1={v:1,date:today,ev:'first',status:status,cause:null,chg:null,reason:null,snap:null,img:'',imgSrc:window._fvImgSrc||null,copy:copy};
+  const rowStatus=status==='live'?'上线中':'待上线';
+  const adsv=((document.getElementById('fv-ads')||{}).value||'').trim()||null;
+  try{const {error}=await db.from('creatives').update({versions:[v1],status:rowStatus,ads_code:adsv,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
+  catch(e){alert('保存失败: '+rpcErr(e));return;}
+  c.versions=[v1];c.st=rowStatus;c.ads=adsv;
+  logAction('creative','edit',(c.gen||'')+' 第一版');
+  renderCreatives();openCreative(i);toast('第一版已保存');
+}
+function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return firstVersion(i);
+  const vs=creatives[i].versions||[],cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{},isDraft=cur.status==='draft';
+  const esc=(s)=>(s||'').replace(/"/g,'&quot;');
+  window._ecImgSrc=null;
+  document.getElementById('d-title').textContent=creatives[i].code+' · 编辑这版';
+  document.getElementById('d-body').innerHTML=`
+    <h2>编辑这版 · 文案 + 图</h2>
+    <div class="remark" style="margin:6px 0 12px">${isDraft?'这条还是草稿 — 文案 / 图直接改;改完可设为「上线中」提交。':'这版已提交。改文案或图都会<b>存成新一版</b>(append),旧版保留 — 所以要选换版原因。'}</div>
+    <div class="row"><div class="fld"><label>图 / 视频(点选替换 — 原型仅预览,不真存)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div id="ec-imgprev">${thumbBox(cur.img,cur.imgSrc,creatives[i].label,64)}</div>
+        <input type="file" id="ec-imgfile" accept="image/*" onchange="ecImgPick(this)">
+      </div>
+    </div></div>
+    <div class="row2">
+      <div class="fld"><label>这一版结果</label><select id="ec-status" onchange="ecCauseToggle()"><option value="draft">草稿</option><option value="live">上线中</option><option value="rejected">被拒</option><option value="retired">已下线</option></select></div>
+      <div class="fld" id="ec-trigrow" style="${isDraft?'display:none':''}"><label>换版原因</label><select id="ec-trig" onchange="ecChgToggle()"><option value="reject">被拒后重投</option><option value="perf">效果差换版</option><option value="self">自发优化</option></select></div>
+    </div>
+    <div class="row" id="ec-causerow" style="display:none"><div class="fld"><label>拒因(被 Meta 拒的是哪部分)</label><select id="ec-cause"><option value="copy">文案</option><option value="image">图 / 视频</option></select></div></div>
+    <div class="row" id="ec-chgrow" style="display:none"><div class="fld"><label>改了什么(效果迭代:动的是文案还是图)</label><select id="ec-chg"><option value="copy">文案</option><option value="image">图 / 视频</option><option value="both">两者</option></select></div></div>
+    <div class="row"><div class="fld"><label>Primary text</label><textarea id="ec-p" rows="2">${cc.p||''}</textarea></div></div>
+    <div class="row2">
+      <div class="fld"><label>Headline</label><input id="ec-h" type="text" value="${esc(cc.h)}"></div>
+      <div class="fld"><label>CTA</label><input id="ec-c" type="text" value="${esc(cc.c)}"></div>
+    </div>
+    <div class="row"><div class="fld"><label>Description</label><input id="ec-d" type="text" value="${esc(cc.d)}"></div></div>
+    <div class="row"><div class="fld"><label>说明(为什么换 / 拒登原文 / 当时数据)</label><input id="ec-reason" type="text"></div></div>
+    <div class="row"><div class="fld"><label>Ads Code（团队手动命名,可留空）</label><input id="ec-ads" type="text" value="${esc(creatives[i].ads)}"></div></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" onclick="saveCreativeCopy(${i})">保存</button>
+      <button class="btn ghost" onclick="openCreative(${i})">取消</button>
+    </div>`;
+  document.getElementById('ec-status').value=['draft','live','rejected','retired'].includes(cur.status)?cur.status:'live';
+  ecCauseToggle();ecChgToggle();
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function saveCreativeCopy(i){
+  const vs=creatives[i].versions,last=vs[vs.length-1];
+  const status=document.getElementById('ec-status').value;
+  const copy={p:document.getElementById('ec-p').value,h:document.getElementById('ec-h').value,d:document.getElementById('ec-d').value,c:document.getElementById('ec-c').value};
+  const reason=document.getElementById('ec-reason').value;
+  const newImg=window._ecImgSrc;
+  const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  if(last.status==='draft'){last.copy=copy;last.status=status;if(reason)last.reason=reason;if(newImg)last.imgSrc=newImg;last.date=today;}
+  else{const trig=document.getElementById('ec-trig').value;const cause=status==='rejected'?document.getElementById('ec-cause').value:null;const chg=(trig==='perf'||trig==='self')?document.getElementById('ec-chg').value:null;vs.push({v:vs.length+1,date:today,ev:trig,status:status,cause:cause,chg:chg,reason:reason,snap:null,img:last.img||'',imgSrc:newImg||last.imgSrc,copy:copy});}
+  retirePriorLive(vs);
+  const adsv=((document.getElementById('ec-ads')||{}).value||'').trim()||null;
+  try{const {error}=await db.from('creatives').update({versions:vs,ads_code:adsv,updated_at:new Date().toISOString()}).eq('gen_code',creatives[i].gen);if(error)throw error;}catch(e){alert('保存失败: '+rpcErr(e));return;}
+  creatives[i].ads=adsv;
+  logAction('creative','edit',(creatives[i].gen||'')+' 换版');
+  renderCreatives();openCreative(i);toast('已保存');
+}
+function saveRun(){
+  const i=window._vformI,c=creatives[i];c.runs=c.runs||[];
+  const start=document.getElementById('rf-start').value||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  const open=c.runs.find(r=>!r.end);if(open)open.end=start;
+  c.runs.push({r:c.runs.length+1,phase:document.getElementById('rf-phase').value,camp:document.getElementById('rf-camp').value,adset:document.getElementById('rf-adset').value,meta:document.getElementById('rf-meta').value,start:start,end:null,snap:null,note:document.getElementById('rf-note').value});
+  toast('运行记录已加(原型:内存,刷新重置)');
+  cancelRun();openCreativeDetail(i);
+}
+
+function confirmPaused(code){
+  const c=creatives.find(x=>x.code===code);
+  if(!confirm('确认你已在 Ads Manager 手动暂停 '+code+'?\n系统只记录已确认的事实,不会替你操作 Meta。'))return;
+  c.st='已暂停 6/11';c.stc='paused';c.act=null;
+  toast(code+' 已标记为人工确认暂停');renderCreatives();
+}
+function linkHyp(c){const gen=c.gen||c.code||'';const par=(gen.match(/^(HYP-\d+)/)||[])[1]||((c.hyp||'').split(/[ ·]/)[0]||'');const has=par&&hypos.some(h=>h.id===par);if(has)return '<span class="code" style="color:var(--accent);cursor:pointer" title="跟回上层假设 '+esc(par)+'" onclick="event.stopPropagation();gotoHypo(\''+esc(par)+'\')">'+esc(gen||'—')+'</span>';return '<span class="code">'+esc(gen||'—')+'</span>';}
+function gotoHypo(code){const idx=hypos.findIndex(h=>h.id===code);if(idx<0){toast('找不到假设 '+code);return;}go('hypo',document.querySelector('[data-v="hypo"]'));openDrawer(idx);}
+function renderCreatives(){
+  const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
+  document.getElementById('creativeBody').innerHTML=creatives.filter(c=>(!fb||((c.code||'')+(c.ads||'')+(c.hyp||'')).includes(fb))&&(!fh||(c.hyp||'').startsWith(fh))).map(c=>`
+   <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
+    <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
+    <td>${linkHyp(c)}</td>
+    <td><span class="qt"><b>${c.fmt}</b></span></td>
+    <td><span class="qt" title="${ZH[c.hook]||c.hook}">${c.hook}</span></td>
+    <td><span class="qt" title="${ZH[c.vs]||c.vs}">${c.vs}</span></td>
+    <td class="code">${c.spend}</td><td class="code"><b>${c.fdc}</b></td><td class="code">${c.cpa}</td>
+    <td><span class="cst cst-${c.stc}">${c.st}</span></td>
+    <td style="white-space:nowrap" onclick="event.stopPropagation()">
+      ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
+      ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
+      ${c.act==='confirm'?`<button class="btn danger sm" onclick="confirmPaused('${c.code}')">确认已暂停</button>`:''}
+    </td>
+   </tr>`).join('');
+}
+
+async function addDict(){
+  if(!can('dict','add')){toast('当前岗位没有「新增词条」权限');return;}
+  const code=prompt('新词条 — 代码 (code),例如 new_hook:');if(!code||!code.trim())return;
+  const name=prompt('名称 (name):');if(name===null)return;
+  const descr=prompt('说明 (description):');if(descr===null)return;
+  const arr=DICT[dictTab]||[];
+  try{const {error}=await db.from('dict_entries').insert({tab:dictTab,code:code.trim(),name:(name||'').trim(),descr:(descr||'').trim(),usage:'—',active:true,sort:arr.length});if(error)throw error;}
+  catch(e){alert('Add failed: '+rpcErr(e));return;}
+  logAction('dict','add',dictTab+' / '+code.trim());await loadDict();renderDict();toast('已新增词条 '+code.trim());
+}
+async function toggleDict(tab,idx){
+  const r=DICT[tab][idx];
+  if(r.on&&!confirm(r.c+' 停用?\n停用后新记录不可选,历史记录不受影响,可随时启用恢复。'))return;
+  const nv=!r.on;
+  try{const {error}=await db.from('dict_entries').update({active:nv,updated_at:new Date().toISOString()}).eq('tab',tab).eq('code',r.c);if(error)throw error;}
+  catch(e){alert('Update failed: '+rpcErr(e));return;}
+  r.on=nv;logAction('dict','edit',r.c+(nv?' 启用':' 停用'));toast(r.c+(nv?' 已启用':' 已停用'));renderDict();
+}
+function renderDict(){
+  document.getElementById('dictTabs').innerHTML=Object.keys(DICT).map(k=>`<div class="tabbtn ${k===dictTab?'on':''}" onclick="dictTab='${k}';renderDict()">${k}</div>`).join('');
+  const noToggle=dictTab==='Capacity';
+  document.getElementById('dictBody').innerHTML=(DICT[dictTab]||[]).map((r,i)=>`
+   <tr class="${r.on?'':'inactive'}">
+    <td class="code"><b style="color:var(--ink)">${r.c}</b></td><td>${r.n}</td><td>${r.d}</td><td class="code">${r.u}</td>
+    <td>${noToggle?'<span class="code">—</span>':`<button class="btn ${r.on?'danger':'ghost'} sm" data-perm="dict:edit" onclick="toggleDict('${dictTab}',${i})">${r.on?'停用':'启用'}</button>`}</td>
+   </tr>`).join('');
+  document.getElementById('dictNote').textContent=DICT_NOTES[dictTab]||DICT_NOTES['default'];
+}
+
+function hookChange(){
+  document.getElementById('offerRow').style.display=document.getElementById('hf-hook').value==='promo_direct'?'flex':'none';
+}
+function getBase(){
+  const b=document.getElementById('hf-brand').value,m=document.getElementById('hf-metric').value;
+  return {own:data[b]?data[b][m]:null,brand:b,metric:m};
+}
+function targetAbs(){
+  const {own}=getBase();const t=parseFloat(document.getElementById('hf-target').value)||0;
+  if(own&&own.base)document.getElementById('hf-pct').value=Math.round((t-own.base)/own.base*100);
+  updateAll(true);
+}
+function targetPct(){
+  const {own}=getBase();const p=parseFloat(document.getElementById('hf-pct').value)||0;
+  if(own&&own.base)document.getElementById('hf-target').value=Math.round(own.base*(1+p/100)*10)/10;
+  updateAll(true);
+}
+function manualBase(){updateAll(true);}
+function updateAll(skipSync){
+  const {own,brand,metric}=getBase();
+  const x=document.getElementById('hf-x').value.trim();
+  const why=document.getElementById('hf-why').value.trim();
+  const t=parseFloat(document.getElementById('hf-target').value)||0;
+  const bEl=document.getElementById('baseline');
+  let manual=document.getElementById('mb-val')?parseFloat(document.getElementById('mb-val').value)||null:null;
+  if(own){
+    bEl.innerHTML=`<b>${own.unit==='周均'?'周均 ':''}${own.base}</b> <span style="color:var(--ink3)">${metric} · ${brand} · 近 30 天</span>
+      <div class="note">数据管道自动填充(Meta × 后台 API)</div>`;
+    if(!skipSync){const p=parseFloat(document.getElementById('hf-pct').value)||0;
+      document.getElementById('hf-target').value=Math.round(own.base*(1+p/100)*10)/10;}
+  }else{
+    bEl.innerHTML=`<b style="color:var(--violet)">无基准</b>
+      <div class="explore">🧭 <b>探索型测试</b> — ${brand} 近期无有效数据。目的:建立第一个基准。</div>
+      <div class="row" style="margin-top:10px;margin-bottom:0">
+        <div class="fld"><label>手填参考成本 $/${metric}(可选)</label>
+          <input type="number" id="mb-val" placeholder="例:15" value="${manual||''}" oninput="manualBase()">
+          <small>留空则自动借兄弟品牌数据</small>
+        </div></div>`;
+  }
+  const baseTxt=own?(own.unit==='周均'?'周均 '+own.base:own.base):'(无基准·探索)';
+  const s=(v,cls)=>`<span class="slot ${v?cls:'empty'}">${v||'…'}</span>`;
+  document.getElementById('sentence').innerHTML=
+   `<div class="sl"><span class="lab">我相信</span><span>${s(x,'fill')}</span></div>
+    <div class="sl"><span class="lab">会让</span><span>${s(metric,'auto')} 从 ${s(baseTxt,'auto')} 变为 ${s(t?t:'','fill')}</span></div>
+    <div class="sl"><span class="lab">因为</span><span>${s(why?(why.length>52?why.slice(0,52)+'…':why):'','fill')}</span></div>`;
+  document.getElementById('rule-win').textContent=own?`观察期内 ${metric} ≥ ${t}`:`参考值 ${t}(探索型,判定从宽)`;
+  document.getElementById('rule-lose').textContent=own?`${metric} ≤ ${own.base}(未超越基准)`:'—';
+  capacity(own,brand,metric,t,manual);
+  matrix();
+}
+function capacity(own,brand,metric,target,manual){
+  const out=document.getElementById('cc-out');
+  const budRaw=(document.getElementById('cc-budget')||{}).value,daysRaw=(document.getElementById('cc-days')||{}).value;
+  if(!budRaw||!daysRaw){out.innerHTML='<div class="light gray"><div class="tt"><span class="dot"></span>请填日预算与周期</div></div>';return;}
+  const bud=parseFloat(budRaw)||0;
+  const days=parseFloat(daysRaw)||0;
+  const have=bud*days;
+  let cost=own?own.cost:null,borrow='';
+  if(!cost&&manual){cost=manual;borrow=`<span class="borrow">手填参考值</span>`;}
+  if(!cost&&sibling[brand]&&data[sibling[brand]]&&data[sibling[brand]][metric]){
+    cost=data[sibling[brand]][metric].cost;borrow=`<span class="borrow">估算基于 ${sibling[brand]}</span>`;
+  }
+  if(!cost){out.innerHTML=`<div class="light gray"><div class="tt"><span class="dot"></span>该指标暂无单位成本</div><p>在左侧基准卡内手填参考成本即可体检</p></div>`;return;}
+  const weeks=days/7;const needUnits=Math.round(target*weeks);const needSpend=Math.round(needUnits*cost);
+  const ratio=have/needSpend;const can=Math.floor(have/cost);
+  let cls='green',title='🟢 预算充足',advice=`余量 ${Math.round(ratio*100)}%,结论有容错空间`;
+  if(ratio<1){cls='red';title='🔴 物理上够不到成功线';
+    advice=`建议:预算提至 $${Math.ceil(needSpend/days)}/日,或成功线降至 ${Math.floor(can/weeks)},或周期延长。坚持上线须写一句理由`;}
+  else if(ratio<1.5){cls='amber';title='🟡 刚好够,没有容错';advice='表现略低于基准即出不了结论,建议留 1.5 倍余量';}
+  out.innerHTML=`
+   <div class="light ${cls}">
+     <div class="tt"><span class="dot"></span>${title}${borrow}</div>
+     <div class="ccgrid">
+       <div><label>预算可支撑</label><b>${can} 个</b></div>
+       <div><label>成功线需要</label><b>${needUnits} 个</b></div>
+       <div><label>单位成本</label><b>$${cost}</b></div>
+     </div>
+     <p>${advice}</p>
+   </div>
+   <div class="calc">需求 ≈ ${target}/周 × ${weeks.toFixed(1)} 周 × $${cost} = $${needSpend}<br>持有 = $${bud}/日 × ${days} 天 = $${have}</div>`;
+}
+function matrix(){
+  const vRaw=(document.getElementById('am-v')||{}).value,laRaw=(document.getElementById('am-la')||{}).value,nRaw=(document.getElementById('am-n')||{}).value;
+  const v=+vRaw;
+  document.getElementById('am-lb-fld').style.display=v===2?'flex':'none';
+  if(!vRaw||!laRaw||!nRaw||(v===2&&!(document.getElementById('am-lb')||{}).value)){document.getElementById('am-out').textContent='—';return;}
+  const la=+laRaw||2,lb=+((document.getElementById('am-lb')||{}).value)||2,n=+nRaw||1;
+  const cells=v===2?la*lb:la;
+  document.getElementById('am-out').textContent=(v===2?`${la} × ${lb} × ${n}`:`${la} × ${n}`)+` = 需素材 ${cells*n} 支`;
+}
+
+/* ================= Competitor Intelligence — LIVE 数据逻辑(接 Supabase + n8n webhook) ================= */
+const SUPABASE_URL="https://bfukphakofrjalsqteda.supabase.co";
+const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmdWtwaGFrb2ZyamFsc3F0ZWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDA0OTksImV4cCI6MjA5NjQ3NjQ5OX0.wZpCRkeMm9MGKR7ueUS7UpIV62ZJlZPuMPRMps-kxW8";
+const WEBHOOK_URL="https://n8n.ohmediaa.com/webhook/manual-add";
+const RESCAN_URL="https://n8n.ohmediaa.com/webhook/rescan-brand";
+const DONUT=['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#639922','#BA7517','#9aa1ab','#c084fc','#2dd4bf','#fb923c','#f472b6','#60a5fa','#a3e635'];
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+let ads=[],operators=[],reports=[],candidates=[],brands=[],galRows=[],hookCh=null,styleCh=null;
+let reportWeeks=[],reportTabIdx=0;
+
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// 数据生命周期:按 last_seen 距今天数判活跃/休眠/已停(≤14 / ≤30 / >30);无日期=已停
+function lifeStatus(ls){if(!ls)return 'dead';const d=Math.floor((Date.now()-new Date(ls).getTime())/86400000);if(isNaN(d))return 'dead';return d<=14?'active':d<=30?'dormant':'dead';}
+function lifeBadge(ls){const st=lifeStatus(ls);const m={active:['Active','la'],dormant:['Dormant','ld'],dead:['Inactive','lx']};const x=m[st];return '<span class="life '+x[1]+'">'+x[0]+'</span>';}
+// 筛选:active=仅活跃 / archive=休眠+已停 / all=全部
+function lifeMatch(ls,mode){const st=lifeStatus(ls);return mode==='all'?true:mode==='archive'?st!=='active':st==='active';}
+function pc(c){c=(c||'').toUpperCase();return '<span class="pl '+(c==='KH'?'kh':(c==='MY'?'my':''))+'">'+esc(c||'?')+'</span>';}
+function showErr(m){document.getElementById('errbox').innerHTML='<div class="err">'+esc(m)+'</div>';}
+function daysAgo(d){if(!d)return 9999;return (Date.now()-new Date(d).getTime())/86400000;}
+function isNew(a){return a.start_date&&daysAgo(a.start_date)<=7;}
+function hooksOf(a){return (a.hook_type||'').split(',').map(s=>s.trim()).filter(Boolean);}
+function langCode(l){const m={chinese:'ZH',english:'EN',malay:'MS',khmer:'KH',mixed:'MX'};return m[(l||'').toLowerCase()]||(l?String(l).toUpperCase().slice(0,2):'');}
+function toggleAddForms(){document.getElementById('addForms').classList.toggle('hidden');}
+
+async function loadAll(){
+  document.getElementById('errbox').innerHTML='';document.getElementById('status').textContent='加载中…';
+  try{
+    const [a,o,r,c,b]=await Promise.all([
+      db.from('v_ads_gallery').select('*'),db.from('v_operator_intel').select('*'),
+      db.from('weekly_reports').select('*').order('generated_at',{ascending:false}),
+      db.from('discovery_candidates').select('*').eq('status','pending').order('discovered_at',{ascending:false}),
+      db.from('monitor_brands').select('*')]);
+    for(const x of [a,o,r,c,b])if(x.error)throw x.error;
+    ads=a.data||[];operators=o.data||[];reports=r.data||[];candidates=c.data||[];brands=b.data||[];
+    ads.forEach(x=>{if(x.operator_name)x.operator_name=x.operator_name.toUpperCase();});
+    operators.forEach(x=>{if(x.operator_name)x.operator_name=x.operator_name.toUpperCase();});
+    brands.forEach(x=>{x._kw=x.keyword;if(x.keyword)x.keyword=x.keyword.toUpperCase();});
+    renderKpis();buildFilters();renderGallery();renderOperators();renderFunnel();buildReportWeeks();renderCandidates();renderBrands();
+    document.getElementById('status').textContent='更新于 '+new Date().toLocaleString('zh-CN');
+  }catch(e){showErr('读取失败：'+(e.message||e));document.getElementById('status').textContent='出错';}
+}
+
+function renderKpis(rows){
+  const src=rows||ads;
+  const filtered=!!rows && rows.length!==ads.length;
+  const ops=new Set(src.map(a=>a.operator_name).filter(Boolean));
+  const longest=src.reduce((m,a)=>Math.max(m,a.duration_days||0),0);
+  document.getElementById('kpis').innerHTML=kpi(src.length,'Total Ads'+(filtered?' (filtered)':''))+kpi(ops.size,'Active Operators')+kpi(src.filter(isNew).length,'New This Week')+kpi(longest+' d','Longest Running');
+}
+function kpi(v,l){return '<div class="kpi"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';}
+
+function setOpts(id,label,vals){const el=document.getElementById(id);const cur=el.value;el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join('');el.value=vals.includes(cur)?cur:'';}
+function buildFilters(){
+  const m=fMarket.value;
+  const base=m?ads.filter(a=>(a.country||'').toUpperCase()===m):ads;
+  setOpts('fOperator','All Operators',[...new Set(base.map(x=>x.operator_name).filter(Boolean))].sort());
+  setOpts('fHook','All Hooks',[...new Set(base.flatMap(hooksOf))].sort());
+  setOpts('fStyle','All Styles',[...new Set(base.map(x=>x.visual_style).filter(Boolean))].sort());
+  const gtSel=document.getElementById('fGameType').value;
+  document.getElementById('fGameType').innerHTML='<option value="">All Game Types</option>'+(DICT['Game Type']||[]).filter(g=>g.on!==false).map(g=>'<option value="'+g.c+'">'+g.n+'</option>').join('');
+  document.getElementById('fGameType').value=gtSel;
+}
+function media(a){
+  const img=a.stored_image_url||a.image_url,vid=a.stored_video_url;
+  if(vid)return '<video class="th" src="'+esc(vid)+'" muted preload="metadata" onclick="lb('+a._i+')"></video>';
+  if(img)return '<img class="th" src="'+esc(img)+'" loading="lazy" onclick="lb('+a._i+')" onerror="this.outerHTML=\'<div class=&quot;thx&quot;>broken</div>\'">';
+  return '<div class="thx">no img</div>';
+}
+function lb(i){const a=galRows[i];const img=a.stored_image_url||a.image_url,vid=a.stored_video_url;document.getElementById('lbInner').innerHTML=vid?'<video src="'+esc(vid)+'" controls autoplay></video>':'<img src="'+esc(img)+'">';document.getElementById('lb').classList.add('show');}
+function closeLb(){document.getElementById('lb').classList.remove('show');document.getElementById('lbInner').innerHTML='';}
+
+function filteredAds(){
+  const m=fMarket.value,o=fOperator.value,h=fHook.value,s=fStyle.value,fmt=fFormat.value,gt=fGameType.value,st=(document.getElementById('fStatus')||{value:'all'}).value,q=(fSearch.value||'').toLowerCase();
+  let r=ads.filter(a=>(!m||(a.country||'').toUpperCase()===m)&&(!o||a.operator_name===o)&&(!h||hooksOf(a).includes(h))&&(!s||a.visual_style===s)&&(!fmt||(a.media_type||'').toUpperCase()===fmt)&&(!gt||(a.game_type||a.vertical)===gt)&&lifeMatch(a.last_seen,st));
+  if(q)r=r.filter(a=>((a.ad_text||'')+(a.selling_point||'')+(a.creative_theme||'')+(a.page_name||'')).toLowerCase().includes(q));
+  const so=fSort.value;
+  if(so==='dur')r.sort((a,b)=>(b.duration_days||0)-(a.duration_days||0));
+  else if(so==='new')r.sort((a,b)=>(''+(b.start_date||'')).localeCompare(''+(a.start_date||'')));
+  else if(so==='recent')r.sort((a,b)=>(''+(b.last_seen||'')).localeCompare(''+(a.last_seen||'')));
+  else r.sort((a,b)=>(''+(a.operator_name||'')).localeCompare(''+(b.operator_name||'')));
+  return r;
+}
+function renderGallery(){
+  galRows=filteredAds();galRows.forEach((a,i)=>a._i=i);
+  document.getElementById('galCount').textContent=galRows.length+' ads';
+  renderKpis(galRows);
+  let h='';
+  if(!galRows.length)h='<tr><td colspan="14" class="empty">No ads match.</td></tr>';
+  galRows.forEach(a=>{
+    const gt=a.game_type||a.vertical||'';
+    const dur=a.duration_days==null?'':'<span class="pl '+(a.duration_days>=180?'win':'dur')+'">'+(a.duration_days>=180?'🏆 ':'')+a.duration_days+'</span>';
+    const newb=isNew(a)?'<span class="pl new">NEW</span> ':'';
+    const fn=[];if(a.extracted_telegram)fn.push('TG '+esc(a.extracted_telegram));if(a.extracted_domain)fn.push(esc(a.extracted_domain));if(a.extracted_ref_code)fn.push('ref '+esc(a.extracted_ref_code));
+    h+='<tr><td><div class="op" onclick="drill(\''+esc(a.operator_name)+'\')">'+esc(a.operator_name||'?')+'</div>'+media(a)+(a.media_type?'<div style="margin-top:4px"><span class="pl cta">'+esc((a.media_type||'').toUpperCase())+'</span></div>':'')+'</td>'+
+      '<td><div class="hooks">'+hooksOf(a).map(x=>'<span class="pl hook">'+esc(x)+'</span>').join('')+'</div></td>'+
+      '<td class="cn">'+esc(a.selling_point||'')+'</td>'+
+      '<td class="cn">'+esc(a.creative_theme||'')+'</td>'+
+      '<td>'+(a.visual_style?'<span class="pl style">'+esc(a.visual_style)+'</span>':'-')+'</td>'+
+      '<td>'+(gt?'<span class="pl style">'+esc(gt)+'</span>':'-')+'</td>'+
+      '<td>'+newb+dur+'</td>'+
+      '<td>'+(a.cta_type?'<span class="pl cta">'+esc(a.cta_type)+'</span>':'')+'</td>'+
+      '<td class="sm">'+fn.join('<br>')+'</td>'+
+      '<td class="sm">'+esc(langCode(a.language))+'</td>'+
+      '<td class="sm">'+esc((a.start_date||'')+(a.end_date?' → '+a.end_date:''))+'</td>'+
+      '<td class="sm">'+esc(a.page_name||'')+'</td>'+
+      '<td class="sm">'+esc((a.last_seen||'').slice(5,10))+((document.getElementById('fStatus')||{}).value==='all'?'<br>'+lifeBadge(a.last_seen):'')+'</td>'+
+      '<td>'+(a.snapshot_url?'<a class="fb" href="'+esc(a.snapshot_url)+'" target="_blank">↗</a>':'')+'</td></tr>';
+  });
+  if(galRows.length)h+='<tr><td colspan="14" style="text-align:center;color:var(--ink3);padding:14px;font-size:12px">— 共 '+galRows.length+' 条，已全部显示 —</td></tr>';
+  document.getElementById('galBody').innerHTML=h;
+}
+function renderAdsReport(){
+  const cf=document.getElementById('rMarket').value;
+  const sub=ads.filter(a=>!cf||(a.country||'').toUpperCase()===cf);
+  drawDonut('hookChart',hookCounts(sub),c=>hookCh=c,hookCh);
+  drawDonut('styleChart',countBy(sub,'visual_style'),c=>styleCh=c,styleCh);
+}
+function hookCounts(arr){const m={};arr.forEach(a=>hooksOf(a).forEach(h=>m[h]=(m[h]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
+function countBy(arr,k){const m={};arr.forEach(a=>{if(a[k])m[a[k]]=(m[a[k]]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
+function drawDonut(id,entries,setRef,prev){
+  if(prev)prev.destroy();
+  let e=entries;
+  const ctx=document.getElementById(id);if(!ctx)return;
+  if(!e.length){setRef(null);return;}
+  setRef(new Chart(ctx,{type:'doughnut',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:DONUT,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,font:{size:11},color:'#444',padding:8}}}}}));
+}
+function drill(op){fMarket.value='';buildFilters();fOperator.value=op;fHook.value='';fStyle.value='';go('gallery',document.querySelector('[data-v="gallery"]'));document.getElementById('opBanner').innerHTML='<div class="opbanner"><span><b>'+esc(op)+'</b> · all ads</span><span class="link" onclick="clearDrill()">✕ clear</span></div>';renderGallery();window.scrollTo(0,0);}
+function clearDrill(){fOperator.value='';document.getElementById('opBanner').innerHTML='';renderGallery();}
+
+function renderOperators(){
+  const cf=opCountry.value;const sf=(document.getElementById('opStatus')||{value:'all'}).value;const allMode=sf==='all';
+  let rows=operators.filter(o=>(!cf||(o.country||'').toUpperCase()===cf)&&lifeMatch(o.last_seen,sf)).sort((a,b)=>(b.total_ads||0)-(a.total_ads||0));
+  let h='<thead><tr><th>Operator</th><th>Market</th>'+(allMode?'<th>Ad Status</th>':'')+'<th>Total Ads</th><th>Active</th><th>Pages</th><th>Domains</th><th>TG</th><th>Msgr</th><th>Avg Days</th><th>Last Seen</th></tr></thead><tbody>';
+  if(!rows.length)h+='<tr><td colspan="'+(allMode?11:10)+'" class="empty">No data</td></tr>';
+  rows.forEach(o=>{h+='<tr><td><span class="link" onclick="drill(\''+esc(o.operator_name)+'\')">'+esc(o.operator_name)+'</span></td><td>'+pc(o.country)+'</td>'+(allMode?'<td>'+lifeBadge(o.last_seen)+'</td>':'')+'<td>'+(o.total_ads||0)+'</td><td>'+(o.active_ads||0)+'</td><td>'+(o.pages||0)+'</td><td>'+(o.domains||0)+'</td><td>'+(o.telegram_ads||0)+'</td><td>'+(o.messenger_ads||0)+'</td><td>'+(o.avg_duration_days==null?'-':o.avg_duration_days)+'</td><td>'+esc(o.last_seen||'-')+'</td></tr>';});
+  document.getElementById('opTable').innerHTML=h+'</tbody>';
+}
+function renderFunnel(){
+  const cf=document.getElementById('fFunnelCountry').value;const sf=(document.getElementById('fFunnelStatus')||{value:'all'}).value;const allMode=sf==='all';const fmap={};
+  ads.filter(a=>!cf||(a.country||'').toUpperCase()===cf).forEach(a=>{const o=a.operator_name;if(!o)return;const F=fmap[o]=fmap[o]||{tg:{},dom:{},ref:new Set(),c:a.country,ls:''};const ls=a.last_seen||'';const upd=(obj,key)=>{if(!key)return;if(!obj[key]||ls>obj[key])obj[key]=ls;};upd(F.tg,a.extracted_telegram);upd(F.dom,a.extracted_domain);if(a.extracted_ref_code)F.ref.add(a.extracted_ref_code);if(ls>F.ls)F.ls=ls;});
+  let h='<thead><tr><th>Operator</th><th>Market</th>'+(allMode?'<th>Ad Status</th>':'')+'<th>Telegram</th><th>Domains</th></tr></thead><tbody>';
+  const fe=Object.entries(fmap).filter(e=>(Object.keys(e[1].tg).length||Object.keys(e[1].dom).length||e[1].ref.size)&&lifeMatch(e[1].ls,sf)).sort((a,b)=>(Object.keys(b[1].tg).length+Object.keys(b[1].dom).length)-(Object.keys(a[1].tg).length+Object.keys(a[1].dom).length));
+  const tgLink=(t,ls)=>{const v=String(t).trim();const url=/^https?:\/\//i.test(v)?v:('https://'+v.replace(/^@/,'t.me/'));return '<a class="fb" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(v)+'</a>'+(allMode?' '+lifeBadge(ls):'');};
+  const domLink=(d,ls)=>{const v=String(d).trim();const url=/^https?:\/\//i.test(v)?v:('https://'+v);return '<a class="fb" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(v)+'</a>'+(allMode?' '+lifeBadge(ls):'');};
+  if(!fe.length)h+='<tr><td colspan="'+(allMode?5:4)+'" class="empty">No funnel signals yet</td></tr>';
+  fe.forEach(e=>{const v=e[1];h+='<tr><td>'+esc(e[0])+'</td><td>'+pc(v.c)+'</td>'+(allMode?'<td>'+lifeBadge(v.ls)+'</td>':'')+'<td class="sm">'+Object.entries(v.tg).map(x=>tgLink(x[0],x[1])).join('<br>')+'</td><td class="sm">'+Object.entries(v.dom).map(x=>domLink(x[0],x[1])).join('<br>')+'</td></tr>';});
+  document.getElementById('funnelTable').innerHTML=h+'</tbody>';
+}
+
+function buildReportWeeks(){
+  const seen={},rows=[];
+  for(const r of reports){
+    const key=(r.period||'')+'||'+(r.market||'');
+    if(seen[key])continue;seen[key]=1;rows.push(r);
+  }
+  const byWeek={};
+  rows.forEach(r=>{const wk=r.period||(r.generated_at||'').slice(0,10)||'未知';(byWeek[wk]=byWeek[wk]||[]).push(r);});
+  reportWeeks=Object.entries(byWeek).sort((a,b)=>b[0].localeCompare(a[0])).map(e=>({week:e[0],items:e[1].sort((a,b)=>(''+(a.market||'')).localeCompare(''+(b.market||'')))}));
+  const sel=document.getElementById('reportWeek');
+  sel.innerHTML=reportWeeks.map((w,i)=>'<option value="'+i+'">'+esc(w.week)+'</option>').join('');
+  renderReportTabs();
+}
+function renderReportTabs(){
+  const tabsEl=document.getElementById('reportTabs'),body=document.getElementById('reportBody');
+  if(!reportWeeks.length){tabsEl.innerHTML='';body.innerHTML='<div class="empty">暂无周报。跑完抓取后，在 n8n 手动执行一次「Weekly Report」即可生成。</div>';return;}
+  const wi=+document.getElementById('reportWeek').value||0;
+  reportTabIdx=0;
+  tabsEl.innerHTML=reportWeeks[wi].items.map((r,i)=>'<button class="mtab'+(i===0?' active':'')+'" onclick="pickReportTab('+i+')">'+esc(r.market||'未标记')+'</button>').join('');
+  renderReport();
+}
+function pickReportTab(i){reportTabIdx=i;document.querySelectorAll('#reportTabs .mtab').forEach((b,j)=>b.classList.toggle('active',j===i));renderReport();}
+function renderReport(){
+  const body=document.getElementById('reportBody');
+  if(!reportWeeks.length){body.innerHTML='<div class="empty">暂无周报。</div>';return;}
+  const wi=+document.getElementById('reportWeek').value||0;
+  const item=reportWeeks[wi].items[reportTabIdx]||reportWeeks[wi].items[0];
+  body.innerHTML=marked.parse((item&&item.report_md)||'(空)');
+}
+
+function renderCandidates(){
+  document.getElementById('candCount').textContent=candidates.length+' to review';
+  let h='<thead><tr><th>Action</th><th>Page</th><th>Market</th><th>Domain</th><th>Telegram</th><th>Sample · Note</th><th>Source</th><th>Found</th></tr></thead><tbody>';
+  if(!candidates.length)h+='<tr><td colspan="8" class="empty">No candidates</td></tr>';
+  candidates.forEach(c=>{h+='<tr><td><button class="cbtn ok" data-perm="pending:edit" onclick="confirmCand(\''+c.id+'\',\''+esc(c.country||'')+'\',\''+esc((c.suggested_keyword||c.page_name||'').replace(/\x27/g,""))+'\')">✓</button><button class="cbtn no" data-perm="pending:delete" onclick="rejectCand(\''+c.id+'\')">✗</button></td><td class="sm">'+esc(c.page_name||'-')+'</td><td>'+pc(c.country)+'</td><td class="sm">'+esc(c.extracted_domain||'-')+'</td><td class="sm">'+esc(c.extracted_telegram||'-')+'</td><td class="sm">'+esc((c.sample_ad_text||c.triage_note||'').slice(0,140))+'</td><td class="sm">'+esc(c.source||'-')+'</td><td class="sm">'+esc((c.discovered_at||'').slice(0,10))+'</td></tr>';});
+  document.getElementById('candTable').innerHTML=h+'</tbody>';
+}
+function renderBrands(){
+  const mf=(document.getElementById('fWatchMarket')||{}).value||'';
+  const opLs={};(operators||[]).forEach(o=>{if(o.operator_name)opLs[o.operator_name.toUpperCase()]=o.last_seen||'';});
+  const rows=[...brands].filter(b=>!mf||(b.country||'').toUpperCase()===mf).sort((a,b)=>(''+(a.country||'')).localeCompare(''+(b.country||''))||(''+(a.keyword||'')).localeCompare(''+(b.keyword||'')));
+  let h='<thead><tr><th>Keyword</th><th>Market</th><th>Ad Status</th><th>Monitoring (click to toggle)</th><th>Source</th><th>Rescan</th></tr></thead><tbody>';
+  if(!rows.length)h+='<tr><td colspan="6" class="empty">No data</td></tr>';
+  rows.forEach(b=>{const on=b.is_active!==false;const ls=opLs[(b.keyword||'').toUpperCase()];const act=ls?lifeBadge(ls):'<span class="sm">No ads</span>';h+='<tr><td>'+esc(b.keyword)+'</td><td>'+pc(b.country)+'</td><td>'+act+'</td><td><span class="pill2 '+(on?'son':'soff')+'" data-perm="watchlist:edit" onclick="toggleBrand('+b.id+','+(!on)+')">'+(on?'Activated':'Inactivated')+'</span></td><td>'+esc(b.source||'-')+'</td><td>'+(on?'<button class="cbtn rescan" data-perm="watchlist:edit" onclick="rescanBrand(\''+esc(b._kw||'')+'\',this)">↻ rescan</button>':'<span class="sm">-</span>')+'</td></tr>';});
+  document.getElementById('brandTable').innerHTML=h+'</tbody>';
+}
+async function rescanBrand(kw,btn){
+  const msg=document.getElementById('rescanMsg');
+  if(!kw)return;
+  if(!confirm('立刻单独重抓「'+kw+'」？大约需要 3–10 分钟。'))return;
+  btn.disabled=true;btn.textContent='⏳ 提交中…';msg.className='msg';msg.textContent='';
+  try{
+    const res=await fetch(RESCAN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand:kw})});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    btn.textContent='✓ 已提交';msg.className='msg ok';
+    msg.textContent='✓ 「'+kw+'」重抓已提交。抓取 + AI 解析约 3–10 分钟，完成后点左下角「刷新」查看（看 Ads Library 里该品牌的 Last Seen 是否更新到今天）。';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='↻ rescan';},60000);
+  }catch(e){
+    btn.disabled=false;btn.textContent='↻ rescan';
+    msg.className='msg err';msg.textContent='提交失败：'+(e.message||e)+'（如果刚部署，可能 rescan webhook 还没上线）';
+  }
+}
+async function confirmCand(id,country,suggested){const kw=prompt('给这个竞品一个监测关键词（下次抓取用）：',suggested||'');if(!kw)return;try{await hook({action:'confirm_candidate',id:id,keyword:kw,country:country||'KH',market:null});await loadAll();}catch(e){alert('确认失败：'+(e.message||e));}}
+async function rejectCand(id){if(!confirm('拒绝这个候选？'))return;try{await hook({action:'reject_candidate',id:id});await loadAll();}catch(e){alert('拒绝失败：'+(e.message||e));}}
+async function toggleBrand(id,val){try{await hook({action:'toggle_brand',id:id,is_active:val});logAction('watchlist','edit','brand#'+id+' → '+(val?'active':'off'));await loadAll();}catch(e){alert('切换失败：'+(e.message||e));}}
+async function addCompetitor(){const kw=c_keyword.value.trim();const msg=document.getElementById('c_msg');if(!kw){msg.className='msg err';msg.textContent='请填 keyword';return;}c_btn.disabled=true;msg.className='msg';msg.textContent='提交中…';try{await hook({action:'add_competitor',keyword:kw,page_url:c_pageurl.value.trim()||null,country:c_country.value,market:c_market.value.trim()||null});msg.className='msg ok';msg.textContent='✓ 已加进监测列表';c_keyword.value='';c_pageurl.value='';c_market.value='';await loadAll();}catch(e){msg.className='msg err';msg.textContent='失败：'+(e.message||e);}c_btn.disabled=false;}
+async function addCandidate(){const msg=document.getElementById('d_msg');d_btn.disabled=true;msg.className='msg';msg.textContent='提交中…';try{await hook({action:'add_candidate',page_name:d_page.value.trim()||null,page_url:d_pageurl.value.trim()||null,extracted_domain:d_domain.value.trim()||null,extracted_telegram:d_tg.value.trim()||null,country:d_country.value,note:d_note.value.trim()||null});msg.className='msg ok';msg.textContent='✓ 已加进候选池';d_page.value='';d_pageurl.value='';d_domain.value='';d_tg.value='';d_note.value='';await loadAll();}catch(e){msg.className='msg err';msg.textContent='失败：'+(e.message||e);}d_btn.disabled=false;}
+function openAddCompetitor(){
+  document.getElementById('d-title').textContent='添加竞品页面';
+  document.getElementById('d-body').innerHTML=`
+    <div class="acform"><h2>添加竞品页面 · 加入 Watchlist</h2>
+    <div class="row2">
+      <div class="fld"><label>Market <span style="color:var(--red)">*</span></label><select id="ac-market" onchange="acMarketFilter()"><option value="KH">KH (USC)</option><option value="MY">MY (INZ9)</option></select></div>
+      <div class="fld"><label>归属竞品 <span style="color:var(--red)">*</span></label><select id="ac-comp" onchange="acCompToggle()"></select></div>
+    </div>
+    <div class="row" id="ac-newrow" style="display:none"><div class="fld"><label>新竞品名 <span style="color:var(--red)">*</span></label><input id="ac-newcomp" type="text" placeholder="例:BK8"></div></div>
+    <div class="row"><div class="fld"><label>Page name <span style="color:var(--red)">*</span></label><input id="ac-name" type="text" placeholder="竞品页面名称"></div></div>
+    <div class="row"><div class="fld"><label>Page URL <span style="color:var(--red)">*</span></label><input id="ac-url" type="text" placeholder="https://www.facebook.com/..."></div></div>
+    <div class="row2">
+      <div class="fld"><label>Keyword</label><input id="ac-kw" type="text" placeholder="例:win777"></div>
+      <div class="fld"><label>Note</label><input id="ac-note" type="text"></div>
+    </div>
+    <div class="msg" id="ac-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" id="ac-submit" onclick="submitAddCompetitor()">加入 Watchlist →</button>
+      <button class="btn ghost" onclick="closeDrawer()">取消</button>
+    </div></div>`;
+  acMarketFilter();
+  acAddWire();
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('ov').classList.add('show');
+}
+function acMarketFilter(){
+  const mk=(document.getElementById('ac-market')||{}).value||'KH';
+  const sel=document.getElementById('ac-comp');if(!sel)return;const cur=sel.value;
+  const ops=[...new Set((operators||[]).filter(o=>(o.country||'').toUpperCase()===mk).map(o=>o.operator_name).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">— 选择已有竞品 —</option><option value="__new__">＋ 新竞品(新建)</option>'+ops.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'';
+  acCompToggle();
+}
+function acCompToggle(){
+  const v=document.getElementById('ac-comp').value;
+  document.getElementById('ac-newrow').style.display=(v==='__new__')?'flex':'none';
+  acCheck();
+}
+function acCheck(){
+  const comp=document.getElementById('ac-comp').value;
+  const newc=document.getElementById('ac-newcomp');
+  const compOk=comp&&(comp!=='__new__'||(newc&&newc.value.trim()));
+  const name=document.getElementById('ac-name').value.trim();
+  const url=document.getElementById('ac-url').value.trim();
+  const ok=compOk&&name&&url;
+  const btn=document.getElementById('ac-submit');
+  btn.disabled=!ok;btn.style.opacity=ok?'1':'0.45';btn.style.cursor=ok?'pointer':'not-allowed';
+}
+function acAddWire(){
+  ['ac-comp','ac-newcomp','ac-name','ac-url'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',acCheck);el.addEventListener('change',acCheck);}});
+  acCheck();
+}
+async function submitAddCompetitor(){
+  const compSel=document.getElementById('ac-comp').value;
+  const isNew=compSel==='__new__';
+  const comp=isNew?document.getElementById('ac-newcomp').value.trim():compSel;
+  const name=document.getElementById('ac-name').value.trim();
+  const url=document.getElementById('ac-url').value.trim();
+  const market=document.getElementById('ac-market').value;
+  const kw=document.getElementById('ac-kw').value.trim();
+  const note=document.getElementById('ac-note').value.trim();
+  const msg=document.getElementById('ac-msg'),btn=document.getElementById('ac-submit');
+  if(!comp||!name||!url){msg.className='msg err';msg.textContent='归属竞品、Page name、Page URL 必填';return;}
+  btn.disabled=true;msg.className='msg';msg.textContent='提交中…';
+  try{
+    await hook({action:'add_competitor',operator_name:comp,is_new_competitor:isNew,page_name:name,page_url:url,country:market,keyword:kw||null,note:note||null,source:'manual'});
+    msg.className='msg ok';msg.textContent='✓ 已加入 Watchlist'+(isNew?'(新竞品 '+comp+')':'(归到 '+comp+')');
+    logAction('watchlist','add',name+(isNew?' ('+comp+')':''));
+    await loadAll();
+    setTimeout(closeDrawer,800);
+  }catch(e){btn.disabled=false;msg.className='msg err';msg.textContent='失败：'+(e.message||e);}
+}
+async function hook(payload){if(WEBHOOK_URL.indexOf('PASTE_')===0)throw new Error('webhook 未配置');const res=await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('HTTP '+res.status);return true;}
+
+/* ===== 权限 / 登录 / 操作记录 系统 ===== */
+const PERM_SECTIONS=[
+  {k:'watchlist',g:'CI',n:'Watchlist',acts:['add','edit','delete']},
+  {k:'pending',g:'CI',n:'Pending List',acts:['edit','delete']},
+  {k:'idea',g:'PI',n:'Idea Pool',acts:['add','edit','delete']},
+  {k:'hypo',g:'PI',n:'Hypotheses',acts:['add','edit','delete']},
+  {k:'creative',g:'PI',n:'Creatives',acts:['add','edit','delete']},
+  {k:'dict',g:'PI',n:'Dictionary',acts:['add','edit']}
+];
+const READ_ONLY=['Weekly Summary','Ads Library','Operators','Funnels','Results'];
+const ACT_LABEL={add:'Add',edit:'Edit',delete:'Delete'};
+function allPerms(v){const p={};PERM_SECTIONS.forEach(s=>{p[s.k]={};s.acts.forEach(a=>p[s.k][a]=v);});return p;}
+let roles=[];            /* hydrated from Supabase on login */
+let users=[];            /* hydrated from Supabase on login */
+let currentUser=null, auditLog=[];
+const AUTH_DOMAIN='@nexmax.local';
+async function loadAuthData(){
+  const [rs,rps,ps,au]=await Promise.all([
+    db.from('roles').select('*'),
+    db.from('role_permissions').select('*'),
+    db.from('profiles').select('*'),
+    db.auth.getUser()
+  ]);
+  const rpRows=rps.data||[];
+  roles=(rs.data||[]).map(r=>{
+    const perms={};
+    rpRows.filter(x=>x.role_id===r.id).forEach(x=>{perms[x.section]={add:x.can_add,edit:x.can_edit,delete:x.can_delete};});
+    PERM_SECTIONS.forEach(s=>{perms[s.k]=perms[s.k]||{};});
+    return {id:r.id,key:r.key,name:r.name,admin:!!r.is_admin,perms:perms};
+  });
+  users=(ps.data||[]).map(p=>({id:p.id,username:p.username,name:p.name,roleId:p.role_id}));
+  const uid=(au&&au.data&&au.data.user)?au.data.user.id:null;
+  currentUser=uid?(users.find(x=>x.id===uid)||null):null;
+}
+function renderResults(){
+  const el=document.getElementById('resultsBody');if(!el)return;
+  const judged=(hypos||[]).filter(h=>h&&h.verdict);
+  if(!judged.length){
+    el.innerHTML='<div class="card"><div class="empty" style="padding:26px 18px;line-height:1.9">还没有已判定的假设。<br>Results 会从 <b>Hypotheses</b> 的判定结果自动汇总 —— 按来源 / Hook / Visual Style / 主指标统计胜率(同类案例 ≥5 条才显示百分比)。<br><span style="color:var(--ink3)">现在 hypotheses = 0,所以这里是空的。</span></div></div>';
+    return;
+  }
+  const won=v=>{const r=(v&&(v.result||v.verdict||v.outcome||v.status))||'';return /成立|win|pass|赢|hold/i.test(''+r);};
+  function bucket(keyFn,title){
+    const m={};judged.forEach(h=>{const k=keyFn(h);if(!k)return;(m[k]=m[k]||{n:0,w:0});m[k].n++;if(won(h.verdict))m[k].w++;});
+    const ks=Object.keys(m);
+    let rows=ks.map(k=>{const b=m[k];const enough=b.n>=5;const w=enough?Math.round(b.w/b.n*100):0;const right=enough?(b.w+' / '+b.n+' · '+w+'%'):'<span class="locked">'+b.n+' 条 · 攒满 5 条后显示</span>';return '<div class="barrow"><span class="tag">'+esc(k)+'</span><div class="track"><div class="fillb" style="width:'+w+'%"></div></div><span>'+right+'</span></div>';}).join('');
+    return '<div class="card"><h3>'+title+'</h3>'+(rows||'<div class="empty">暂无</div>')+'</div>';
+  }
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+    bucket(h=>{const p=(''+(h.idea||'')).split('·');return p[1]?p[1].trim():null;},'来源胜率 Source Win Rate')+
+    bucket(h=>h.hook,'Hook 战绩')+
+    bucket(h=>h.vs,'Visual Style 战绩')+
+    bucket(h=>h.metric,'主指标胜率')+
+    '</div>';
+}
+function openIdeaEditor(id){
+  const isNew=!id;
+  if(!can('idea',isNew?'add':'edit')){toast('当前岗位没有「'+(isNew?'新增':'编辑')+'想法」权限');return;}
+  const it=isNew?null:ideas.find(x=>x.id===id);
+  if(!isNew&&!it){toast('找不到该想法');return;}
+  if(!isNew&&it&&it.by!==((currentUser&&currentUser.name)||'')){toast('只能编辑自己提出的想法');return;}
+  window._editIdea=it?{id:it.id}:null;
+  const srcList=(DICT['Idea Source']||[]).filter(x=>x.on);
+  let srcOpts=srcList.map(x=>'<option value="'+esc(x.n)+'"'+(it&&it.src===x.n?' selected':'')+'>'+esc(x.c)+' '+esc(x.n)+'</option>').join('');
+  if(!srcOpts)srcOpts='<option value="原创直觉">ORIGINAL 原创直觉</option>';
+  if(it&&it.src&&!srcList.some(x=>x.n===it.src))srcOpts='<option value="'+esc(it.src)+'" selected>'+esc(it.src)+'</option>'+srcOpts;
+  const sel=(it&&it.tags)||[];
+  const hooks=(DICT['Hook']||[]).filter(x=>x.on);
+  const tagOpts=hooks.length?hooks.map(o=>'<label class="tagopt"><input type="checkbox" value="'+esc(o.c)+'"'+(sel.indexOf(o.c)>=0?' checked':'')+'><span class="tc">'+esc(o.c)+'</span>'+esc(o.n)+'</label>').join(''):'<span class="sm" style="color:var(--ink3)">Hook 词表为空 — 先去 Dictionary 添加</span>';
+  let h='<h2>'+(isNew?'新增想法':'编辑想法 · '+esc(it.id))+'</h2>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>想法(一句话)</label><textarea id="ni-txt" placeholder="例:真人出镜「秒提款」角度">'+(it?esc(it.txt):'')+'</textarea></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>来源 Source</label><select id="ni-src">'+srcOpts+'</select></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>优先级 Priority</label><select id="ni-pri">'+['高','中','低'].map(p=>'<option'+(((it&&it.pri)||'中')===p?' selected':'')+'>'+p+'</option>').join('')+'</select></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>Tag(必填 · 多选,来自 Hook 词表)</label><div id="ni-tags" class="tagpick">'+tagOpts+'</div><small style="color:var(--ink3);margin-top:5px">手动想法需自己选 Tag(必填);只有 AI 从 CI 拉的想法才自动打 Tag。</small></div>';
+  h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveIdea()">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  document.getElementById('d-title').textContent=isNew?'新增想法':'编辑想法';
+  document.getElementById('d-body').innerHTML=h;
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function saveIdea(){
+  const ed=window._editIdea;
+  const txt=(document.getElementById('ni-txt').value||'').trim();
+  if(!txt){alert('请填写想法内容');return;}
+  const src=document.getElementById('ni-src').value||'原创直觉';
+  const pri=document.getElementById('ni-pri').value||'中';
+  const tags=[...document.querySelectorAll('#ni-tags input:checked')].map(x=>x.value);
+  if(!tags.length){alert('请至少选一个 Tag（手动想法 Tag 必填）');return;}
+  try{
+    if(ed&&ed.id){
+      const {error}=await db.from('ideas').update({txt:txt,src:src,pri:pri,tags:tags,updated_at:new Date().toISOString()}).eq('code',ed.id);
+      if(error)throw error;
+      logAction('idea','edit',ed.id);window._editIdea=null;
+      await loadIdeas();closeDrawer();if(typeof refreshOverdue==='function')refreshOverdue();renderPool();applyPerms();toast('已更新 '+ed.id);
+    }else{
+      const {data,error}=await db.from('ideas').insert({txt:txt,src:src,tags:tags,pri:pri,status:'待评估',created_by:(currentUser&&currentUser.name)||''}).select('code').single();
+      if(error)throw error;
+      logAction('idea','add',data.code);
+      await loadIdeas();closeDrawer();if(typeof refreshOverdue==='function')refreshOverdue();renderPool();applyPerms();toast('已加入 Idea Pool '+data.code+' · '+src);
+    }
+  }catch(e){alert((ed?'Update':'Add')+' failed: '+rpcErr(e));}
+}
+function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_AUTHORIZED:'You are not an admin',USERNAME_REQUIRED:'Username required',PASSWORD_TOO_SHORT:'Password too short (min 4)',ROLE_NOT_FOUND:'Role not found',USERNAME_EXISTS:'Username already exists',CANNOT_DELETE_SELF:'Cannot delete yourself',USER_NOT_FOUND:'User not found'};for(const k in map){if(m.indexOf(k)>=0)return map[k];}return m;}
+function showLogin(){document.getElementById('loginGate').style.display='flex';}
+async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives()]);}
+async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
+async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
+async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
+async function editAdsCode(i){
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
+  const c=creatives[i];if(!c)return;
+  const v=prompt('Ads Code(成员手动命名,可留空):', c.ads||'');
+  if(v===null)return;
+  const val=(v||'').trim()||null;
+  try{
+    const {error}=await db.from('creatives').update({ads_code:val,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);
+    if(error)throw error;
+    logAction('creative','edit',(c.gen||'')+' ads_code');
+    await loadCreatives();renderCreatives();toast('Ads Code 已更新');
+  }catch(e){alert('更新失败: '+rpcErr(e));}
+}
+async function loadCreatives(){const {data}=await db.from('creatives').select('*').order('created_at',{ascending:false});creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,hook:r.hook,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[]}));}
+function daysSince(ts){try{return Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/86400000));}catch(e){return 0;}}
+function fmtMMDD(ts){try{const d=new Date(ts);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}catch(e){return '';}}
+async function doLogin(){const u=(document.getElementById('lg-user').value||'').trim().toLowerCase();const p=document.getElementById('lg-pwd').value||'';const msg=document.getElementById('lg-msg');if(!u||!p){msg.textContent='Enter username and password';return;}msg.textContent='Signing in…';try{const {error}=await db.auth.signInWithPassword({email:u+AUTH_DOMAIN,password:p});if(error){msg.textContent='Incorrect username or password';return;}await loadAuthData();if(!currentUser){msg.textContent='This account has no profile — contact admin';await db.auth.signOut();return;}document.getElementById('loginGate').style.display='none';initApp();}catch(e){msg.textContent='Sign-in failed: '+((e&&e.message)||e);}}
+function lgKey(e){if(e.key==='Enter')doLogin();}
+async function logout(){try{await db.auth.signOut();}catch(e){}currentUser=null;location.reload();}
+function curRole(){return currentUser?roles.find(r=>r.id===currentUser.roleId):null;}
+function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][act]):false;}
+function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
+function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});if(document.getElementById('auditBody'))renderAudit();if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
+function applyChrome(){const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
+async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderResults();renderDict();refreshOverdue();updateAll();hookChange();applyChrome();loadAll();}
+/* 岗位管理 */
+function renderRoles(){const el=document.getElementById('rolesBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openRoleEditor(null)">＋ New Role</button></div>';h+='<table class="dt"><thead><tr><th>Role</th><th>Admin Access</th><th>Permissions</th><th></th></tr></thead><tbody>';const tot=PERM_SECTIONS.reduce((n,s)=>n+s.acts.length,0);roles.forEach(r=>{const cnt=PERM_SECTIONS.reduce((n,s)=>n+s.acts.filter(a=>r.perms[s.k]&&r.perms[s.k][a]).length,0);h+='<tr><td><b>'+esc(r.name)+'</b></td><td>'+(r.admin?'<span class="life la">Yes</span>':'<span class="life lx">No</span>')+'</td><td class="sm">'+cnt+' / '+tot+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openRoleEditor(\''+r.id+'\')">Edit</button> <button class="cbtn" onclick="dupRole(\''+r.id+'\')">Duplicate</button> <button class="cbtn danger" onclick="delRole(\''+r.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
+function openRoleEditor(id){const r=id?roles.find(x=>x.id===id):{id:'role_'+Date.now(),name:'',admin:false,perms:allPerms(false),_new:true};window._editRole=JSON.parse(JSON.stringify(r));document.getElementById('d-title').textContent='岗位权限';renderRoleEditor();document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');}
+function renderRoleEditor(){const r=window._editRole;let h='<h2>'+(r._new?'New Role':'Edit Role')+'</h2>';h+='<div class="fld" style="margin-bottom:14px"><label>Role Name</label><input id="re-name" type="text" value="'+esc(r.name)+'" oninput="window._editRole.name=this.value" placeholder="e.g. Project Owner"></div>';h+='<label class="re-admin"><input type="checkbox" '+(r.admin?'checked':'')+' onchange="window._editRole.admin=this.checked"><span>Can access Administration (Roles / Users / Activity Log)</span></label>';h+='<table class="permtable"><thead><tr><th>Section</th><th>Add</th><th>Edit</th><th>Delete</th></tr></thead><tbody>';let lastG='';PERM_SECTIONS.forEach(s=>{if(s.g!==lastG){h+='<tr class="grouprow"><td colspan="4">'+s.g+'</td></tr>';lastG=s.g;}h+='<tr><td>'+esc(s.n)+'</td>';['add','edit','delete'].forEach(a=>{if(s.acts.indexOf(a)<0){h+='<td class="permna">—</td>';}else{const on=r.perms[s.k]&&r.perms[s.k][a];h+='<td><span class="permcell '+(on?'pyes':'pno')+'" onclick="togglePerm(\''+s.k+'\',\''+a+'\')">'+(on?'✓':'✗')+'</span></td>';}});h+='</tr>';});h+='</tbody></table>';h+='<div class="remark" style="margin-top:8px">Read-only sections (no add / edit / delete): '+READ_ONLY.join(' · ')+'</div>';h+='<div style="display:flex;gap:8px;margin-top:14px"><button class="btn" onclick="saveRole()">Save Role</button><button class="btn ghost" onclick="closeDrawer()">Cancel</button></div>';document.getElementById('d-body').innerHTML=h;}
+function togglePerm(k,a){const r=window._editRole;r.perms[k]=r.perms[k]||{};r.perms[k][a]=!r.perms[k][a];renderRoleEditor();}
+async function saveRole(){const r=window._editRole;if(!(r.name||'').trim()){alert('Please enter a role name');return;}try{let roleId=r.id;if(r._new){const key=(r.key||('role_'+Date.now())).toString();const {data,error}=await db.from('roles').insert({key:key,name:r.name.trim(),is_admin:!!r.admin}).select('id').single();if(error)throw error;roleId=data.id;}else{const {error}=await db.from('roles').update({name:r.name.trim(),is_admin:!!r.admin}).eq('id',roleId);if(error)throw error;}const rows=PERM_SECTIONS.map(s=>({role_id:roleId,section:s.k,can_add:!!(r.perms[s.k]&&r.perms[s.k].add),can_edit:!!(r.perms[s.k]&&r.perms[s.k].edit),can_delete:!!(r.perms[s.k]&&r.perms[s.k].delete)}));const {error:e2}=await db.from('role_permissions').upsert(rows,{onConflict:'role_id,section'});if(e2)throw e2;await loadAuthData();closeDrawer();applyChrome();toast('Role saved');}catch(e){alert('Save failed: '+rpcErr(e));}}
+async function dupRole(id){const r=roles.find(x=>x.id===id);if(!r)return;try{const key='role_'+Date.now();const {data,error}=await db.from('roles').insert({key:key,name:r.name+' (副本)',is_admin:!!r.admin}).select('id').single();if(error)throw error;const rows=PERM_SECTIONS.map(s=>({role_id:data.id,section:s.k,can_add:!!(r.perms[s.k]&&r.perms[s.k].add),can_edit:!!(r.perms[s.k]&&r.perms[s.k].edit),can_delete:!!(r.perms[s.k]&&r.perms[s.k].delete)}));const {error:e2}=await db.from('role_permissions').upsert(rows,{onConflict:'role_id,section'});if(e2)throw e2;await loadAuthData();renderRoles();toast('Role duplicated — adjust as needed');}catch(e){alert('Duplicate failed: '+rpcErr(e));}}
+async function delRole(id){if(users.some(u=>u.roleId===id)){alert('Users are still assigned to this role — reassign them first');return;}if(!confirm('Delete this role?'))return;try{const {error}=await db.from('roles').delete().eq('id',id);if(error)throw error;await loadAuthData();renderRoles();}catch(e){alert('Delete failed: '+rpcErr(e));}}
+/* 用户管理 */
+function renderUsers(){const el=document.getElementById('usersBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openUserEditor(null)">＋ New User</button></div>';h+='<table class="dt"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr></thead><tbody>';users.forEach(u=>{const r=roles.find(x=>x.id===u.roleId);const self=currentUser&&currentUser.id===u.id;h+='<tr><td>'+esc(u.name)+'</td><td class="code">'+esc(u.username)+(self?' <span class="sm" style="opacity:.6">(you)</span>':'')+'</td><td>'+(r?esc(r.name):'—')+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openUserEditor(\''+u.id+'\')">Edit</button> <button class="cbtn" onclick="resetUserPw(\''+u.id+'\')">Reset PW</button> <button class="cbtn danger" onclick="delUser(\''+u.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
+function openUserEditor(id){const isNew=!id;const u=id?users.find(x=>x.id===id):{id:null,username:'',name:'',roleId:(roles[0]||{}).id};window._editUser=Object.assign({_new:isNew},u);const r=window._editUser;let h='<h2>'+(isNew?'New User':'Edit User')+'</h2>';if(isNew){h+='<div class="fld" style="margin-bottom:12px"><label>Username</label><input id="ue-un" type="text" value="" placeholder="e.g. joey"><div class="remark" style="margin-top:4px">Login name. Cannot be changed later.</div></div>';}else{h+='<div class="fld" style="margin-bottom:12px"><label>Username</label><input id="ue-un" type="text" value="'+esc(r.username)+'"><div class="remark" style="margin-top:4px">登录名。改后用新 username 登录(旧的失效)。</div></div>';}h+='<div class="fld" style="margin-bottom:12px"><label>Name</label><input id="ue-nm" type="text" value="'+esc(r.name)+'"></div>';if(isNew){h+='<div class="fld" style="margin-bottom:12px"><label>Password</label><input id="ue-pw" type="text" value="123123"></div>';}h+='<div class="fld" style="margin-bottom:12px"><label>Role</label><select id="ue-role">'+roles.map(x=>'<option value="'+x.id+'" '+(x.id===r.roleId?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div>';h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveUser()">Save User</button><button class="btn ghost" onclick="closeDrawer()">Cancel</button></div>';document.getElementById('d-title').textContent='User';document.getElementById('d-body').innerHTML=h;document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');}
+async function saveUser(){const r=window._editUser;const name=(document.getElementById('ue-nm').value||'').trim();const roleId=document.getElementById('ue-role').value;try{if(r._new){const un=(document.getElementById('ue-un').value||'').trim().toLowerCase();const pw=document.getElementById('ue-pw').value||'';if(!un||!name){alert('Username and Name are required');return;}const role=roles.find(x=>x.id===roleId);const {error}=await db.rpc('admin_create_user',{p_username:un,p_name:name,p_password:pw,p_role_key:role?role.key:null});if(error)throw error;logAction('user','add',un);}else{if(!name){alert('Name is required');return;}const un=(document.getElementById('ue-un').value||'').trim().toLowerCase();if(!un){alert('Username is required');return;}if(un!==r.username){const {error:ue}=await db.rpc('admin_set_username',{p_user_id:r.id,p_username:un});if(ue)throw ue;}const {error}=await db.from('profiles').update({name:name,role_id:roleId}).eq('id',r.id);if(error)throw error;logAction('user','edit',un!==r.username?(r.username+' → '+un):r.username);}await loadAuthData();closeDrawer();renderUsers();applyChrome();toast('User saved');}catch(e){alert('Save failed: '+rpcErr(e));}}
+async function delUser(id){if(currentUser&&currentUser.id===id){alert('Cannot delete the user you are logged in as');return;}const u=users.find(x=>x.id===id);if(!confirm('Delete this user? This removes their login permanently.'))return;try{const {error}=await db.rpc('admin_delete_user',{p_user_id:id});if(error)throw error;logAction('user','delete',u?u.username:id);await loadAuthData();renderUsers();}catch(e){alert('Delete failed: '+rpcErr(e));}}
+async function resetUserPw(id){const u=users.find(x=>x.id===id);const pw=prompt('New password for '+(u?u.username:'')+':','123123');if(pw===null)return;try{const {error}=await db.rpc('admin_set_password',{p_user_id:id,p_password:pw});if(error)throw error;logAction('user','edit',(u?u.username:'')+' (password)');toast('Password updated');}catch(e){alert('Reset failed: '+rpcErr(e));}}
+/* 操作记录 */
+function fmtTs(ts){try{return new Date(ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return ts;}}
+function secName(k){const s=PERM_SECTIONS.find(x=>x.k===k);return s?s.n:k;}
+async function renderAudit(){const el=document.getElementById('auditBody');if(!el)return;let rows=[];try{const {data}=await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(200);rows=data||[];}catch(e){}let h='<table class="dt"><thead><tr><th>Time</th><th>User</th><th>Section</th><th>Action</th><th>Target</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="5" class="empty">No activity yet — every add / edit / delete is logged here automatically</td></tr>';rows.forEach(e=>{h+='<tr><td class="sm">'+esc(fmtTs(e.created_at))+'</td><td>'+esc(e.name||e.username||'?')+'</td><td>'+esc(secName(e.section))+'</td><td>'+esc(ACT_LABEL[e.action]||e.action)+'</td><td class="sm">'+esc(e.target||'')+'</td></tr>';});el.innerHTML=h+'</tbody></table>';}
+/* 新增想法:提出人 = 当前账号 */
+async function quickAddIdea(){if(!can('idea','add')){toast('当前岗位没有「新增想法」权限');return;}const t=prompt('新想法(一句话):');if(!t||!t.trim())return;try{const {data,error}=await db.from('ideas').insert({txt:t.trim(),src:'原创直觉',tags:[],pri:'中',status:'待评估',created_by:currentUser.name}).select('code').single();if(error)throw error;logAction('idea','add',data.code);await loadIdeas();if(typeof refreshOverdue==='function')refreshOverdue();renderPool();applyPerms();toast('已加入 Idea Pool · 提出人 '+currentUser.name);}catch(e){alert('Add failed: '+rpcErr(e));}}
+
+try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();updateAll();hookChange();}catch(e){console.error('startup render error:',e);}
+(async()=>{
+  try{
+    const {data}=await db.auth.getUser();
+    if(data&&data.user){
+      await loadAuthData();
+      if(currentUser){document.getElementById('loginGate').style.display='none';await initApp();return;}
+    }
+  }catch(e){console.error('session restore error:',e);}
+  showLogin();
+})();
+</script>
+</body>
+</html>

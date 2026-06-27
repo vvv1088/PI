@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hypothesis · 完整优化版预览(Plan A · 单变量)</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#56616e;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--red:#d23f4a;--red-bg:#fdecec}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;font-size:13px;line-height:1.5}
+  .wrap{max-width:920px;margin:0 auto}
+  .banner{background:var(--accent-soft);border:1px solid #c9c5f5;border-radius:10px;padding:13px 16px;margin-bottom:16px;font-size:12.5px;color:#3b3590}
+  .banner b{color:var(--accent)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 18px;margin-bottom:13px}
+  h3{margin:0 0 12px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+  h3 small{font-weight:400;color:var(--ink3);font-size:11.5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .fld{flex:1;min-width:140px;margin-bottom:6px}
+  label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  select,input,textarea{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  select:disabled,input:disabled{background:var(--bg2);color:var(--ink3)}
+  .lockfld{position:relative}
+  .lockbadge{position:absolute;right:7px;top:28px;font-size:9.5px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:5px}
+  .note{font-size:11.5px;color:var(--ink3);margin-top:6px}
+  .sentence{background:var(--bg2);border:1px dashed var(--line2);border-radius:8px;padding:12px 14px;font-size:14px;line-height:2}
+  .slot{display:inline-block;border-radius:5px;padding:1px 8px;margin:0 2px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .slot.v{background:#fff7ed;border-color:#f3d9a8;color:#b7791f}
+  .slot.a{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line2);border-radius:7px;padding:8px;background:#fff;min-height:38px}
+  .opt{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;user-select:none}
+  .opt:hover{border-color:var(--accent);color:var(--accent)}
+  .opt.on{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent);font-weight:600}
+  .opt.ctrl{cursor:default;opacity:.55}
+  .opt.ctrl.on{background:#fff7ed;border-color:#f3d9a8;color:#b7791f;opacity:1}
+  .big{font-weight:700;font-size:17px;color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;color:var(--ink3);font-weight:600;background:var(--bg2)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink2)}
+  .var{background:#fff7ed;color:#b7791f;border:1px solid #f3d9a8;border-radius:5px;padding:1px 7px;font-weight:600}
+  .fix{color:var(--ink3)}
+  .light{border-radius:8px;padding:10px 12px;font-size:12.5px;font-weight:600}
+  .light.green{background:var(--green-bg);color:var(--green)}
+  .light.amber{background:var(--amber-bg);color:var(--amber)}
+  .light.red{background:var(--red-bg);color:var(--red)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;margin:0}
+  .kv dt{color:var(--ink2);font-weight:600}.kv dd{margin:0}
+  .legend{font-size:11px;color:var(--ink3);margin-top:8px}
+  .legend .var,.legend .fix{font-size:11px;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">🧪 <b>New Hypothesis · 完整优化版预览(Plan A · 单变量)</b> —— 独立 demo,<b>不影响现有系统</b>。核心:基础 = 控制变量(固定),改变 X = 你测的<b>那一个</b>变量,生成的素材<b>按层级分配属性</b>。改任意输入,下面全联动。</div>
+
+  <!-- 假设句子 -->
+  <div class="card">
+    <div class="sentence" id="sentence"></div>
+  </div>
+
+  <!-- 1 改变 X + 本次变量 -->
+  <div class="card">
+    <h3><span class="n">1</span>这次测什么 <small>· 一条假设只测一个变量</small></h3>
+    <div class="row">
+      <div class="fld" style="flex:2"><label>改变 X(一句话:这次唯一要动的东西)</label><input id="x" value="把卖点换成「提款秒到账」信任角度"></div>
+      <div class="fld"><label>本次变量(测哪个维度)</label>
+        <select id="dim" onchange="render()">
+          <option value="Hook" selected>Hook(卖点)</option>
+          <option value="Format">Format(素材形式)</option>
+          <option value="Visual Style">Visual Style</option>
+          <option value="人群">人群</option>
+          <option value="Offer">Offer</option>
+          <option value="">其它 / 自由</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <div class="fld" style="flex:2">
+        <label id="lv-label">层级(要比的取值)· 点下面取值加入,建议含一个「对照/现状」</label>
+        <div class="chips" id="lv-chips"></div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px" id="lv-opts"></div>
+      </div>
+      <div class="fld" style="max-width:110px"><label>每格变体</label><input type="number" id="variants" value="3" min="1" oninput="render()"><div class="note">同方向几支不同执行</div></div>
+    </div>
+    <div class="light" id="matrix-out" style="background:var(--bg2);color:var(--ink);margin-top:6px"></div>
+  </div>
+
+  <!-- 2 控制变量 -->
+  <div class="card">
+    <h3><span class="n">2</span>控制变量(固定不变) <small>· 被选为「变量」的维度会自动置灰</small></h3>
+    <div class="row">
+      <div class="fld"><label>品牌</label><select id="b-brand" onchange="render()"><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option></select></div>
+      <div class="fld lockfld" id="c-Format"><label>Format</label><select id="b-Format"><option>视频</option><option>静态图</option><option>多图轮播</option><option>动态创意</option></select></div>
+      <div class="fld lockfld" id="c-Hook"><label>Hook</label><select id="b-Hook"><option>提款到账</option><option>大赢展示</option><option>痛点反转</option><option>客服对话</option><option>名人背书</option></select></div>
+      <div class="fld lockfld" id="c-Visual Style"><label>Visual Style</label><select id="b-Visual Style"><option>真人出镜</option><option>用户自拍感</option><option>游戏画面</option><option>中奖展示</option></select></div>
+      <div class="fld lockfld" id="c-人群"><label>人群</label><select id="b-人群"><option>高价值型</option><option>信任敏感型</option><option>理性长期型</option><option>娱乐冲动型</option></select></div>
+    </div>
+  </div>
+
+  <!-- 3 指标 + baseline -->
+  <div class="card">
+    <h3><span class="n">3</span>指标 · 目标 · 基准(真实近 30 天)</h3>
+    <div class="row">
+      <div class="fld"><label>主指标(唯一判定权)</label><select id="metric" onchange="render()"><option value="FDC">FDC 首存人数</option><option value="REG">REG 注册数</option><option value="AFDA">AFDA 平均首存额</option></select></div>
+      <div class="fld"><label>基准(自动)</label><input id="baseline" disabled></div>
+      <div class="fld"><label>目标值</label><input type="number" id="target" value="35" oninput="render()"></div>
+      <div class="fld"><label>防守底线(必填)</label><select id="guard"><option>CPA ≤ 30</option><option>AFDA ≥ 4</option><option>D7CR ≥ 40%</option></select></div>
+    </div>
+  </div>
+
+  <!-- 4 容量体检 -->
+  <div class="card">
+    <h3><span class="n">4</span>容量体检 <small>· 这些素材 + 预算,够不够跑出结论?</small></h3>
+    <div class="row" style="align-items:flex-end">
+      <div class="fld" style="max-width:120px"><label>日预算 $</label><input type="number" id="budget" value="30" oninput="render()"></div>
+      <div class="fld" style="max-width:120px"><label>周期(天)</label><input type="number" id="days" value="7" oninput="render()"></div>
+      <div class="fld" style="flex:2"><div class="light" id="cap-out"></div></div>
+    </div>
+  </div>
+
+  <!-- 5 生成预览 -->
+  <div class="card">
+    <h3><span class="n">5</span>生成预览 <small>· 存假设后自动生成的素材骨架</small></h3>
+    <div class="legend"><span class="var">变量(按层级变)</span> <span class="fix">控制项(全固定)</span> —— 这就是和现在系统的关键差别:现在是 N 支全同属性,优化版按层级分配。</div>
+    <div id="gen"></div>
+  </div>
+
+  <!-- 6 判定规则 -->
+  <div class="card">
+    <h3><span class="n">6</span>判定规则(自动预填)</h3>
+    <dl class="kv" id="rules"></dl>
+  </div>
+
+  <div style="display:flex;gap:8px;margin:8px 0 24px">
+    <button style="padding:9px 18px;border:0;border-radius:8px;background:#fff;border:1px solid var(--line2);color:var(--ink2);font-size:13px;cursor:default">Draft（没填完也能存）</button>
+    <button style="padding:9px 18px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:default">Save（必填齐 + 至少 2 个层级）</button>
+  </div>
+</div>
+
+<script>
+const DIMS={
+  'Format':['视频','静态图','多图轮播','动态创意'],
+  'Hook':['提款到账','大赢展示','痛点反转','客服对话','名人背书'],
+  'Visual Style':['真人出镜','用户自拍感','游戏画面','中奖展示'],
+  '人群':['高价值型','信任敏感型','理性长期型','娱乐冲动型'],
+  'Offer':['首存红利','分层红利','返水']
+};
+const CTRL_IDS=['Format','Hook','Visual Style','人群'];
+const BASE={
+  'OK188KH':{FDC:{base:27,cost:24,unit:'周均'},REG:{base:281,cost:9.9,unit:'月'},AFDA:{base:5.09,cost:null,unit:'$'}},
+  '17WINKH':{FDC:{base:7,cost:76,unit:'周均'},REG:{base:97,cost:25,unit:'月'},AFDA:{base:5.73,cost:null,unit:'$'}},
+  'SBKH':{FDC:{base:1,cost:472,unit:'周均'},REG:{base:20,cost:71,unit:'月'},AFDA:{base:6,cost:null,unit:'$'}},
+  'INZ9':{FDC:{base:25,cost:17,unit:'周均'},REG:{base:166,cost:11,unit:'月'},AFDA:{base:165,cost:null,unit:'RM'}}
+};
+let levels={'Hook':['提款到账','名人背书'],'Format':['视频','静态图'],'Visual Style':['真人出镜','游戏画面'],'人群':['高价值型','信任敏感型'],'Offer':['首存红利','返水']};
+
+function tog(v){const dim=document.getElementById('dim').value;if(!dim)return;const arr=levels[dim]||(levels[dim]=[]);const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);render();}
+
+function render(){
+  const dim=document.getElementById('dim').value;
+  const brand=document.getElementById('b-brand').value;
+  const metric=document.getElementById('metric').value;
+  // 控制字段置灰(被选为变量的)
+  CTRL_IDS.forEach(id=>{const f=document.getElementById('c-'+id);const sel=document.getElementById('b-'+id);sel.disabled=(id===dim);const old=f.querySelector('.lockbadge');if(old)old.remove();if(id===dim){const b=document.createElement('span');b.className='lockbadge';b.textContent='= 变量';f.appendChild(b);}});
+  // 层级输入
+  const lvWrap=document.getElementById('lv-opts'),chips=document.getElementById('lv-chips');
+  const sel=dim?(levels[dim]||[]):[];
+  document.getElementById('lv-label').textContent=`层级「${dim||'自由'}」的取值（要比的方向，建议含一个「对照/现状」）`;
+  if(dim){
+    chips.innerHTML=sel.length?sel.map((v,i)=>`<span class="opt on">${v}${i===0?' · 对照':''}</span>`).join(''):'<span class="note" style="margin:0">至少选 2 个才有得比</span>';
+    lvWrap.innerHTML=DIMS[dim].map(o=>`<span class="opt ${sel.includes(o)?'on':''}" onclick="tog('${o}')">${sel.includes(o)?'✓ ':''}${o}</span>`).join('');
+  }else{chips.innerHTML='<span class="note" style="margin:0">自由模式:层级数手动定,生成素材不绑维度</span>';lvWrap.innerHTML='';}
+
+  const la=dim?Math.max(sel.length,1):2;
+  const n=parseInt(document.getElementById('variants').value)||1;
+  const total=la*n;
+  document.getElementById('matrix-out').innerHTML=`矩阵 = <b>层级 ${la}</b>（${dim||'自由'}:${sel.join(' / ')||'—'}）× <b>每格变体 ${n}</b> = <span class="big">${total} 支素材</span>`;
+
+  // baseline
+  const bd=(BASE[brand]||{})[metric];
+  document.getElementById('baseline').value=bd?`${bd.base} ${bd.unit}（${metric}·近30天）`:'无基准·探索';
+  const t=parseFloat(document.getElementById('target').value)||0;
+
+  // 句子
+  const x=document.getElementById('x').value||'…';
+  document.getElementById('sentence').innerHTML=`<b>我相信</b> <span class="slot v">${x}</span> <b>会让</b> <span class="slot a">${metric}</span> 从 <span class="slot">${bd?bd.base+' '+bd.unit:'—'}</span> 变为 <span class="slot">${t||'—'}</span>，<b>因为</b> <span class="slot">竞品同类素材连投 9 周</span>`;
+
+  // 容量
+  const bud=parseFloat(document.getElementById('budget').value)||0,days=parseFloat(document.getElementById('days').value)||0;
+  const cost=bd&&bd.cost?bd.cost:null;const have=bud*days;const out=document.getElementById('cap-out');
+  if(!cost){out.className='light amber';out.textContent='该指标无单位成本 → 容量体检走"手填参考成本"';}
+  else{const weeks=days/7;const need=Math.round(t*weeks);const needSpend=Math.round(need*cost);const ratio=have/needSpend;
+    if(ratio>=1.5){out.className='light green';out.innerHTML=`🟢 预算充足 · 余量 ${Math.round(ratio*100)}% — 持有 $${have} / 需要 ~$${needSpend}（${need}个 × $${cost}）`;}
+    else if(ratio>=1){out.className='light amber';out.innerHTML=`🟡 刚好够,没容错 — 持有 $${have} / 需要 ~$${needSpend}`;}
+    else{out.className='light red';out.innerHTML=`🔴 物理上够不到成功线 — 持有 $${have} / 需要 ~$${needSpend}。建议:加预算 / 降目标 / 延长周期`;}}
+
+  // 生成预览
+  const ctrl={};CTRL_IDS.forEach(id=>ctrl[id]=document.getElementById('b-'+id).value);
+  const cellsA=dim?sel:['(单一)'];
+  let rows='',idx=0;
+  cellsA.forEach((av,li)=>{for(let k=1;k<=n;k++){idx++;
+    const r={Format:ctrl['Format'],Hook:ctrl['Hook'],'Visual Style':ctrl['Visual Style'],'人群':ctrl['人群']};
+    if(dim&&(dim in r))r[dim]=av;
+    const cell=(field)=>{const isVar=field===dim;return isVar?`<span class="var">${r[field]}</span>`:`<span class="fix">${r[field]}</span>`;};
+    const extra=(dim&&!(dim in r))?` <span class="var">${dim}=${av}</span>`:'';
+    rows+=`<tr><td class="code">HYP-001-V${idx}</td><td>${cell('Format')}</td><td>${cell('Hook')}</td><td>${cell('Visual Style')}</td><td>${cell('人群')}</td><td class="code">${dim?'层级'+(li+1):''} 变体${k}${extra}</td></tr>`;
+  }});
+  document.getElementById('gen').innerHTML=`<table><tr><th>编号</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>人群</th><th>说明</th></tr>${rows}</table>`;
+
+  // 判定规则
+  document.getElementById('rules').innerHTML=
+    `<dt>成功线</dt><dd>观察期内 ${metric} ≥ ${t}</dd>`+
+    `<dt>失败线</dt><dd>${metric} ≤ ${bd?bd.base:'基准'}（未超越基准）</dd>`+
+    `<dt>观察期</dt><dd>${days} 天</dd>`+
+    `<dt>分层判读</dt><dd>某层 ${n} 支全败 = 方向错,关掉;有 1 支跑出 = 方向对,放大</dd>`;
+}
+render();
+</script>
+</body>
+</html>

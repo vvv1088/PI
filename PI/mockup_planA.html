@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 A 预览 · 素材矩阵改版</title>
+<style>
+  :root{--ink:#1c2128;--ink2:#566;--ink3:#8a94a3;--line:#e6e9ee;--line2:#d4d9e0;--bg:#f6f8fa;--bg2:#f0f3f7;--accent:#5b54d6;--accent-soft:#edecfb;--green:#1a7f4b;--green-bg:#e8f6ee;--amber:#b7791f;--amber-bg:#fdf3e2;--violet:#7a4fd6;--red:#d23f4a}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:24px;line-height:1.5}
+  .wrap{max-width:880px;margin:0 auto}
+  .banner{background:var(--accent-soft);border:1px solid #c9c5f5;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:#3b3590}
+  .banner b{color:var(--accent)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+  h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px}
+  h3 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .fld{flex:1;min-width:150px;margin-bottom:4px}
+  label{display:block;font-size:11.5px;color:var(--ink2);margin-bottom:4px;font-weight:600}
+  select,input{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:7px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  select:disabled{background:var(--bg2);color:var(--ink3);cursor:not-allowed}
+  .lockfld{position:relative}
+  .lockbadge{position:absolute;right:8px;top:30px;font-size:10px;background:var(--violet);color:#fff;padding:1px 7px;border-radius:5px}
+  .note{font-size:12px;color:var(--ink3);margin-top:6px}
+  .remark{font-size:12px;color:var(--ink2);background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.9}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--line2);border-radius:7px;padding:8px;background:#fff;min-height:40px;align-content:flex-start}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--accent-soft);color:var(--accent);border:1px solid #c9c5f5;border-radius:6px;padding:3px 8px;cursor:default}
+  .chip .x{cursor:pointer;font-weight:700;opacity:.6}
+  .chip .x:hover{opacity:1}
+  .opt{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer;user-select:none}
+  .opt:hover{border-color:var(--accent);color:var(--accent)}
+  .opt.on{background:var(--accent-soft);border-color:#c9c5f5;color:var(--accent)}
+  .big{font-weight:700;font-size:16px;color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;color:var(--ink3);font-weight:600;background:var(--bg2)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--ink2)}
+  .var{background:#fff7ed;color:#b7791f;border:1px solid #f3d9a8;border-radius:5px;padding:1px 7px;font-weight:600}
+  .fix{color:var(--ink3)}
+  .toggle{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+  .toggle button{border:0;background:#fff;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--accent);color:#fff}
+  .vb{border-left:3px solid var(--accent);padding-left:10px;margin-top:10px}
+  .pill{display:inline-block;font-size:11px;background:var(--bg2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    📐 <b>方案 A 预览 · 素材矩阵改版</b> —— 这是独立 demo,<b>不影响现在的系统</b>。
+    核心:基础部分 = <b>控制变量(固定不变)</b>;选「本次变量」后,那个维度变成「层级输入」,生成的素材<b>真正按层级分配属性</b>。点下面试试。
+  </div>
+
+  <!-- 基础部分(简化,只放相关字段示意) -->
+  <div class="card">
+    <h3><span class="n">1</span>基础部分(= 控制变量,固定不变)</h3>
+    <div class="row">
+      <div class="fld"><label>品牌</label><select><option>OK188KH</option><option>17WINKH</option><option>INZ9</option></select></div>
+      <div class="fld lockfld" id="fld-format"><label>Format</label><select id="b-format"><option>视频</option><option>静态图</option><option>多图轮播</option><option>动态创意</option></select></div>
+      <div class="fld lockfld" id="fld-hook"><label>Hook</label><select id="b-hook"><option>提款到账</option><option>大赢展示</option><option>痛点反转</option><option>客服对话</option></select></div>
+      <div class="fld lockfld" id="fld-vs"><label>Visual Style</label><select id="b-vs"><option>真人出镜</option><option>用户自拍感</option><option>游戏画面</option><option>中奖展示</option></select></div>
+    </div>
+    <div class="note">说明:这些是「保持不变」的控制项。被选为「本次变量」的那个维度会自动置灰(它的取值改到矩阵里填)。</div>
+  </div>
+
+  <!-- 改变 X + 本次变量 -->
+  <div class="card">
+    <h3><span class="n">2</span>假设 · 改变 X</h3>
+    <div class="row">
+      <div class="fld" style="flex:2"><label>改变 X — 这次唯一要动的东西</label><input value="提款实拍视频替代静态 bonus 图" id="x"></div>
+      <div class="fld"><label>本次变量(测哪个维度)</label>
+        <select id="dimA" onchange="render()">
+          <option value="Format" selected>Format(素材形式)</option>
+          <option value="Hook">Hook</option>
+          <option value="Visual Style">Visual Style</option>
+          <option value="人群">人群</option>
+          <option value="Offer">Offer</option>
+          <option value="">其它 / 自由(不绑维度)</option>
+        </select>
+      </div>
+    </div>
+    <div class="note">👉 选了哪个维度,它就成为本次要比的变量;其余基础字段固定。这就解决了"基础选了一个 Format、又要测多个 Format"的冲突。</div>
+  </div>
+
+  <!-- 素材矩阵 -->
+  <div class="card">
+    <h3><span class="n">3</span>素材矩阵</h3>
+    <div class="row" style="align-items:flex-start">
+      <div class="fld" style="max-width:120px"><label>变量数</label>
+        <div class="toggle">
+          <button id="v1" class="on" onclick="setVars(1)">1</button>
+          <button id="v2" onclick="setVars(2)">2</button>
+        </div>
+      </div>
+      <div class="fld" style="flex:2" id="lvA-wrap">
+        <label id="lvA-label">变量 A「Format」的层级(要比的取值)</label>
+        <div class="chips" id="lvA-chips"></div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px" id="lvA-opts"></div>
+      </div>
+      <div class="fld" style="max-width:120px"><label>每格变体</label><input type="number" id="variants" value="3" min="1" oninput="render()"></div>
+    </div>
+
+    <div class="row" id="varB-block" style="display:none;align-items:flex-start;margin-top:6px">
+      <div class="fld" style="max-width:120px"><label>变量 B(维度)</label>
+        <select id="dimB" onchange="render()">
+          <option value="Hook">Hook</option>
+          <option value="Visual Style">Visual Style</option>
+          <option value="人群">人群</option>
+          <option value="Offer">Offer</option>
+        </select>
+      </div>
+      <div class="fld" style="flex:2">
+        <label id="lvB-label">变量 B 的层级(取值)</label>
+        <div class="chips" id="lvB-chips"></div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px" id="lvB-opts"></div>
+      </div>
+    </div>
+
+    <div class="remark" id="formula"></div>
+  </div>
+
+  <!-- 生成预览 -->
+  <div class="card">
+    <h3><span class="n">4</span>生成预览(存假设后自动生成的素材骨架)</h3>
+    <div class="note" style="margin-bottom:6px">关键差异:<span class="var">橙色 = 变量</span>(按层级变),<span class="fix">灰色 = 控制项</span>(全固定)。现在的系统是 6 支全同一个 Format;方案 A 是真正按层级分配。</div>
+    <div id="gen"></div>
+  </div>
+
+  <div class="banner" style="background:var(--green-bg);border-color:#bfe5cf;color:#1a5f3a">
+    ✅ <b>方案 A 解决了什么</b>:① 基础选单一 Format 和"测多个 Format"不再冲突(Format 成为变量时自动置灰,取值在矩阵填);② 生成的素材<b>真正反映层级</b>(视频×N + 静态图×N,而非 6 支全视频);③ 1 个变量和 2 个变量统一在一套模型里。
+  </div>
+</div>
+
+<script>
+const DIMS={
+  'Format':['视频','静态图','多图轮播','动态创意'],
+  'Hook':['提款到账','大赢展示','痛点反转','客服对话'],
+  'Visual Style':['真人出镜','用户自拍感','游戏画面','中奖展示'],
+  '人群':['信任敏感型','理性长期型','娱乐冲动型','高价值型'],
+  'Offer':['首存红利','分层红利','返水']
+};
+const BASEFLD={'Format':'fld-format','Hook':'fld-hook','Visual Style':'fld-vs'};
+let nVars=1;
+let selA=['视频','静态图'];   // 变量 A 选中的层级取值
+let selB=['提款到账','大赢展示']; // 变量 B 选中的层级取值
+
+function setVars(n){nVars=n;document.getElementById('v1').classList.toggle('on',n===1);document.getElementById('v2').classList.toggle('on',n===2);document.getElementById('varB-block').style.display=n===2?'flex':'none';render();}
+
+function chipBox(boxId,optBoxId,dim,sel,arrName){
+  const box=document.getElementById(boxId),optBox=document.getElementById(optBoxId);
+  box.innerHTML=sel.length?sel.map(v=>`<span class="chip">${v} <span class="x" onclick="rm('${arrName}','${v}')">✕</span></span>`).join(''):'<span class="note" style="margin:0">— 点下面取值加入(至少 2 个才有得比)—</span>';
+  const opts=DIMS[dim]||[];
+  optBox.innerHTML=opts.map(o=>`<span class="opt ${sel.includes(o)?'on':''}" onclick="tog('${arrName}','${o}')">${o}</span>`).join('');
+}
+function tog(arrName,v){const arr=arrName==='A'?selA:selB;const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);render();}
+function rm(arrName,v){const arr=arrName==='A'?selA:selB;const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);render();}
+
+function render(){
+  const dimA=document.getElementById('dimA').value;
+  // 基础字段置灰:被选为变量的维度
+  ['fld-format','fld-hook','fld-vs'].forEach(id=>{const f=document.getElementById(id);const sel=f.querySelector('select');sel.disabled=false;const old=f.querySelector('.lockbadge');if(old)old.remove();});
+  const lock=(dim)=>{const id=BASEFLD[dim];if(!id)return;const f=document.getElementById(id);f.querySelector('select').disabled=true;const b=document.createElement('span');b.className='lockbadge';b.textContent='= 变量';f.appendChild(b);};
+  lock(dimA);
+  const dimB=document.getElementById('dimB').value;
+  if(nVars===2)lock(dimB);
+
+  // 变量 A 层级输入
+  document.getElementById('lvA-label').textContent=`变量 A「${dimA||'自由'}」的层级(要比的取值)`;
+  if(dimA){chipBox('lvA-chips','lvA-opts',dimA,selA,'A');}
+  else{document.getElementById('lvA-chips').innerHTML='<span class="note" style="margin:0">自由模式:层级数手动定,生成的素材属性不自动绑维度</span>';document.getElementById('lvA-opts').innerHTML='';}
+  document.getElementById('lvB-label').textContent=`变量 B「${dimB}」的层级(取值)`;
+  if(nVars===2)chipBox('lvB-chips','lvB-opts',dimB,selB,'B');
+
+  // 计算
+  const la=dimA?Math.max(selA.length,1):2;
+  const lb=nVars===2?Math.max(selB.length,1):1;
+  const n=parseInt(document.getElementById('variants').value)||1;
+  const total=la*lb*n;
+  document.getElementById('formula').innerHTML=
+    `<b>总数 = ${nVars===2?`层级A ${la} × 层级B ${lb} × 每格变体 ${n}`:`层级 ${la} × 每格变体 ${n}`} = <span class="big">${total} 支</span></b><br>`+
+    `层级 = 几个方向互相比(${dimA||'自由'}:${selA.join(' / ')||'—'})${nVars===2?` × (${dimB}:${selB.join(' / ')||'—'})`:''};变体 = 每个方向做 ${n} 支不同执行(排除"执行差异")`;
+
+  // 生成预览
+  const fmt=document.getElementById('b-format').value, hook=document.getElementById('b-hook').value, vs=document.getElementById('b-vs').value;
+  const ctrl={'Format':fmt,'Hook':hook,'Visual Style':vs,'人群':'(基础)','Offer':'(基础)'};
+  const cellsA=dimA?selA:['(单一)'];
+  const cellsB=nVars===2?selB:[null];
+  let rows='',idx=0;
+  const head=`<tr><th>编号</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>说明</th></tr>`;
+  cellsA.forEach(av=>{cellsB.forEach(bv=>{for(let k=1;k<=n;k++){idx++;
+    const cell={Format:fmt,Hook:hook,'Visual Style':vs};
+    if(dimA&&cell[dimA]!==undefined)cell[dimA]=av; if(dimA&&!(dimA in cell))cell._extraA=`${dimA}=${av}`;
+    if(nVars===2&&dimB&&cell[dimB]!==undefined)cell[dimB]=bv; if(nVars===2&&dimB&&!(dimB in cell))cell._extraB=`${dimB}=${bv}`;
+    const mark=(field,val)=>{const isVar=(field===dimA)||(nVars===2&&field===dimB);return isVar?`<span class="var">${val}</span>`:`<span class="fix">${val}</span>`;};
+    const extra=[cell._extraA,cell._extraB].filter(Boolean).map(e=>`<span class="var">${e}</span>`).join(' ');
+    rows+=`<tr><td class="code">HYP-001-V${idx}</td><td>${mark('Format',cell.Format)}</td><td>${mark('Hook',cell.Hook)}</td><td>${mark('Visual Style',cell['Visual Style'])}</td><td>变体${k} ${extra}</td></tr>`;
+  }})});
+  document.getElementById('gen').innerHTML=`<table>${head}${rows}</table>`;
+}
+render();
+</script>
+</body>
+</html>
