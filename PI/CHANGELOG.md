@@ -14,7 +14,11 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v18] — 2026-06-28 · P1b 素材标签 + P2 裁判(当前基线)
+## [v19] — 2026-06-28 · 指标格子对齐(当前基线)
+
+- card2 指标重排为两行对齐网格:`主指标[长下拉] 目标值[88] %[88]` 与 `防守底线[长下拉] op[88] figure[88]` —— 第一格弹性长、右两格固定 88px,两行列对齐。标签右上角标「目标值(绝对 / %)」。
+
+## [v18] — 2026-06-28 · P1b 素材标签 + P2 裁判
 
 > 完成 SPEC 的 P1b(Creative Setup 打标签)+ P2(一致性裁判)。词表**动态读 DICT**(V 定)。
 > ⚠️ **DICT tab 名假设**:`DIM_DICT_TAB` 把 7 维映射到 Dictionary tab —— `format→Format`、`hook→Hook`、`visual_style→Visual Style`、`offer→Offer`、`audience→Persona`、`age→Age Range`、`game_type→Game Type`。若某下拉为空 = tab 名与 `dict_entries.tab` 不符,改 `DIM_DICT_TAB` 即可(下拉会显示「Dictionary『X』无词条」提示)。
