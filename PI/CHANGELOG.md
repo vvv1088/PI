@@ -14,7 +14,23 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v17] — 2026-06-28 · 指标区 UI 微调(当前基线)
+## [v18] — 2026-06-28 · P1b 素材标签 + P2 裁判(当前基线)
+
+> 完成 SPEC 的 P1b(Creative Setup 打标签)+ P2(一致性裁判)。词表**动态读 DICT**(V 定)。
+> ⚠️ **DICT tab 名假设**:`DIM_DICT_TAB` 把 7 维映射到 Dictionary tab —— `format→Format`、`hook→Hook`、`visual_style→Visual Style`、`offer→Offer`、`audience→Persona`、`age→Age Range`、`game_type→Game Type`。若某下拉为空 = tab 名与 `dict_entries.tab` 不符,改 `DIM_DICT_TAB` 即可(下拉会显示「Dictionary『X』无词条」提示)。
+
+**P1b — 素材标签(Creative Setup)**
+- `firstVersion` / `editCreativeCopy` 表单加「素材标签 · 7 维」区:7 个下拉(Format/Hook/视觉/Offer/人群/年龄/游戏),选项**动态从 `DICT[tab]`** 拉(filter active),已有值预填。
+- **Hook + Format 必填**(红 `*`);`saveFirstVersion` / `saveCreativeCopy` 存前校验(缺则 toast 拦),标签写入 creatives 的 format/hook/visual_style/offer/audience/age/game_type 列。
+- `loadCreatives` 映射这 7 列到 creative 对象;本地 `Object.assign` 同步。
+
+**P2 — 一致性裁判(`checkHypoConsistency`,只警告不阻断)**
+- 判定:声明维度(`test_dim`)在素材间 `distinct≥2`(该变)+ 其它 6 维各 `distinct≤1`(该一致)→ `clean`;声明维度无差异→ `nodiff`(没在测它);其它维度混了→ `polluted`(列冲突维度 + 修法);<2 条→ `insufficient`;无 test_dim→ `undeclared` 跳过。
+- 展示:① **假设详情抽屉**加「一致性裁判」卡(逐维 ✓/✕ + 裁决 + 修法);② **假设列表行**状态点(干净/污染/没差异/待补素材);③ **Creative Setup 表单内实时**(`liveJudge`:改任一标签下拉 → 用「本条当前表单值 + 同假设其它已存素材」即时重判翻红)。
+- 修法提示:`nodiff` → 让素材在该维度取不同值;`polluted` → 对齐混了的维度 / 或拆成多条假设。
+- 验证(无头实测):裁判 clean/polluted(conflicts=[format,offer])/nodiff 三态正确;7 下拉从 DICT 填充 + 预填;liveJudge 改 format 实时翻红;Hook/Format 校验返回 [Format,Hook];`node --check` 通过、无 pageerror。
+
+## [v17] — 2026-06-28 · 指标区 UI 微调
 
 - 「本次测的维度 — …」标签 → 改为简洁的 **「测试维度」**。
 - 指标区格子统一:目标值(绝对+%)与护栏 figure 输入框改为弹性填充、对齐;防守底线整行放满宽,避免 `Day-1 Quality Floor` 被截断。
