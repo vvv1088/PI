@@ -14,7 +14,17 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v19] — 2026-06-28 · 指标格子对齐(当前基线)
+## [v20] — 2026-06-28 · 素材标签移到假设级「对比页」+ Setup 还原(当前基线)
+
+> 反馈:逐条 Setup 里打标签没法对比。改为**一个假设的全部素材在同一页排成表对比**,顶部裁判实时。
+- **Setup 还原**:`firstVersion` / `editCreativeCopy` 去掉「素材标签·7维」块,回到只 上传图/文案/状态/Ads Code;`saveFirstVersion` / `saveCreativeCopy` 去掉标签校验与写入(回原样)。删 `creativeTagBlock`/`readCreativeTags`/`validateCreativeTags`/`liveJudge`/`addCreativeSkeleton`(被取代)。
+- **新建假设级全宽页**`#v-tagmatrix`(`openTagMatrix`/`renderTagMatrix`):一个假设的全部素材每条一行,7 维各一列下拉(词表动态读 DICT),已有值预填;`Format/Hook` 列标 `*`、空值红框;测试维度列高亮 + `▲测`。
+- **改即存**(`tmCellChange`):改任一格 → 内存更新 + 顶部裁判**实时重判** + 写回 creatives 对应列(单列 update)。`tmAddCreative`「＋加素材」在本页建骨架并刷新。
+- **入口**:假设详情抽屉 Creatives 卡的按钮改为「打标签 & 对比 →」`openTagMatrix(h.id)`;抽屉裁判卡 + 列表状态点(P2)保留。
+- 验证(无头实测):矩阵 4 行×7 下拉=28 个、从 DICT 填充;改 V4 format→污染、全 hook 同→没在测它,顶部裁判三态实时切换正确;`node --check` 通过、无 pageerror。
+- 注:creatives 标签仍存同样 7 列(format/hook/visual_style/offer/audience/age/game_type),裁判口径不变;DICT tab 名映射仍待线上核对(见 v18 注)。
+
+## [v19] — 2026-06-28 · 指标格子对齐
 
 - card2 指标重排为两行对齐网格:`主指标[长下拉] 目标值[88] %[88]` 与 `防守底线[长下拉] op[88] figure[88]` —— 第一格弹性长、右两格固定 88px,两行列对齐。标签右上角标「目标值(绝对 / %)」。
 
