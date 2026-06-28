@@ -14,7 +14,28 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v15] — 2026-06-28 · New Hypothesis 重构 P1a(假设端)(当前基线)
+## [v16] — 2026-06-28 · 指标按品牌方向锁定(当前基线)
+
+> 范围严格限定:只改「指标」区(主指标名单 / 防守底线 / 算法标注 + 目标值挪位)。不碰判定层级、观察期、双轴护栏、诊断字段、任何阈值数字(figure 是独立下一步,本期一律 TBD)。
+
+- **布局**:目标值(绝对 + %)从 card3 搬到 **card2**(主指标右侧);card3「假设」去掉目标值字段,只留 sentence + 改变 X + 理由。
+- **主指标按品牌锁定**(`syncMetricByBrand` + `onBrandChange`,品牌 onchange 触发):
+  - `OK188KH`(高价值)→ 只有 `7-Day High-Value Rate(7 天大脚率)`,锁定单选(disabled)。
+  - `17WINKH`(走量)→ `FDC` / `CPA` 二选一。
+  - `SBKH`(待定)→ disabled「待定(方向未定)」,不给名单。
+  - `INZ9` 及非 USC 三品牌 → **完全原样**(FDC/REG/AFDA/FDAMT)。
+- **防守底线**:`OK188`/`17WIN` 锁为 `Day-1 Quality Floor`(指标名 disabled、比较符固定 `>` 只读),figure 仍可填(现 TBD);移除这两个品牌的 AFDA。`INZ9`/其他原样(AFDA/FDC/CPA/D7CR、≥/≤)。
+- **算法标注**(浅灰小字、纯展示、不参与计算/校验,`#metric-algo` / `#guard-algo`):
+  - High-Value Rate → `同期新客中,7 天总存款 ≥ 高门槛 的人数 ÷ 新客总数 × 100%`
+  - Day-1 Quality Floor → `同期新客中,第一天自己存款 > 最低线 的人数 ÷ 新客总数 × 100%`
+  - 「高门槛」「最低线」保留文字、不填数字。
+- **连带**:① sentence 的指标名跟随当前主指标(不再写死 FDC);② Baseline 跟随主指标 —— High-Value Rate 现数据管道无基准 → 显示「基准待定」并标注、**不假填**(⚠️ 见下「待 V/数据」)。
+- **切品牌即清旧数值**:进 OK188/17WIN/SBKH 时清空 目标值/%/护栏 figure,不把旧指标的数字(FDC 18/80%、AFDA ≥4)平移到新指标;`editHypothesis` 同理(锁定品牌不回填被替换指标的数值)。
+- **校验**:figure 本期 TBD —— 目标值 / 护栏阈值仅对非锁定品牌(INZ9/其他)仍必填;OK188/17WIN/SBKH 留空可存(草稿无校验;SBKH 因无合法指标,只能存草稿、到不了「待锁定」)。
+- 验证:`node --check` 通过;无头浏览器渲染 OK188 / 17WIN 两态,锁定 / 名单 / op / 算法标注 / Baseline 全部对上,无 pageerror。
+- **⚠️ 待 V / 数据**:`get_brand_baselines()` RPC 只返回 FDC/REG/AFDA/FDAMT,**不含 7-Day High-Value Rate**;HVR 是 7 天 cohort 指标,现管道算不出其基准 → 已按你要求留空标注、不假填。要它的 baseline,需新增 cohort 口径的取数(D1+D7、高门槛 figure 定了之后)。
+
+## [v15] — 2026-06-28 · New Hypothesis 重构 P1a(假设端)
 
 > SPEC:`SPEC_hypothesis_redesign.md`(标签优先 + 维度声明 + 裁判 + Results)。本次只做 P1 的「假设端」:删素材矩阵、加维度声明、素材改逐条建骨架。Creative Setup 打标签(P1b)、裁判(P2)、Results 聚合(P3)未做。
 > ⚠️ **依赖 DB 迁移**:部署前必须先在 Supabase 跑 `migration_p1.sql`(加 `hypotheses.test_dim` + `creatives` 的 audience/age/game_type/offer 列),否则立假设保存失败。
