@@ -14,7 +14,22 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v14] — 2026-06-26(当前基线)
+## [v15] — 2026-06-28 · New Hypothesis 重构 P1a(假设端)(当前基线)
+
+> SPEC:`SPEC_hypothesis_redesign.md`(标签优先 + 维度声明 + 裁判 + Results)。本次只做 P1 的「假设端」:删素材矩阵、加维度声明、素材改逐条建骨架。Creative Setup 打标签(P1b)、裁判(P2)、Results 聚合(P3)未做。
+> ⚠️ **依赖 DB 迁移**:部署前必须先在 Supabase 跑 `migration_p1.sql`(加 `hypotheses.test_dim` + `creatives` 的 audience/age/game_type/offer 列),否则立假设保存失败。
+
+- **删素材矩阵卡(card4)** + `matrix()` 函数 + `updateAll` 里的 `matrix()` 调用。
+- **card1 删逐属性 select**:`hf-format`/`hf-persona`/`hf-age`/`hf-game`/`hf-vs`/`hf-hook`/`hf-offer`(连带 `offerRow` + `hookChange()` 及其 3 处调用)——这些属性下沉为 Creative 标签。**留** `hf-brand`(baseline key)。
+- **card1 加「本次测的维度」下拉 `hf-dim`**:选项 = `TEST_DIMS` 白名单 7 维(Format/Hook/视觉/Offer/人群/年龄/游戏),key 与 creatives 标签列名对齐(供 P2 裁判)。默认 unselected,Save 必填(沿用 v12 防漏填)。
+- **目标整套逐字保留**:指标卡、改变 X、目标值(绝对+%)、`#sentence` slot、Baseline 卡、容量体检、判定规则 —— 一行未动(SPEC 硬约束)。
+- **素材生成改逐条建骨架**:`saveHypothesis` 删「按 matrix.total 批量生成 creative」循环;hypothesis row 不再写 format/hook/vs/persona/age/game/offer/matrix,改写 `test_dim`。新增详情抽屉「＋ 加素材」按钮(`addCreativeSkeleton`)逐条建 creative 骨架(挂 hyp_code + V 编号),团队再去 Creative Setup 打标签 / 填图文。**注**:删 auto-gen 后这是当前唯一的 creative 创建入口。
+- **联动收口**:`resetHypoForm`/`validateHypo`/`editHypothesis` 去掉已删字段、加 `hf-dim`;`loadHypos` map `test_dim`→`testDim`(旧列映射保留作历史兼容);`renderHypo` 列表加维度 pill;`openDrawer` 把「目标人群」行换成「本次测维度」、加 `applyPerms()`。
+- **未改**:`renderResults`(P3 重写,现仍兼容 null hook/vs)、Creative Setup 表单(P1b 加标签)、裁判(P2)。
+- 验证:抽内联 JS `node --check` 通过;未做浏览器实测(本环境无 Supabase MCP / 无法起预览)。
+- **待 V 定**:① card1 的 hf-type/hf-trigger/hf-evi 去留(本版先保留);② P1b Creative Setup 标签下拉的词表来源(复用原硬编码列表 vs 动态读 DICT)。
+
+## [v14] — 2026-06-26
 - **未选品牌时 baseline 文案**:`updateAll` 加 `else if(!brand)` 分支,未选品牌显示「请先选择品牌」而非误导性的「无基准·探索」(后者仅在选了品牌但该品牌无数据时出现)。
 - **INZ9 币种标注**:RPC 给 INZ9 的 AFDA/FDAMT 单位返回 `RM`/`RM/周`(USC 维持 `$`/`$/周`),表单 baseline 显示该单位 —— 免团队把 INZ9 的 165 误读成美元。背景:广告费两边均 USD(故 CPA/cost 可跨品牌比),首存额各自本币(USC USD / INZ9 MYR,不可直接比),已 V 确认。
 
