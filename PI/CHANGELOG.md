@@ -14,7 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v20] — 2026-06-28 · 素材标签移到假设级「对比页」+ Setup 还原(当前基线)
+## [v21] — 2026-06-28 · 抽屉去重 + HVR 占位基准(当前基线)
+
+- **假设详情抽屉**:删掉「一致性裁判」卡 + Creatives 卡底部那条说明 remark(裁判已在「打标签 & 对比」页,避免重复)。列表行状态点保留。
+- **HVR 占位基准**(上线前先跑通功能,V 之后替换):`get_brand_baselines()` RPC 不产 7-Day High-Value Rate,故给 `data['OK188KH']['7-Day High-Value Rate']` 放占位 `{base:8,unit:'%',placeholder:true}`(loadBaselines 覆盖后再注入)。于是 OK188 baseline 自动显示「8 %」、目标值 %↔绝对值双向同步恢复;baseline 卡注明「⚠️ 占位基准(待数据管道接入 HVR)」。要换真值改 `data` 字面量 + loadBaselines 注入处(两处 base:8)。
+- DICT 7 列下拉线上确认全部有词条 → `DIM_DICT_TAB` 映射正确,无需改。
+- 验证:`node --check` 通过;无头实测 OK188 baseline=8%(占位)、%50→目标12、目标12→%50。
+
+## [v20] — 2026-06-28 · 素材标签移到假设级「对比页」+ Setup 还原
 
 > 反馈:逐条 Setup 里打标签没法对比。改为**一个假设的全部素材在同一页排成表对比**,顶部裁判实时。
 - **Setup 还原**:`firstVersion` / `editCreativeCopy` 去掉「素材标签·7维」块,回到只 上传图/文案/状态/Ads Code;`saveFirstVersion` / `saveCreativeCopy` 去掉标签校验与写入(回原样)。删 `creativeTagBlock`/`readCreativeTags`/`validateCreativeTags`/`liveJudge`/`addCreativeSkeleton`(被取代)。
