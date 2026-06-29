@@ -14,7 +14,18 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v23] — 2026-06-28 · UI 优化批次(当前基线)
+## [v24] — 2026-06-28 · 对比页 Draft/锁定 + Creative Draft/Save + 自动生成行(当前基线)
+
+- **#1** New Hypothesis 人群/年龄未选 →「— unselected —」(`dimTabOpts` 空项统一,与其他字段一致)。
+- **#2** Hypotheses 列表行去掉「干净/没差异/污染」小状态点(删 `judgeDot`)。
+- **#3** 对比页标题「素材标签 & 对比」→「**管理素材 & 标签**」(与入口按钮统一)。
+- **#4 选维度自动生成行**(`tmToggleDim` → `tmEnsureRows`):勾 1 维自动补到 1 条、勾 2 维补到 4 条(2×2 交叉,只补不删);手动「＋加素材」仍可加。
+- **#5 / #7 对比页 Draft → 保存并锁定**:① 未锁=草稿态,所有控件可改、改即存;② **一致性提醒** banner(不一致显示红色),**「保存并锁定」前校验** —— 维度没勾 / <2 条 / Format·Hook 没填 / `checkHypoConsistency` 非 clean,任一不满足都 **toast 拦下、不能锁**;③ 锁定后(`locked_tags._locked=true`,复用 jsonb,免迁移)整页只读(复选框/锁定下拉/在测格/加素材全禁用),**仅 Admin 可见「🔓 解锁修改」**(`tmUnlock`)。
+- **#6 Creative Setup/Edit Draft/Save**:`firstVersion` / `editCreativeCopy` 改为 **存草稿 + 保存** 双按钮 —— 存草稿不校验;保存校验「图 + Primary text + Headline + CTA + Description」必填(Ads Code 可留空),缺则 toast 拦(`creativeContentMissing`)。Setup 去掉「这一版结果」下拉,状态由按钮决定(草稿→待上线 / 保存→上线中)。
+- 验证:`node --check` 通过;无头实测 —— 不一致拦锁、干净可锁、锁后只读+复选框禁用、Setup 双按钮 + 校验列出缺项,无 pageerror。
+- 注:`setup_locked` 暂存于 `locked_tags._locked`(Supabase MCP 时断,免迁移);稳定后可提升为独立布尔列。
+
+## [v23] — 2026-06-28 · UI 优化批次
 
 - **指标 card2**:主指标 / 防守底线下拉收窄到 1/3 列宽(与「测试类型」同宽,不再撑满);目标值/%、阈值 op/figure 两小格保持 88px;改用 row3 网格,各有独立标签(目标值(绝对/%)、阈值)。
 - **slot 句子**:无基准时由「(无基准·探索)」改为「…」(NH live + `val_from` 落库;抽屉对历史值做显示映射)。
