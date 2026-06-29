@@ -1834,10 +1834,6 @@ function showErr(m){document.getElementById('errbox').innerHTML='<div class="err
 function daysAgo(d){if(!d)return 9999;return (Date.now()-new Date(d).getTime())/86400000;}
 function isNew(a){return a.start_date&&daysAgo(a.start_date)<=7;}
 function hooksOf(a){return (a.hook_type||'').split(',').map(s=>s.trim()).filter(Boolean);}
-// Game Type:与 hook_type 完全同款(逗号分隔、可多值)。英文 key 存库,中文显示。
-const GAME_ZH={slots:'老虎机',live_casino:'真人娱乐',sports:'体育',lottery:'彩票 / 4D',fishing:'捕鱼',cockfight:'斗鸡',unknown:'未知'};
-function gameTypesOf(a){return (a.game_type||'').split(',').map(s=>s.trim()).filter(Boolean);}
-function gameZh(code){const r=(DICT['Game Type']||[]).find(x=>x.c===code);return r?(r.n||r.c):(GAME_ZH[code]||code);}
 function langCode(l){const m={chinese:'ZH',english:'EN',malay:'MS',khmer:'KH',mixed:'MX'};return m[(l||'').toLowerCase()]||(l?String(l).toUpperCase().slice(0,2):'');}
 function toggleAddForms(){document.getElementById('addForms').classList.toggle('hidden');}
 
@@ -1876,9 +1872,7 @@ function buildFilters(){
   setOpts('fHook','All Hooks',[...new Set(base.flatMap(hooksOf))].sort());
   setOpts('fStyle','All Styles',[...new Set(base.map(x=>x.visual_style).filter(Boolean))].sort());
   const gtSel=document.getElementById('fGameType').value;
-  const gtOpts=(DICT['Game Type']||[]).filter(g=>g.on!==false).map(g=>[g.c,g.n]);
-  if(!gtOpts.some(o=>o[0]==='unknown'))gtOpts.push(['unknown','未知']);   // 扫描兜底值,也可筛
-  document.getElementById('fGameType').innerHTML='<option value="">All Game Types</option>'+gtOpts.map(o=>'<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>').join('');
+  document.getElementById('fGameType').innerHTML='<option value="">All Game Types</option>'+(DICT['Game Type']||[]).filter(g=>g.on!==false).map(g=>'<option value="'+g.c+'">'+g.n+'</option>').join('');
   document.getElementById('fGameType').value=gtSel;
 }
 function media(a){
@@ -1892,7 +1886,7 @@ function closeLb(){document.getElementById('lb').classList.remove('show');docume
 
 function filteredAds(){
   const m=fMarket.value,o=fOperator.value,h=fHook.value,s=fStyle.value,fmt=fFormat.value,gt=fGameType.value,st=(document.getElementById('fStatus')||{value:'all'}).value,q=(fSearch.value||'').toLowerCase();
-  let r=ads.filter(a=>(!m||(a.country||'').toUpperCase()===m)&&(!o||a.operator_name===o)&&(!h||hooksOf(a).includes(h))&&(!s||a.visual_style===s)&&(!fmt||(a.media_type||'').toUpperCase()===fmt)&&(!gt||gameTypesOf(a).includes(gt))&&lifeMatch(a.last_seen,st));
+  let r=ads.filter(a=>(!m||(a.country||'').toUpperCase()===m)&&(!o||a.operator_name===o)&&(!h||hooksOf(a).includes(h))&&(!s||a.visual_style===s)&&(!fmt||(a.media_type||'').toUpperCase()===fmt)&&(!gt||(a.game_type||a.vertical)===gt)&&lifeMatch(a.last_seen,st));
   if(q)r=r.filter(a=>((a.ad_text||'')+(a.selling_point||'')+(a.creative_theme||'')+(a.page_name||'')).toLowerCase().includes(q));
   const so=fSort.value;
   if(so==='dur')r.sort((a,b)=>(b.duration_days||0)-(a.duration_days||0));
@@ -1908,6 +1902,7 @@ function renderGallery(){
   let h='';
   if(!galRows.length)h='<tr><td colspan="14" class="empty">No ads match.</td></tr>';
   galRows.forEach(a=>{
+    const gt=a.game_type||a.vertical||'';
     const dur=a.duration_days==null?'':'<span class="pl '+(a.duration_days>=180?'win':'dur')+'">'+(a.duration_days>=180?'🏆 ':'')+a.duration_days+'</span>';
     const newb=isNew(a)?'<span class="pl new">NEW</span> ':'';
     const fn=[];if(a.extracted_telegram)fn.push('TG '+esc(a.extracted_telegram));if(a.extracted_domain)fn.push(esc(a.extracted_domain));if(a.extracted_ref_code)fn.push('ref '+esc(a.extracted_ref_code));
@@ -1916,7 +1911,7 @@ function renderGallery(){
       '<td class="cn">'+esc(a.selling_point||'')+'</td>'+
       '<td class="cn">'+esc(a.creative_theme||'')+'</td>'+
       '<td>'+(a.visual_style?'<span class="pl style">'+esc(a.visual_style)+'</span>':'-')+'</td>'+
-      '<td>'+(gameTypesOf(a).length?'<div class="hooks">'+gameTypesOf(a).map(x=>'<span class="pl style">'+esc(gameZh(x))+'</span>').join('')+'</div>':'-')+'</td>'+
+      '<td>'+(gt?'<span class="pl style">'+esc(gt)+'</span>':'-')+'</td>'+
       '<td>'+newb+dur+'</td>'+
       '<td>'+(a.cta_type?'<span class="pl cta">'+esc(a.cta_type)+'</span>':'')+'</td>'+
       '<td class="sm">'+fn.join('<br>')+'</td>'+

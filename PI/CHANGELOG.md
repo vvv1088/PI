@@ -14,7 +14,17 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v28] — 2026-06-29 · 交叉测 2×2 网格校验(当前基线)
+## [v29] — 2026-06-29 · Ads Library Game Type 接真实数据(多值中文 pill)(当前基线)
+
+- **Game Type 显示/筛选接通**(完全参照 hook_type 处理):
+  - 新增 `gameTypesOf(a)`(逗号 split/trim/去空,与 `hooksOf` 平行)、`GAME_ZH` 英中映射、`gameZh(code)`(先查 `DICT['Game Type']`,回退 `GAME_ZH`,再回退原值)。
+  - 表格 Game Type 列:多值渲染成竖排多个中文 pill(`.hooks` 容器 + `pl style`),空值显示 `-`(原本只显示单个英文 key)。
+  - 筛选:`filteredAds` 的 game_type 条件从整串 `===` 改为 `gameTypesOf(a).includes(选中值)`(多值按"包含"筛,与 hook 一致);KPI 走 `galRows` 自动联动。
+  - 下拉:保持 DICT 驱动(value=英文 code、显示中文),补 `unknown→未知` 兜底项。
+- **注意:需配套视图改动** —— `v_ads_gallery` 视图当前未 select `game_type`(底层 `competitor_ads.game_type` 已存在但全 null),所以前端读不到,显示仍会是 `-`,直到视图透出该列(见交接说明)。
+- 验证:`node --check` 通过;headless exit 0、无 pageerror;逻辑单测:多值→两 pill、空→[]、unknown→未知、sports/live_casino 互筛命中同一条。
+
+## [v28] — 2026-06-29 · 交叉测 2×2 网格校验
 
 - **一致性裁判加 2 维交叉网格校验** —— 之前选 2 个维度时,裁判只检查「每个维度有没有变化(≥2 个值)」,所以某维度有 3+ 个值(例:Format = 单一静态图 / 单一视频 / 多图轮播)照样判 clean,漏报。现在 `checkHypoConsistency` 对 `dims.length===2` 追加干净 2×2 判定:**每维恰好 2 个值、4 种组合各出现一次、无留空**,否则报 `crossbad` 红条。
   - `over`(值超过 2 个的维度)→ 提示「把多出来的那条改成另一个值补齐」(对应你说的「多图轮播应变成单一静态图」)。
