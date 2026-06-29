@@ -14,7 +14,17 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v21] — 2026-06-28 · 抽屉去重 + HVR 占位基准(当前基线)
+## [v22] — 2026-06-28 · 多选测试维度 + 全组锁定 + 人群/年龄上移(当前基线)
+
+> DB:`hypotheses` 加 `locked_tags jsonb`;`test_dim` 改存逗号分隔的多维度。
+- **New Hypothesis card1**:删「测试维度」下拉 + 那段维度说明 remark;**加「人群」+「年龄段」**(词表动态读 DICT 的 Persona / Age Range),存到 hypotheses 的 persona / age_range。两者纳入必填。
+- **对比页:测试维度改可多选**(`tmToggleDim`)—— 5 维(Format/Hook/视觉/Offer/游戏)复选框,勾 1 = 单变量、勾 ≥2 = 交叉测;存 hypotheses.test_dim(逗号分隔)。人群/年龄已移走,对比页维度 7→5。
+- **对比页:全组锁定**(`tmSetLock`)—— 没勾的维度在「🔒 全组锁定」面板一次设好,自动写到该假设**所有**素材的该列(`.eq('hyp_code')` 批量),表格里灰显、不可改;`tmAddCreative` 新素材自动套用锁定值。表格:在测列=每条可选(紫),锁定列=🔒文本。
+- **裁判**:`checkHypoConsistency` 改多维(每个在测维度应 distinct≥2;没勾的应一致);**对比页 + 抽屉的「一致性裁判」卡按 V 要求全部移除**,只保留 Hypotheses 列表行的小状态点(judgeDot)。删 `judgeHtml`(无引用)。
+- 连带:`loadHypos` 解析 `testDims` 数组 + `lockedTags`;`saveHypothesis` 写 persona/age_range(不再写 test_dim,改由对比页管);`editHypothesis`/`renderHypo` pill/`openDrawer`(加人群/年龄行、维度改多选)同步。
+- 验证:`node --check` 通过;无头实测 —— 表单无测试维度、人群/年龄从 DICT 填充;对比页 Hook=▲在测可选、其余 4 维🔒全组锁定文本、锁定面板 4 下拉、无裁判卡、无 pageerror。
+
+## [v21] — 2026-06-28 · 抽屉去重 + HVR 占位基准
 
 - **假设详情抽屉**:删掉「一致性裁判」卡 + Creatives 卡底部那条说明 remark(裁判已在「打标签 & 对比」页,避免重复)。列表行状态点保留。
 - **HVR 占位基准**(上线前先跑通功能,V 之后替换):`get_brand_baselines()` RPC 不产 7-Day High-Value Rate,故给 `data['OK188KH']['7-Day High-Value Rate']` 放占位 `{base:8,unit:'%',placeholder:true}`(loadBaselines 覆盖后再注入)。于是 OK188 baseline 自动显示「8 %」、目标值 %↔绝对值双向同步恢复;baseline 卡注明「⚠️ 占位基准(待数据管道接入 HVR)」。要换真值改 `data` 字面量 + loadBaselines 注入处(两处 base:8)。
