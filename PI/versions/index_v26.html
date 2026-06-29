@@ -940,9 +940,7 @@ function judgeMeta(jc){
   return ({clean:{dot:'var(--green)',tag:'✅ 干净可比'},polluted:{dot:'var(--red)',tag:'🔴 被污染'},nodiff:{dot:'var(--amber)',tag:'⚠️ 勾了没差异'},insufficient:{dot:'var(--ink3)',tag:'素材不足'},undeclared:{dot:'var(--ink3)',tag:'未勾维度'}})[jc.state]||{dot:'var(--ink3)',tag:'—'};
 }
 /* ===== 假设级「素材管理 & 标签」全宽页 ===== */
-function openTagMatrix(hypId){const hyp=hypos.find(h=>h.id===hypId);if(!hyp)return;closeDrawer();window._tmHyp=hypId;renderTagMatrix();go('tagmatrix');window.scrollTo(0,0);}
-// 锁定组下拉:没显式设过锁定值时,回退到「全部素材都相同」的那个值,免得明明一致却显示 unselected
-function tmCommonVal(dimKey,cr){const vals=[...new Set((cr||[]).map(c=>c[dimKey]).filter(Boolean))];return vals.length===1?vals[0]:'';}
+function openTagMatrix(hypId){const hyp=hypos.find(h=>h.id===hypId);if(!hyp)return;window._tmHyp=hypId;renderTagMatrix();go('tagmatrix');window.scrollTo(0,0);}
 function renderTagMatrix(){
   const el=document.getElementById('tagmatrixBody');if(!el)return;
   const hyp=hypos.find(h=>h.id===window._tmHyp);
@@ -992,7 +990,7 @@ function renderTagMatrix(){
     </div>
     <div class="card" style="margin-top:12px"><h3>🔒 全组锁定 · 一次设定</h3>
       <div style="color:var(--ink3);font-size:12px;margin-bottom:8px">没在测的维度,在这里一次设好;表格里它们全组统一、不可改。</div>
-      ${lockedDims.length?`<div style="display:flex;flex-wrap:wrap;gap:12px">${lockedDims.map(d=>`<div class="fld" style="max-width:180px"><label>🔒 ${d[1]}</label><select ${dis} onchange="tmSetLock('${d[0]}',this.value)">${dimTabOpts(d[0],locked[d[0]]||tmCommonVal(d[0],cr)||'')}</select></div>`).join('')}</div>`:'<div style="color:var(--ink3)">所有维度都在测,无锁定项。</div>'}
+      ${lockedDims.length?`<div style="display:flex;flex-wrap:wrap;gap:12px">${lockedDims.map(d=>`<div class="fld" style="max-width:180px"><label>🔒 ${d[1]}</label><select ${dis} onchange="tmSetLock('${d[0]}',this.value)">${dimTabOpts(d[0],locked[d[0]]||'')}</select></div>`).join('')}</div>`:'<div style="color:var(--ink3)">所有维度都在测,无锁定项。</div>'}
     </div>
     <div class="card" style="margin-top:12px">
       ${editable?`<div class="tablebar"><button class="btn" data-perm="creative:add" onclick="tmAddCreative()">＋ 加素材</button></div>`:''}
@@ -1056,7 +1054,6 @@ async function tmCellChange(sel){
   const dimDef=MATRIX_DIMS.find(d=>d[0]===dim);sel.style.borderColor=(dimDef&&dimDef[2]&&!val)?'var(--red)':'';
   try{const upd={updated_at:new Date().toISOString()};upd[dim]=val;const {error}=await db.from('creatives').update(upd).eq('gen_code',gen);if(error)throw error;}
   catch(e){toast('保存失败: '+rpcErr(e));}
-  renderTagMatrix();   // 改完素材值重算一致性红条(否则停在改之前的旧状态)
 }
 async function tmAddCreative(){
   if(!tmEditable()){toast('已锁定,仅 Admin 可改');return;}

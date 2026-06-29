@@ -14,7 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v26] — 2026-06-29 · 登录页精简 + 对比页间距 + 取消勾选自动减行(当前基线)
+## [v27] — 2026-06-29 · 对比页三个 bug(红条陈旧 / 锁定组下拉 / Drawer 不收)(当前基线)
+
+- **Bug 修复:一致性红条陈旧** —— `tmCellChange`(改素材维度下拉)之前只存 DB + 更新内存,**没重渲染**,所以把两条素材的在测维度改成不同值后,「内容不一致」红条仍停在改之前的「没差异」旧状态(误报)。末尾补 `renderTagMatrix()` 重算。已用 HYP-005 真实数据验证:hook 两条不同(fast_payout / withdrawal_proof)→ 判定应为 `clean`,修复后红条即消失。
+- **Bug 修复:锁定组下拉显示 unselected** —— 「全组锁定」下拉原只读 `lockedTags[dim]`,即使所有素材本就同一个值、但没显式设过锁定,也显示 unselected(感觉"逻辑没接起来")。新增 `tmCommonVal(dim,cr)`:回退到「全部素材都相同」的那个值;素材间不一致时才留空(正确提示需统一)。
+- **Bug 修复:Drawer 不收起** —— 从 Hypothesis 抽屉点「素材管理 & 标签 →」进对比页时,右侧抽屉不会自动关。`openTagMatrix` 开头补 `closeDrawer()`。
+- 验证:`node --check` 通过;headless chromium exit 0、无 pageerror;`tmCommonVal`/`closeDrawer()` 已加载;一致性逻辑用真实数据单测为 `clean`。
+
+## [v26] — 2026-06-29 · 登录页精简 + 对比页间距 + 取消勾选自动减行
 
 - **登录页精简** —— 删掉标题下灰色副标题「Sign in」(`.lgsub` 元素+CSS)与底部「Use your assigned username & password · Issues? Contact your admin」(`.lghint` 元素+CSS);标题间距移到 `.lgbrand` 上,布局不塌。登录按钮保留。
 - **对比页间距** —— 「内容不一致」红色提醒原仅 `margin-top:12px`,贴着下方素材表太密;补 `margin-bottom:18px` 拉开与表格的距离。
