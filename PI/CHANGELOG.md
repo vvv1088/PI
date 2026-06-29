@@ -14,7 +14,19 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v24] — 2026-06-28 · 对比页 Draft/锁定 + Creative Draft/Save + 自动生成行(当前基线)
+## [v25] — 2026-06-28 · 命名/按钮统一 + 重排 + 安全(当前基线)
+
+- **A** 对比页/入口按钮「管理素材 & 标签」→「**素材管理 & 标签**」(两处统一,顺序对调)。
+- **B** 对比页红色「内容不一致」提醒从顶部移到「＋加素材」下方、表格上方。
+- **C** Draft / Save 统一英文:Creative Setup/Edit「存草稿/保存」→「Draft / Save」;对比页「保存并锁定/解锁修改」→「Save / Draft」(New Hypothesis 本就是 Draft/Save)。语义:Draft=可随意改、Save=锁定不可改。
+- **D** Draft/Save 操作移到**页面右上角**(对比页 header + Creative Drawer header),与 New Hypothesis 一致;移除底部按钮行。
+- **E** New Hypothesis 基础重排:第一排 品牌 / 起因 / 证据;第二排 测试类型 / 人群 / 年龄段。
+- **安全:闲置自动登出** —— 10 分钟无鼠标/键盘/点击/滚动 → `logout()`(`resetIdleTimer`,登录后启动、任意操作重置)。
+- **Activity Log 加登录/登出** —— `doLogin` 成功记 `auth/login`、`logout` 记 `auth/logout`(写入 `audit_log`,含 user/time)。
+- 验证:`node --check` 通过;无头实测 card1 顺序正确、idle timer 在、无 pageerror。
+- 注:`知识类型`(你提到的第二排首项)我按现有「测试类型」字段放置、未改标签 —— 若要把它改名成「知识类型」告诉我。
+
+## [v24] — 2026-06-28 · 对比页 Draft/锁定 + Creative Draft/Save + 自动生成行
 
 - **#1** New Hypothesis 人群/年龄未选 →「— unselected —」(`dimTabOpts` 空项统一,与其他字段一致)。
 - **#2** Hypotheses 列表行去掉「干净/没差异/污染」小状态点(删 `judgeDot`)。
