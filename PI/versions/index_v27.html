@@ -933,20 +933,11 @@ function checkHypoConsistency(hyp,overrideCr){
   const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变
   const noDiff=tested.filter(t=>!t.vary);
   const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>({dim:d,vals:[...distinct(d)]})).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
-  if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length};
-  // 2 维 = 交叉测:必须凑成干净的 2×2(每维恰 2 个值、4 种组合各出现一次、无空格)
-  if(dims.length===2){
-    const [A,B]=dims,va=distinct(A),vb=distinct(B);
-    const over=(va.size>2?[A]:[]).concat(vb.size>2?[B]:[]);   // 值超过 2 个的维度
-    const combos=new Set(cr.map(c=>(c[A]||'∅')+'∥'+(c[B]||'∅')));
-    const cleanGrid=va.size===2&&vb.size===2&&combos.size===4&&![...combos].some(k=>k.includes('∅'));
-    if(!cleanGrid)return {state:'crossbad',over,combos:combos.size,dims,tested,conflicts,n:cr.length};
-  }
-  const state=conflicts.length?'polluted':'clean';
+  const state=noDiff.length?'nodiff':(conflicts.length?'polluted':'clean');
   return {state,tested,noDiff,conflicts,dims,n:cr.length};
 }
 function judgeMeta(jc){
-  return ({clean:{dot:'var(--green)',tag:'✅ 干净可比'},polluted:{dot:'var(--red)',tag:'🔴 被污染'},nodiff:{dot:'var(--amber)',tag:'⚠️ 勾了没差异'},crossbad:{dot:'var(--red)',tag:'🔴 2×2 不齐'},insufficient:{dot:'var(--ink3)',tag:'素材不足'},undeclared:{dot:'var(--ink3)',tag:'未勾维度'}})[jc.state]||{dot:'var(--ink3)',tag:'—'};
+  return ({clean:{dot:'var(--green)',tag:'✅ 干净可比'},polluted:{dot:'var(--red)',tag:'🔴 被污染'},nodiff:{dot:'var(--amber)',tag:'⚠️ 勾了没差异'},insufficient:{dot:'var(--ink3)',tag:'素材不足'},undeclared:{dot:'var(--ink3)',tag:'未勾维度'}})[jc.state]||{dot:'var(--ink3)',tag:'—'};
 }
 /* ===== 假设级「素材管理 & 标签」全宽页 ===== */
 function openTagMatrix(hypId){const hyp=hypos.find(h=>h.id===hypId);if(!hyp)return;closeDrawer();window._tmHyp=hypId;renderTagMatrix();go('tagmatrix');window.scrollTo(0,0);}
@@ -982,8 +973,7 @@ function renderTagMatrix(){
   // 一致性提醒(只在未锁定 + 有问题时)
   let banner='';
   if(!setupLocked&&jc.state!=='clean'&&jc.state!=='undeclared'){
-    const crossMsg=(jc.over&&jc.over.length)?`交叉测要凑成干净的 2×2:测试维度「${jc.over.map(dimLabel).join('、')}」的值超过 2 个 —— 每维只能 2 个值,把多出来的那条改成另一个值补齐缺的格子。`:`4 条素材没凑成完整的 2×2(有重复、缺格或留空)—— 让「${(jc.dims||[]).map(dimLabel).join(' × ')}」的 4 种组合各出现一次。`;
-    const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。`,crossbad:crossMsg,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
+    const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。`,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
     banner=`<div style="background:rgba(216,90,48,.08);border:1px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font-size:13px;margin-top:12px;margin-bottom:18px">⚠️ <b>内容不一致,还不能锁定</b> · ${msgs[jc.state]||''}</div>`;
   }
   el.innerHTML=`
