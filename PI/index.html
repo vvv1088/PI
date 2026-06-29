@@ -308,14 +308,12 @@
   #lb{position:fixed;inset:0;background:rgba(20,22,26,.88);display:none;align-items:center;justify-content:center;z-index:50}
   #lb.show{display:flex}#lb img,#lb video{max-width:90vw;max-height:90vh;border-radius:8px}#lb .x{position:absolute;top:18px;right:26px;color:#fff;font-size:30px;cursor:pointer}  #loginGate{position:fixed;inset:0;background:linear-gradient(135deg,#1a1d24,#11141a);display:none;align-items:center;justify-content:center;z-index:200}
   .lgcard{background:var(--bg);border-radius:14px;padding:32px 30px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
-  .lgbrand{font-weight:700;font-size:16px;color:var(--ink)}
-  .lgsub{color:var(--ink3);font-size:13px;margin:2px 0 22px}
+  .lgbrand{font-weight:700;font-size:16px;color:var(--ink);margin:0 0 22px}
   .lglbl{display:block;font-size:12px;color:var(--ink2);font-weight:600;margin:0 0 5px}
   .lgin{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-bottom:14px;font-family:inherit}
   .lgin:focus{outline:none;border-color:var(--accent)}
   .lgmsg{color:var(--red);font-size:12px;min-height:16px;margin-bottom:6px}
   .lgbtn{width:100%;justify-content:center}
-  .lghint{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:11px;line-height:1.6}
   .permtable{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
   .permtable th{text-align:center;padding:7px 6px;border-bottom:1px solid var(--line);color:var(--ink3);font-weight:600;font-size:11.5px}
   .permtable th:first-child{text-align:left}
@@ -336,14 +334,12 @@
 <div id="loginGate">
   <div class="lgcard">
     <div class="lgbrand">Marketing Intelligent System</div>
-    <div class="lgsub">Sign in</div>
     <label class="lglbl">Username</label>
     <input id="lg-user" class="lgin" placeholder="Username" onkeydown="lgKey(event)" autocomplete="off">
     <label class="lglbl">Password</label>
     <input id="lg-pwd" type="password" class="lgin" placeholder="Password" onkeydown="lgKey(event)">
     <div id="lg-msg" class="lgmsg"></div>
     <button class="btn lgbtn" onclick="doLogin()">Sign in</button>
-    <div class="lghint">Use your assigned username &amp; password · Issues? Contact your admin</div>
   </div>
 </div>
 
@@ -976,7 +972,7 @@ function renderTagMatrix(){
   let banner='';
   if(!setupLocked&&jc.state!=='clean'&&jc.state!=='undeclared'){
     const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。`,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
-    banner=`<div style="background:rgba(216,90,48,.08);border:1px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font-size:13px;margin-top:12px">⚠️ <b>内容不一致,还不能锁定</b> · ${msgs[jc.state]||''}</div>`;
+    banner=`<div style="background:rgba(216,90,48,.08);border:1px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font-size:13px;margin-top:12px;margin-bottom:18px">⚠️ <b>内容不一致,还不能锁定</b> · ${msgs[jc.state]||''}</div>`;
   }
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
@@ -1016,6 +1012,17 @@ async function tmEnsureRows(hyp,target){
   try{const {error}=await db.from('creatives').insert(rows);if(error)throw error;}catch(e){toast('自动加素材失败: '+rpcErr(e));return false;}
   return true;
 }
+async function tmTrimRows(hyp,target){
+  // 维度减少时,把多出来的「空」素材行删掉(无 versions/无 runs 的才删,已填内容/已上线的保留)
+  const existing=creatives.filter(c=>(c.hyp||'').startsWith(hyp.id))
+    .sort((a,b)=>{const ma=(a.gen||'').match(/-V(\d+)$/),mb=(b.gen||'').match(/-V(\d+)$/);return (mb?+mb[1]:0)-(ma?+ma[1]:0);}); // 按 V 序号倒序,优先删最新加的
+  if(existing.length<=target)return false;
+  const removable=existing.filter(c=>(!c.versions||c.versions.length===0)&&(!c.runs||c.runs.length===0));
+  const toRemove=removable.slice(0,existing.length-target);
+  if(!toRemove.length)return false;
+  try{const {error}=await db.from('creatives').delete().in('gen_code',toRemove.map(c=>c.gen));if(error)throw error;}catch(e){toast('自动减素材失败: '+rpcErr(e));return false;}
+  return true;
+}
 async function tmToggleDim(dimKey){
   if(!tmEditable()){toast('已锁定,仅 Admin 可改');return;}
   const hyp=hypos.find(h=>h.id===window._tmHyp);if(!hyp)return;
@@ -1024,8 +1031,8 @@ async function tmToggleDim(dimKey){
   s.has(dimKey)?s.delete(dimKey):s.add(dimKey);
   hyp.testDims=MATRIX_DIM_KEYS.filter(k=>s.has(k));   // 保持顺序
   await tmSaveHyp(hyp,{test_dim:hyp.testDims.join(',')});
-  // 自动生成行:1 维 → 1 条,2 维 → 4 条(只补不删)
-  if(can('creative','add')){const target=hyp.testDims.length===2?4:(hyp.testDims.length===1?1:0);if(target){const added=await tmEnsureRows(hyp,target);if(added){try{await loadCreatives();}catch(e){}renderCreatives();}}}
+  // 自动生成行:1 维 → 1 条,2 维 → 4 条;维度减少时把多余的空行删掉(2→1 回到 1 条)
+  if(can('creative','add')){const target=hyp.testDims.length===2?4:(hyp.testDims.length===1?1:0);if(target){const added=await tmEnsureRows(hyp,target);const trimmed=await tmTrimRows(hyp,target);if(added||trimmed){try{await loadCreatives();}catch(e){}renderCreatives();}}}
   renderTagMatrix();renderHypo();
 }
 async function tmSetLock(dimKey,val){
