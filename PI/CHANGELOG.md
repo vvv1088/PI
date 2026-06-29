@@ -14,7 +14,18 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v29] — 2026-06-29 · Ads Library Game Type 接真实数据(多值中文 pill)(当前基线)
+## [v30] — 2026-06-29 · Finalize:独立 demo.html + 清空 production 测试数据(当前基线)
+
+- **新增 `PI/demo.html`** —— 面向演示的自带数据版本,**完全不连后端**:
+  - 用「内存 mock supabase」替换 CDN 的 supabase client(保留 marked / Chart CDN,浏览器内正常出图/渲染 markdown),app 业务逻辑零改动,与正式版完全一致。
+  - 自动登录为 Admin(Eling),省去演示时的登录摩擦;mock 支持 select/insert/update/delete/upsert/rpc + auth,演示中可交互(改动只进内存、不落库)。
+  - 种子数据覆盖各种情况:8 条 idea(各来源/优先级/状态)、6 条 hypothesis(OK188KH/17WINKH/SBKH/INZ9;素材/受众/Promotion;含 **clean / 干净 2×2 / crossbad(Format 三值)/ nodiff / undeclared** 五种一致性状态)、13 条 creative、10 条竞品广告(含**多值 Game Type**如 sports+live_casino、单值、null 的 `-`、🏆长青、NEW)、运营商/周报/发现候选/监测词等。
+  - 安全:demo 里 n8n webhook 已置为 `PASTE_DEMO_DISABLED`,手动添加表单不会向生产发数据。
+  - 生成器留档于 `PI/demo_src/`(`gen_demo.py` + `dict_entries.json`);index.html 改版后重跑即可同步 demo。
+- **清空 production 测试数据**(Supabase `bfukphakofrjalsqteda`,按 V 确认范围):删 ideas / hypotheses / creatives / audit_log;保留 competitor_*、weekly_reports、dict_entries、profiles(9 用户)、roles/permissions。正式版自此从干净状态起步。
+- 验证:headless chromium 跑 demo.html → 自动登录、各页渲染、无 pageerror;一致性状态实测 = 设计预期(clean/clean/crossbad/nodiff/undeclared)。
+
+## [v29] — 2026-06-29 · Ads Library Game Type 接真实数据(多值中文 pill)
 
 - **Game Type 显示/筛选接通**(完全参照 hook_type 处理):
   - 新增 `gameTypesOf(a)`(逗号 split/trim/去空,与 `hooksOf` 平行)、`GAME_ZH` 英中映射、`gameZh(code)`(先查 `DICT['Game Type']`,回退 `GAME_ZH`,再回退原值)。
