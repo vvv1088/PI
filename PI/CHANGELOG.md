@@ -14,7 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v30] — 2026-06-29 · Finalize:独立 demo.html + 清空 production 测试数据(当前基线)
+## [v31] — 2026-06-29 · 修复「重置密码变回 123123」+ AI 周报想法接回(当前基线)
+
+- **Bug 修复:Reset PW 改完变回 123123** —— `resetUserPw` 的 `prompt` 默认值原本预填 `'123123'`,管理员点「Reset PW」时框里已是 123123,没清空重打就确认 = 把密码设回 123123(手机尤甚)。改:默认值置空 + 最少 4 位校验(`np.length<4` 直接拦下不调 RPC) + 提示语明确。后端 `admin_set_password` / `is_admin()` 经验证完全正常,问题纯在前端预填值。
+  - (另:已按 V 要求在后台直接改了 bryan/gg/joey 三个密码。)
+- **AI 周报想法接回 Idea Pool** —— `ideas` 表新增 4 条 `created_by='AI'` 的精华想法(从本周 06-29 周报「值得测试的方向」提炼);并加 `ai_add_idea(p_txt,p_tags,p_pri,p_src)` SECURITY DEFINER RPC(anon 可执行、近 10 天同文案去重),供 n8n 每周自动写入。HTML 侧无需改动(AI 徽章 `by==='AI'` 一直都在)。
+- 验证:`node --check` 通过;headless exit 0、无 pageerror。
+
+## [v30] — 2026-06-29 · Finalize:独立 demo.html + 清空 production 测试数据
 
 - **新增 `PI/demo.html`** —— 面向演示的自带数据版本,**完全不连后端**:
   - 用「内存 mock supabase」替换 CDN 的 supabase client(保留 marked / Chart CDN,浏览器内正常出图/渲染 markdown),app 业务逻辑零改动,与正式版完全一致。
