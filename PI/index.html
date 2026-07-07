@@ -1381,6 +1381,36 @@ async function delHypothesis(i){
   logAction('hypo','delete',h.id+(cr.length?(' (+'+cr.length+' 空 creative)'):''));
   try{await loadHypos();}catch(e){}try{await loadCreatives();}catch(e){}closeDrawer();renderHypo();renderCreatives();toast(h.id+' 已删除');
 }
+/* ===== 判定:测试跑完后下结论,状态 → 已沉淀,Results 自动汇总 ===== */
+function openVerdictForm(i){
+  const h=hypos[i];if(!h)return;
+  if(!can('hypo','edit')){toast('当前岗位没有「编辑假设」权限');return;}
+  const v=h.verdict||{};
+  let x='<h2 style="margin:0 0 4px">'+esc(h.id)+' · 判定</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:14px">'+esc(h.x)+'</div>';
+  x+='<div class="row2" style="margin-bottom:12px">'
+   +'<div class="fld"><label>结论</label><select id="vd-res"><option'+(v.res==='成立'?' selected':'')+'>成立</option><option'+(v.res==='不成立'?' selected':'')+'>不成立</option><option'+(v.res==='无定论'?' selected':'')+'>无定论</option></select></div>'
+   +'<div class="fld"><label>数据置信度</label><select id="vd-conf"><option'+(v.conf==='充分'?' selected':'')+'>充分</option><option'+(v.conf==='勉强'?' selected':'')+'>勉强</option></select><div style="font-size:11px;color:var(--ink3);margin-top:4px">「勉强」不计入 Results 胜率</div></div></div>';
+  x+='<div class="fld" style="margin-bottom:12px"><label>学到了什么 <span style="color:var(--red)">(必填)</span></label><textarea id="vd-learn" style="width:100%;min-height:70px" placeholder="这次测试证明/推翻了什么">'+esc(v.learn||'')+'</textarea></div>';
+  x+='<div class="fld" style="margin-bottom:12px"><label>下月约束 / 行动</label><textarea id="vd-next" style="width:100%;min-height:56px" placeholder="基于结论,下月怎么做">'+esc(v.next||'')+'</textarea></div>';
+  x+='<div style="display:flex;gap:8px"><button class="btn" onclick="guard(()=>saveVerdict('+i+'))">保存判定(状态 → 已沉淀)</button><button class="btn ghost" onclick="openDrawer('+i+')">取消</button></div>';
+  document.getElementById('d-title').textContent='判定';
+  document.getElementById('d-body').innerHTML=x;
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function saveVerdict(i){
+  const h=hypos[i];if(!h)return;
+  if(!can('hypo','edit')){toast('无权判定');return;}
+  const g=id=>document.getElementById(id).value;
+  const learn=(g('vd-learn')||'').trim();
+  if(!learn){toast('「学到了什么」必填 — 判定的价值就在沉淀');return;}
+  const verdict={res:g('vd-res'),conf:g('vd-conf'),learn:learn,next:(g('vd-next')||'').trim()};
+  try{const {error}=await db.from('hypotheses').update({verdict:verdict,status:'已沉淀',updated_at:new Date().toISOString()}).eq('code',h.id);if(error)throw error;}
+  catch(e){toast('保存失败: '+rpcErr(e));return;}
+  h.verdict=verdict;h.st='已沉淀';
+  logAction('hypo','判定',h.id+' → '+verdict.res+'('+verdict.conf+')');
+  toast(h.id+' 已判定:'+verdict.res);
+  renderHypo();renderResults();openDrawer(i);
+}
 function openDrawer(i){
   const h=hypos[i];
   document.getElementById('d-title').textContent=h.id+' · '+h.brand+' · '+h.month;
@@ -1415,6 +1445,7 @@ function openDrawer(i){
         <div class="sl"><span class="lab">因为</span><span>${ds(dwhy?esc(dwhy):'','fill')}</span></div>
       </div>
       <div style="display:flex;gap:6px;flex:none">
+        ${h.st!=='已沉淀'?`<button class="btn sm" data-perm="hypo:edit" onclick="openVerdictForm(${i})">判定</button>`:''}
         <button class="btn ghost sm" data-perm="hypo:edit" onclick="editHypothesis(${i})">Edit</button>
         ${canDel?`<button class="btn danger sm" data-perm="hypo:delete" onclick="delHypothesis(${i})">Delete</button>`:''}
       </div>
