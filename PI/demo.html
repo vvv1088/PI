@@ -1483,6 +1483,9 @@ async function saveVerdict(i){
   try{const {error}=await db.from('hypotheses').update({verdict:verdict,status:'已沉淀',updated_at:new Date().toISOString()}).eq('code',h.id);if(error)throw error;}
   catch(e){toast('保存失败: '+rpcErr(e));return;}
   h.verdict=verdict;h.st='已沉淀';
+  if(verdict.res==='成立'&&h.mode!=='主力运行'&&confirm('判定成立 — 把这个假设转为「主力运行」吗?')){
+    try{await db.from('hypotheses').update({mode:'主力运行'}).eq('code',h.id);h.mode='主力运行';}catch(e){}
+  }
   logAction('hypo','判定',h.id+' → '+verdict.res+'('+verdict.conf+')');
   toast(h.id+' 已判定:'+verdict.res);
   renderHypo();renderResults();openDrawer(i);
@@ -1583,13 +1586,55 @@ async function saveCreativeRun(i){
   const spendRaw=(document.getElementById('cr-spend')||{value:''}).value;
   const spend=spendRaw===''?null:+spendRaw;
   const startD=parseMD(start)||new Date();
-  const open=c.runs.find(r=>!r.end);if(open)open.end=start;
+  const open=c.runs.find(r=>r.start&&!r.end);if(open)open.end=start;
   c.runs.push({r:c.runs.length+1,phase:document.getElementById('cr-phase').value,camp:document.getElementById('cr-camp').value,adset:document.getElementById('cr-adset').value,meta:document.getElementById('cr-meta').value,start:start,end:null,snap:null,note:document.getElementById('cr-note').value,week:isoWeekOf(startD),spend:spend});
   try{const {error}=await db.from('creatives').update({runs:c.runs,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
   catch(e){toast('运行记录保存失败: '+rpcErr(e));return;}
   logAction('creative','edit',(c.gen||c.code||'')+' 运行记录');
   toast('运行记录已保存');
   openCreative(i);
+}
+// 结束当前运行段(不开新段):填结束日,可选把素材标记已下线
+async function endCreativeRun(i){
+  const c=creatives[i];const open=(c.runs||[]).find(r=>r.start&&!r.end);
+  if(!open){toast('没有进行中的运行段');return;}
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
+  const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  if(!confirm('结束当前运行段(运行 '+open.r+',始于 '+open.start+')— 结束日记为今天 '+today+'?'))return;
+  open.end=today;
+  let patch={runs:c.runs,updated_at:new Date().toISOString()};
+  const off=confirm('同时把素材状态标记为「已下线」吗?(取消 = 仅结束这段运行)');
+  if(off){patch.status='已下线';patch.stc='off';}
+  try{const {error}=await db.from('creatives').update(patch).eq('gen_code',c.gen);if(error)throw error;}
+  catch(e){toast('保存失败: '+rpcErr(e));return;}
+  if(off){c.st='已下线';c.stc='off';renderCreatives();}
+  logAction('creative','edit',(c.gen||'')+' 结束运行'+(off?' + 下线':''));
+  toast('运行已结束');openCreative(i);
+}
+// 补记某一周的花费(跑多周的段,每周补一笔;Budget 已投放按周汇总)
+function addWeekSpend(i){
+  const c=creatives[i];if(!c)return;
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
+  let x='<h2 style="margin:0 0 4px">'+esc(c.code)+' · 补记周花费</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:14px">跑多周的运行,每周补一笔;Budget「已投放」按周自动汇总。</div>';
+  x+='<div class="row2" style="margin-bottom:12px"><div class="fld"><label>周(ISO)</label><input id="ws-week" type="text" value="'+isoWeekOf(new Date())+'"></div>'
+   +'<div class="fld"><label>该周花费 $</label><input id="ws-amt" type="number" min="0" placeholder="如 320"></div></div>';
+  x+='<div style="display:flex;gap:8px"><button class="btn" onclick="guard(()=>saveWeekSpend('+i+'))">保存</button><button class="btn ghost" onclick="openCreative('+i+')">取消</button></div>';
+  document.getElementById('d-title').textContent='补记周花费';
+  document.getElementById('d-body').innerHTML=x;
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function saveWeekSpend(i){
+  const c=creatives[i];const wk=(document.getElementById('ws-week').value||'').trim();
+  const amt=+(document.getElementById('ws-amt').value||'');
+  if(!/^\d{4}-W\d{1,2}$/.test(wk)){toast('周格式:如 2026-W28');return;}
+  if(!(amt>=0)||!document.getElementById('ws-amt').value){toast('请填该周花费');return;}
+  c.runs=c.runs||[];
+  const ex=c.runs.find(r=>r.week===wk&&r.phase==='spend');
+  if(ex)ex.spend=amt;else c.runs.push({r:c.runs.length+1,phase:'spend',week:wk,spend:amt,start:null,end:wk,note:'周花费补记',camp:'',adset:'',meta:''});
+  try{const {error}=await db.from('creatives').update({runs:c.runs,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
+  catch(e){toast('保存失败: '+rpcErr(e));return;}
+  logAction('creative','edit',(c.gen||'')+' 周花费 '+wk+' $'+amt);
+  toast('已记 '+wk+' $'+amt);openCreative(i);
 }
 // 上传图统一压缩:最长边 800px + JPEG 0.82,避免原图 base64(MB 级)灌进 versions JSONB
 function shrinkImage(file,cb){
@@ -1632,7 +1677,11 @@ function openCreative(i){
   document.getElementById('d-body').innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <h2 style="margin:0">素材概览 · Creative Overview</h2>
+      <span style="display:flex;gap:6px">
+      ${(c.runs||[]).some(r=>r.start&&!r.end)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="guard(()=>endCreativeRun(${i}))">■ 结束运行</button>`:''}
+      ${(c.runs||[]).length?`<button class="btn ghost sm" data-perm="creative:edit" onclick="addWeekSpend(${i})">＋ 补记周花费</button>`:''}
       <button class="btn ghost sm" data-perm="creative:add" onclick="editCreativeRun(${i})">＋ 记录搬迁 / 运行</button>
+      </span>
     </div>
     <div style="margin:2px 0 6px"><span class="cst cst-${c.stc}">${c.st}</span></div>
     <div class="kv">
@@ -1928,7 +1977,7 @@ async function saveCreativeCopy(i,mode){
 function saveRun(){
   const i=window._vformI,c=creatives[i];c.runs=c.runs||[];
   const start=document.getElementById('rf-start').value||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
-  const open=c.runs.find(r=>!r.end);if(open)open.end=start;
+  const open=c.runs.find(r=>r.start&&!r.end);if(open)open.end=start;
   c.runs.push({r:c.runs.length+1,phase:document.getElementById('rf-phase').value,camp:document.getElementById('rf-camp').value,adset:document.getElementById('rf-adset').value,meta:document.getElementById('rf-meta').value,start:start,end:null,snap:null,note:document.getElementById('rf-note').value});
   toast('运行记录已加(原型:内存,刷新重置)');
   cancelRun();openCreativeDetail(i);
