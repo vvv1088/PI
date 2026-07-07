@@ -14,6 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v58] — 2026-07-07 · Monthly Plan:按品牌各自确认发送 + 布局微调
+
+- **确认改为按品牌、由该品牌 Marketing 负责人自己发**(线下和 V 审批后):每张品牌卡自带「✔ 确认发送」按钮,只有该品牌的 mkt 负责人(bgAssign)或 Admin 可见可按;确认后卡头显示绿色「✔ 已确认 · 谁」;重发有提示。Joey 只能发 OK188/INZ9,Bryan 只能发 17WIN/SBKH(实测互相拦截)。
+- `monthly_plans` 重建为 (month,brand) 主键,快照按品牌存。
+- 去掉品牌卡的灰色负责人字段(mkt/usc/决策 一串)。
+- 导航:Monthly Plan 移到 Creatives 之后。
+- 验证:headless 权限矩阵实测(joey/bryan 互斥)通过。
+
 ## [v57] — 2026-07-07 · 新增 Monthly Plan 总览页 + 确认本月计划
 
 - **新页面 Monthly Plan**(PI 组第一位):当月安排一页总览 —— 每品牌一卡:最终预算+状态+三方负责人;该月排期(按预计上线日归月)的假设列表(陈述/Stage/Schedule/素材数/Owner/状态,点行直达抽屉)。
