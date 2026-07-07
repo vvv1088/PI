@@ -110,20 +110,20 @@ V_FIRST=[{"v":1,"date":"2026-06-17","ev":"first","status":"saved","copy":{"headl
 
 CREATIVES = [
  # H1 (hook varies) -> clean
- cr("HYP-001-V1","HYP-001","HYP-001 · 提款到账","素材 1","VIDEO","withdrawal_proof","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"320","fdc":"9","cpa":"35.6"}]),
- cr("HYP-001-V2","HYP-001","HYP-001 · 提款到账","素材 2","VIDEO","fast_payout","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"300","fdc":"7","cpa":"42.9"}]),
+ cr("HYP-001-V1","HYP-001","HYP-001 · 提款到账","素材 1","VIDEO","withdrawal_proof","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"320"},{"week":"2026-W28","spend":"9500"}]),
+ cr("HYP-001-V2","HYP-001","HYP-001 · 提款到账","素材 2","VIDEO","fast_payout","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"300"},{"week":"2026-W28","spend":"8000"}]),
  # H2 (format x hook) -> clean 2x2 (VIDEO/IMAGE  x  withdrawal_proof/big_win)
  cr("HYP-002-V1","HYP-002","HYP-002 · Format×Hook","素材 1","VIDEO","withdrawal_proof","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V2","HYP-002","HYP-002 · Format×Hook","素材 2","VIDEO","big_win","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V3","HYP-002","HYP-002 · Format×Hook","素材 3","IMAGE","withdrawal_proof","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V4","HYP-002","HYP-002 · Format×Hook","素材 4","IMAGE","big_win","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  # H3 (format x hook) -> Format has 3 values -> crossbad
- cr("HYP-003-V1","HYP-003","HYP-003 · 体育季","素材 1","VIDEO","big_win","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
+ cr("HYP-003-V1","HYP-003","HYP-003 · 体育季","素材 1","VIDEO","big_win","real_person","tier_bonus","sports","P5","A2534","上线中",V_FIRST,[{"week":"2026-W28","spend":"6000"},{"week":"2026-W29","spend":"3200"}]),
  cr("HYP-003-V2","HYP-003","HYP-003 · 体育季","素材 2","IMAGE","big_win","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  cr("HYP-003-V3","HYP-003","HYP-003 · 体育季","素材 3","CAROUSEL","high_odds","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  cr("HYP-003-V4","HYP-003","HYP-003 · 体育季","素材 4","VIDEO","high_odds","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  # H4 (visual_style varies) but both same -> nodiff
- cr("HYP-004-V1","HYP-004","HYP-004 · 视觉风格","素材 1","VIDEO","big_win","game_screenshot","fd_bonus","live_casino","P3","A1824","待上线",V_FIRST),
+ cr("HYP-004-V1","HYP-004","HYP-004 · 视觉风格","素材 1","VIDEO","big_win","game_screenshot","fd_bonus","live_casino","P3","A1824","上线中",V_FIRST,[{"week":"2026-W28","spend":"8100"}]),
  cr("HYP-004-V2","HYP-004","HYP-004 · 视觉风格","素材 2","VIDEO","big_win","game_screenshot","fd_bonus","live_casino","P3","A1824","待上线",V_FIRST),
  # H6 single creative (insufficient demo)
  cr("HYP-006-V1","HYP-006","HYP-006 · 红利结构","素材 1","IMAGE","promo_value","official_design","tier_bonus","slots","P6","A45P","待上线",V_FIRST),
@@ -191,23 +191,42 @@ AUDIT = [
  {"id":4,"user_id":"5bea4914-67e8-4dcd-a07a-d4056e44abfa","username":"joey","name":"Joey","section":"creative","action":"edit","target":"HYP-001-V1","created_at":ts("2026-06-17")},
 ]
 
-# ---------- budget (每月各品牌:Marketing 申请 → USC 核批) ----------
-def bud(month, brand, req, allo, spent, note=None):
-    return {"month":month,"brand":brand,"requested":req,"allocated":allo,"spent":spent,"note":note}
+# ---------- budget 分工(品牌 → mkt/usc/决策人)----------
+BUDGET_ASSIGN = [
+ {"brand":"OK188KH","mkt_user":"joey","usc_user":"anna","decider_user":"zq"},
+ {"brand":"17WINKH","mkt_user":"bryan","usc_user":"jk","decider_user":"zq"},
+ {"brand":"SBKH","mkt_user":"bryan","usc_user":"wj","decider_user":"zq"},
+ {"brand":"INZ9","mkt_user":"joey","usc_user":None,"decider_user":"zq"},
+]
+
+# ---------- budget (每月各品牌:申请→核批→决策,全字段)----------
+def bud(month, brand, **k):
+    d={"month":month,"brand":brand,"requested":None,"requested_by":None,"requested_reason":None,"requested_at":None,
+       "allocated":None,"allocated_by":None,"allocated_reason":None,"allocated_at":None,
+       "final_amount":None,"final_by":None,"final_reason":None,"decided_at":None}
+    d.update(k);return d
 BUDGETS = [
- # Jul 2026 —— 覆盖四种状态:已满足 / 部分核批 / 已满足 / 待核批
- bud("Jul 2026","OK188KH",30000,30000,18500,"主力品牌"),
- bud("Jul 2026","17WINKH",25000,20000,12000,"体育季想加码,核批未到位"),
- bud("Jul 2026","SBKH",15000,15000,9000,None),
- bud("Jul 2026","INZ9",12000,None,None,"MY 新市场,待 USC 核批"),
- # Jun 2026 —— 历史一条
- bud("Jun 2026","OK188KH",28000,28000,27200,"上月已结"),
- bud("Jun 2026","17WINKH",20000,18000,17600,None),
+ # OK188KH: 申请=核批 → ✅ 已定(自动)
+ bud("Jul 2026","OK188KH",requested=30000,requested_by="joey",requested_reason="主力品牌,维持投放",requested_at=ts("2026-07-02"),
+     allocated=30000,allocated_by="anna",allocated_at=ts("2026-07-03")),
+ # 17WINKH: 核批<申请 → 🟠 待决策(未决)
+ bud("Jul 2026","17WINKH",requested=25000,requested_by="bryan",requested_reason="体育季加码",requested_at=ts("2026-07-02"),
+     allocated=20000,allocated_by="jk",allocated_reason="Q3 整体收紧",allocated_at=ts("2026-07-03")),
+ # SBKH: 核批<申请 → 决策人 zq 折中 → ✅ 已定(已决策)
+ bud("Jul 2026","SBKH",requested=18000,requested_by="bryan",requested_reason="新玩法测试",requested_at=ts("2026-07-01"),
+     allocated=14000,allocated_by="wj",allocated_reason="预算有限",allocated_at=ts("2026-07-02"),
+     final_amount=16000,final_by="zq",final_reason="折中:先给测试一半增量",decided_at=ts("2026-07-04")),
+ # INZ9: 仅申请,USC 未分工 → 待核批
+ bud("Jul 2026","INZ9",requested=12000,requested_by="joey",requested_reason="MY 新市场试水",requested_at=ts("2026-07-02")),
+ # Jun 历史(已定)
+ bud("Jun 2026","OK188KH",requested=28000,requested_by="joey",requested_reason="上月",requested_at=ts("2026-06-02"),
+     allocated=28000,allocated_by="anna",allocated_at=ts("2026-06-03")),
 ]
 
 STORE = {
  "roles":ROLES,"role_permissions":PERMS,"profiles":PROFILES,"dict_entries":DICT,
- "ideas":IDEAS,"hypotheses":HYPS,"creatives":CREATIVES,"audit_log":AUDIT,"budgets":BUDGETS,
+ "ideas":IDEAS,"hypotheses":HYPS,"creatives":CREATIVES,"audit_log":AUDIT,
+ "budgets":BUDGETS,"budget_assignments":BUDGET_ASSIGN,
  "v_ads_gallery":ADS,"v_operator_intel":OPERATORS,"weekly_reports":REPORTS,
  "discovery_candidates":CANDIDATES,"monitor_brands":BRANDS,
 }

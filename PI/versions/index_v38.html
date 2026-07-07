@@ -112,12 +112,6 @@
   .bgtext{width:100%;min-width:120px;font-size:12.5px;padding:5px 8px;border:1px solid var(--line2);border-radius:6px}
   .bgro{font-family:var(--mono);font-size:13px;color:var(--ink2)}
   .bgst{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 10px;white-space:nowrap}
-  .bgsub{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.35}
-  .bgdemo{background:var(--violet-bg);border:1px solid var(--violet);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--violet)}
-  .bgdemo select{margin:0 4px;font-size:13px;padding:3px 6px;border:1px solid var(--violet);border-radius:6px;background:#fff;color:var(--ink)}
-  .bgtl{display:flex;flex-direction:column;gap:12px}
-  .bgtli{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--bg2);border-radius:8px}
-  .bgtlk{flex:none;width:120px;font-weight:600;font-size:13px}
   .hcell-idea{margin-bottom:3px}
   .hcell-main{line-height:1.5}
   .hcell-sub{margin-top:4px}
@@ -671,23 +665,22 @@
   <div class="head">
     <div>
       <h1>Budget</h1>
-      <div class="sub">每月各品牌预算:分工到人 · Marketing 申请 → USC 核批 → 不一致自动升级「待决策」→ 决策人拍板 · 全程留痕。</div>
+      <div class="sub">每月各品牌预算:Marketing(PO/PE)填「申请」→ USC 填「核批」。差额 / 使用率自动算,改动即时保存。</div>
     </div>
     <div class="filters">
       <select id="bg-month" onchange="bgMonth=this.value;renderBudget()"></select>
     </div>
   </div>
 
-  <div id="bgDemoBar"></div>
   <div class="strip" id="bgStrip"></div>
 
   <table>
     <thead><tr>
-      <th style="width:120px">品牌</th><th style="width:170px">Marketing 申请</th><th style="width:170px">USC 核批</th><th style="width:104px">状态</th><th style="width:150px">最终</th><th style="width:96px">已投放</th><th style="width:80px">使用率</th><th style="width:56px">历史</th>
+      <th style="width:130px">品牌</th><th>Marketing 申请</th><th>USC 核批</th><th>差额</th><th>已投放</th><th style="width:90px">使用率</th><th style="width:110px">状态</th><th>备注</th>
     </tr></thead>
     <tbody id="budgetBody"></tbody>
   </table>
-  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定,金额/理由/时间全部留痕(点「历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。</p>
+  <p class="note" style="margin-top:10px">「申请」栏仅 Marketing(PO/PE)/Admin 可改;「核批」栏仅 USC Team/Admin 可改;其余角色只读。已投放先手填,后续可接实际投放自动汇总。</p>
 </section>
 
 <!-- ============ TAG MATRIX(假设级素材标签 & 对比)============ -->
@@ -2347,47 +2340,16 @@ function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_AUTHORIZED:'
 function showLogin(){document.getElementById('loginGate').style.display='flex';}
 async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives(),loadBudgets()]);}
 
-/* ===== Budget:分工到人 + 申请/核批/决策 + 自动投放 + 留痕 ===== */
-let budgets=[],bgMonth='',budgetAssign={};
-// 分工兜底默认(生产从 budget_assignments 表读;读不到用这套)。决策人全为 zq。
-const BG_DEFAULT_ASSIGN={
-  'OK188KH':{mkt:'joey',usc:'anna',decider:'zq'},
-  '17WINKH':{mkt:'bryan',usc:'jk',decider:'zq'},
-  'SBKH':{mkt:'bryan',usc:'wj',decider:'zq'},
-  'INZ9':{mkt:'joey',usc:'',decider:'zq'}
-};
+/* ===== Budget:每月各品牌 Marketing 申请 → USC 核批 ===== */
+let budgets=[],bgMonth='';
 function bgCurMonth(){const n=new Date();return n.toLocaleString('en-US',{month:'short'})+' '+n.getFullYear();}
-async function loadBudgets(){
-  try{const {data,error}=await db.from('budgets').select('*');if(error)throw error;budgets=data||[];}catch(e){budgets=[];}
-  try{const {data,error}=await db.from('budget_assignments').select('*');if(error)throw error;
-    budgetAssign={};(data||[]).forEach(r=>{budgetAssign[r.brand]={mkt:r.mkt_user||'',usc:r.usc_user||'',decider:r.decider_user||''};});
-    if(!Object.keys(budgetAssign).length)budgetAssign=JSON.parse(JSON.stringify(BG_DEFAULT_ASSIGN));
-  }catch(e){budgetAssign=JSON.parse(JSON.stringify(BG_DEFAULT_ASSIGN));}
-}
-function bgAssign(br){return budgetAssign[br]||BG_DEFAULT_ASSIGN[br]||{mkt:'',usc:'',decider:''};}
-function bgUserName(un){if(!un)return '—';const u=users.find(x=>x.username===un);return u?u.name:un;}
-function bgMe(){return currentUser?currentUser.username:'';}
-function bgIsAdmin(){const r=curRole();return !!(r&&r.admin);}
-function bgCanEdit(br,side){if(bgIsAdmin())return true;const a=bgAssign(br);return !!a[side]&&a[side]===bgMe();}
-function bgNum(v){return (v==null||v==='')?null:+v;}
-function bgMoney(n){return (n==null)?'—':'$'+Number(n).toLocaleString('en-US');}
+async function loadBudgets(){try{const {data,error}=await db.from('budgets').select('*');if(error)throw error;budgets=data||[];}catch(e){budgets=[];}}
+function bgMoney(n){return (n==null||n==='')?'—':'$'+Number(n).toLocaleString('en-US');}
 function bgEntry(mo,br){return budgets.find(b=>b.month===mo&&b.brand===br)||null;}
-// 已投放自动汇总:该品牌当月所有素材 run 的 spend 之和(ISO 周归到月)
-function isoWeekMonthLabel(w){const m=(''+w).match(/^(\d{4})-W(\d{1,2})$/);if(!m)return '';const y=+m[1],wk=+m[2];
-  const simple=new Date(y,0,1+(wk-1)*7),dow=simple.getDay(),monday=new Date(simple);
-  if(dow<=4)monday.setDate(simple.getDate()-dow+1);else monday.setDate(simple.getDate()+8-dow);
-  return monday.toLocaleString('en-US',{month:'short'})+' '+monday.getFullYear();}
-function bgSpent(br,mo){let s=0;(creatives||[]).forEach(c=>{const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));if(!h||h.brand!==br)return;(c.runs||[]).forEach(r=>{if(isoWeekMonthLabel(r.week)===mo)s+=(+r.spend||0);});});return s;}
-// 状态 + 最终金额
-function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated),fin=bgNum(e.final_amount);
-  if(fin!=null)return 'settled';
-  if(req==null&&all==null)return 'empty';
-  if(req!=null&&all==null)return 'await_usc';
-  if(all!=null&&req!=null&&all<req)return 'decide';
-  return 'settled';}
-function bgFinalAmt(e){e=e||{};const fin=bgNum(e.final_amount);if(fin!=null)return fin;const all=bgNum(e.allocated),req=bgNum(e.requested);if(all!=null&&(req==null||all>=req))return all;return null;}
-const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],decide:['🟠 待决策','var(--amber-bg)','var(--amber)'],settled:['✅ 已定','var(--green-bg)','var(--green)']};
-function bgLocked(e){return bgNum(e&&e.final_amount)!=null;} // 决策拍板后锁
+// 谁能改哪一栏:申请=Marketing(PO/PE);核批=USC Team;Admin 两者皆可
+function bgCan(kind){const r=curRole();if(!r)return false;if(r.admin)return true;
+  if(kind==='allocate')return (r.name||'').toUpperCase().indexOf('USC')>=0;
+  return r.key==='po'||r.key==='pe';}
 function bgFillMonths(){
   const sel=document.getElementById('bg-month');if(!sel)return;
   const set={};set[bgCurMonth()]=1;budgets.forEach(b=>{if(b.month)set[b.month]=1;});
@@ -2395,120 +2357,59 @@ function bgFillMonths(){
   if(!bgMonth||arr.indexOf(bgMonth)<0)bgMonth=arr[0]||bgCurMonth();
   sel.innerHTML=arr.map(m=>`<option${m===bgMonth?' selected':''}>${m}</option>`).join('');
 }
-// 金额格(申请/核批):数字(只有分工到的人能改,且未锁)+ 下面一行 谁·理由
-function bgAmtCell(e,mo,br,side){
-  const field=side==='mkt'?'requested':'allocated';
-  const val=bgNum(e[field]),by=e[field+'_by'],reason=e[field+'_reason'];
-  const canEdit=bgCanEdit(br,side)&&!bgLocked(e);
-  const amt=canEdit
-    ? `<input type="number" class="bgnum" min="0" step="100" value="${val==null?'':val}" placeholder="—" onchange="bgSaveAmt('${mo}','${br}','${side}',this.value)">`
-    : `<span class="bgro">${bgMoney(val)}</span>`;
-  let sub='';
-  if(val!=null)sub=`<div class="bgsub">${esc(bgUserName(by))}${reason?` · <span title="${esc(reason)}">💬 ${esc(reason.length>12?reason.slice(0,12)+'…':reason)}</span>`:''}</div>`;
-  else if(canEdit)sub=`<div class="bgsub" style="color:var(--ink3)">待 ${esc(bgUserName(bgAssign(br)[side]))} 填</div>`;
-  else sub=`<div class="bgsub" style="color:var(--ink3)">${esc(bgUserName(bgAssign(br)[side]))}</div>`;
-  return amt+sub;
+function bgCell(mo,br,field,val,editable){
+  if(editable)return `<input type="number" class="bgnum" min="0" step="1" value="${val==null?'':val}" placeholder="—" onchange="saveBudget('${mo}','${br}','${field}',this.value)">`;
+  return `<span class="bgro">${bgMoney(val)}</span>`;
 }
 function renderBudget(){
-  bgFillMonths();bgRenderDemoBar();
+  bgFillMonths();
   const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
-  let tReq=0,tAll=0,tFin=0,tSp=0;
+  const canR=bgCan('request'),canA=bgCan('allocate');
+  let tReq=0,tAll=0,tSp=0;
   document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{
-    const e=bgEntry(bgMonth,br)||{},a=bgAssign(br);
-    const req=bgNum(e.requested),all=bgNum(e.allocated),fin=bgFinalAmt(e),sp=bgSpent(br,bgMonth);
-    tReq+=req||0;tAll+=all||0;tFin+=fin||0;tSp+=sp;
-    const stt=bgStatus(e),st=BG_ST[stt];
-    const usePct=(fin)?Math.round(sp/fin*100):null;
-    let finCell;
-    if(stt==='decide'){
-      finCell=(bgIsAdmin()||a.decider===bgMe())
-        ?`<button class="btn sm" style="background:var(--amber);color:#fff;border:none" onclick="bgDecide('${bgMonth}','${br}')">⚖️ 决策</button>`
-        :`<span class="bgro" style="color:var(--amber)">待 ${esc(bgUserName(a.decider))} 决策</span>`;
-    }else if(fin!=null){
-      finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(bgNum(e.final_amount)!=null?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">💬 ${esc(e.final_reason.length>12?e.final_reason.slice(0,12)+'…':e.final_reason)}</span>`:''}</div>`:'<div class="bgsub" style="color:var(--green)">自动(核批≥申请)</div>');
-    }else finCell='<span class="bgro" style="color:var(--ink3)">—</span>';
+    const e=bgEntry(bgMonth,br)||{};
+    const req=(e.requested==null?null:+e.requested),all=(e.allocated==null?null:+e.allocated),sp=(e.spent==null?null:+e.spent);
+    tReq+=req||0;tAll+=all||0;tSp+=sp||0;
+    const diff=(all!=null&&req!=null)?(all-req):null;
+    const usePct=(all)?Math.round((sp||0)/all*100):null;
+    let st,sc;
+    if(all==null){st='待 USC 核批';sc=['var(--bg2)','var(--ink3)'];}
+    else if(req!=null&&all<req){st='部分核批';sc=['var(--amber-bg)','var(--amber)'];}
+    else{st='已满足';sc=['var(--green-bg)','var(--green)'];}
     return `<tr>
       <td><b>${br}</b></td>
-      <td>${bgAmtCell(e,bgMonth,br,'mkt')}</td>
-      <td>${bgAmtCell(e,bgMonth,br,'usc')}</td>
-      <td><span class="bgst" style="background:${st[1]};color:${st[2]}">${st[0]}</span></td>
-      <td>${finCell}</td>
-      <td><span class="bgro">${sp?bgMoney(sp):'—'}</span></td>
+      <td>${bgCell(bgMonth,br,'requested',e.requested,canR)}</td>
+      <td>${bgCell(bgMonth,br,'allocated',e.allocated,canA)}</td>
+      <td class="bgro" style="color:${diff==null?'var(--ink3)':diff<0?'var(--red)':'var(--green)'}">${diff==null?'—':(diff>=0?'+':'−')+'$'+Math.abs(diff).toLocaleString('en-US')}</td>
+      <td>${bgCell(bgMonth,br,'spent',e.spent,canR)}</td>
       <td>${usePct==null?'<span class="bgro" style="color:var(--ink3)">—</span>':`<span class="bgro" style="color:${usePct>100?'var(--red)':usePct>85?'var(--amber)':'var(--green)'}">${usePct}%</span>`}</td>
-      <td><button class="btn ghost sm" title="看时间线" onclick="bgHistory('${bgMonth}','${br}')">🕘</button></td>
+      <td><span class="bgst" style="background:${sc[0]};color:${sc[1]}">${st}</span></td>
+      <td>${(canR||canA)?`<input type="text" class="bgtext" value="${esc(e.note||'')}" placeholder="备注…" onchange="saveBudget('${bgMonth}','${br}','note',this.value)">`:`<span class="bgro" style="color:var(--ink2)">${esc(e.note||'—')}</span>`}</td>
     </tr>`;
   }).join('');
-  const stat=(v,l)=>`<div class="stat"><b>${v}</b><label>${l}</label></div>`;
+  const totDiff=tAll-tReq,totUse=tAll?Math.round(tSp/tAll*100):null;
   document.getElementById('bgStrip').innerHTML=
-    stat('$'+tReq.toLocaleString('en-US'),'总申请')+stat('$'+tAll.toLocaleString('en-US'),'总核批')+
-    stat('$'+tFin.toLocaleString('en-US'),'最终合计')+stat('$'+tSp.toLocaleString('en-US'),'已投放')+
-    stat(tFin?Math.round(tSp/tFin*100)+'%':'—','使用率');
+    `<div class="stat"><b>$${tReq.toLocaleString('en-US')}</b><label>总申请 Requested</label></div>`+
+    `<div class="stat"><b>$${tAll.toLocaleString('en-US')}</b><label>总核批 Allocated</label></div>`+
+    `<div class="stat"><b style="color:${totDiff<0?'var(--red)':'var(--green)'}">${totDiff>=0?'+':'−'}$${Math.abs(totDiff).toLocaleString('en-US')}</b><label>差额 Diff</label></div>`+
+    `<div class="stat"><b>$${tSp.toLocaleString('en-US')}</b><label>已投放 Spent</label></div>`+
+    `<div class="stat"><b>${totUse==null?'—':totUse+'%'}</b><label>使用率 Utilization</label></div>`;
 }
-async function bgSaveAmt(mo,br,side,value){
-  const field=side==='mkt'?'requested':'allocated';
-  if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');renderBudget();return;}
-  const v=bgNum(value);if(value!==''&&(v==null||isNaN(v)||v<0)){toast('请输入非负数字');renderBudget();return;}
-  let e=bgEntry(mo,br)||{};
-  if(bgLocked(e)){toast('已定并锁定,需决策人重开');renderBudget();return;}
-  let reason=e[field+'_reason']||null;
-  if(field==='allocated'&&v!=null){
-    const req=bgNum(e.requested);
-    if(req!=null&&v<req){const r=prompt('核批低于申请('+bgMoney(v)+' < '+bgMoney(req)+'),必须写原因:',reason||'');if(r===null){renderBudget();return;}if(!(r||'').trim()){toast('核批低于申请必须写原因');renderBudget();return;}reason=r.trim();}
-    else{const r=prompt('核批理由(可选):',reason||'');if(r!==null)reason=(r||'').trim()||null;}
-  }else if(field==='requested'&&v!=null){const r=prompt('申请理由(建议填):',reason||'');if(r!==null)reason=(r||'').trim()||null;}
-  const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();
-  const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
+async function saveBudget(mo,br,field,value){
+  const kind=field==='allocated'?'allocate':'request';
+  if(field!=='note'&&!bgCan(kind)){toast('当前岗位不可改这一栏');return;}
+  if(field==='note'&&!(bgCan('request')||bgCan('allocate'))){toast('当前岗位不可改备注');return;}
+  let v;
+  if(field==='note'){v=(value||'').trim()||null;}
+  else{v=(value===''||value==null)?null:Number(value);if(v!=null&&(isNaN(v)||v<0)){toast('请输入非负数字');renderBudget();return;}}
+  let e=bgEntry(mo,br);
   try{
-    if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-    else{const {error}=await db.from('budgets').insert(patch);if(error)throw error;budgets.push(patch);}
+    if(e){const patch={updated_at:new Date().toISOString()};patch[field]=v;const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;e[field]=v;}
+    else{const ins={month:mo,brand:br};ins[field]=v;const {error}=await db.from('budgets').insert(ins);if(error)throw error;budgets.push(ins);}
   }catch(err){toast('保存失败: '+rpcErr(err));return;}
-  logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
-  if(after==='decide'&&prev!=='decide')bgSlack('decide',bgEntry(mo,br),br,mo);
-  else if(after==='settled'&&prev!=='settled')bgSlack('settled',bgEntry(mo,br),br,mo);
+  logAction('budget',field==='requested'?'申请':field==='allocated'?'核批':field==='spent'?'投放':'备注',br+' '+mo);
   renderBudget();
 }
-async function bgDecide(mo,br){
-  const a=bgAssign(br);
-  if(!(bgIsAdmin()||a.decider===bgMe())){toast('只有决策人('+bgUserName(a.decider)+')或 Admin 可拍板');return;}
-  const e=bgEntry(mo,br)||{};const req=bgNum(e.requested),all=bgNum(e.allocated);
-  const dv=prompt('最终预算(申请 '+bgMoney(req)+' / 核批 '+bgMoney(all)+'):',(all!=null?all:req)||'');
-  if(dv===null)return;const v=bgNum(dv);if(v==null||isNaN(v)||v<0){toast('请输入非负数字');return;}
-  const rr=prompt('决定原因(必填):',e.final_reason||'');if(rr===null)return;if(!(rr||'').trim()){toast('决策必须写原因');return;}
-  const patch={final_amount:v,final_by:bgMe(),final_reason:rr.trim(),decided_at:new Date().toISOString()};
-  try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-  catch(err){toast('保存失败: '+rpcErr(err));return;}
-  logAction('budget','决策',br+' '+mo+' → '+bgMoney(v));
-  bgSlack('settled',e,br,mo);toast('已定 '+bgMoney(v));renderBudget();
-}
-function bgHistory(mo,br){
-  const e=bgEntry(mo,br)||{},rows=[];
-  if(e.requested!=null)rows.push(['📝 申请',e.requested,e.requested_by,e.requested_reason,e.requested_at]);
-  if(e.allocated!=null)rows.push(['🏦 核批',e.allocated,e.allocated_by,e.allocated_reason,e.allocated_at]);
-  if(bgStatus(e)==='decide')rows.push(['🟠 升级待决策','','','申请与核批不一致,已通知决策人 '+bgUserName(bgAssign(br).decider),'']);
-  if(e.final_amount!=null)rows.push(['⚖️ 决策',e.final_amount,e.final_by,e.final_reason,e.decided_at]);
-  let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:14px">预算时间线(留痕)</div>';
-  h+= rows.length?('<div class="bgtl">'+rows.map(r=>`<div class="bgtli"><div class="bgtlk">${r[0]}</div><div>${r[1]!==''?`<b>${bgMoney(bgNum(r[1]))}</b> · `:''}${r[2]?esc(bgUserName(r[2])):''}${r[4]?` · <span style="color:var(--ink3)">${new Date(r[4]).toLocaleString('zh-CN')}</span>`:''}${r[3]?`<div class="bgsub" style="color:var(--ink2)">💬 ${esc(r[3])}</div>`:''}</div></div>`).join('')+'</div>'):'<p style="color:var(--ink3)">还没有任何记录。</p>';
-  document.getElementById('d-title').textContent='Budget 历史';
-  document.getElementById('d-body').innerHTML=h;
-  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
-}
-// Slack 触发点(Phase B 接 n8n webhook + @ 需要 Slack user id 映射);演示版用 toast 展示会发什么
-function bgSlack(kind,e,br,mo){
-  const a=bgAssign(br);let msg;
-  if(kind==='decide')msg='🟠 预算待决 · '+br+' · '+mo+' — 申请 '+bgMoney(bgNum(e.requested))+' / 核批 '+bgMoney(bgNum(e.allocated))+'。请 @'+bgUserName(a.decider)+' 定夺。';
-  else msg='✅ 预算已定 · '+br+' · '+mo+' — 最终 '+bgMoney(bgFinalAmt(e))+(e.final_reason?'(原因:'+e.final_reason+')':'')+' cc @'+bgUserName(a.mkt)+(a.usc?' @'+bgUserName(a.usc):'');
-  logAction('budget','slack',br+' '+mo+' '+kind);
-  if(window.__DEMO__)toast('📨(演示)会发 Slack:'+msg);
-  // TODO(Phase B): fetch(BUDGET_SLACK_WEBHOOK,{method:'POST',body:JSON.stringify({text:msg,...@mentions})})
-}
-// 演示版身份切换条(仅 demo,方便看不同人能编辑哪些格子)
-function bgRenderDemoBar(){
-  const el=document.getElementById('bgDemoBar');if(!el)return;
-  if(!window.__DEMO__){el.innerHTML='';return;}
-  const list=['eling','joey','bryan','anna','jk','wj','zq'];
-  el.innerHTML='<div class="bgdemo">🎭 演示 · 以此身份查看:<select onchange="bgSwitchUser(this.value)">'+list.map(u=>{const usr=users.find(x=>x.username===u);return `<option value="${u}"${bgMe()===u?' selected':''}>${usr?esc(usr.name):u} (${u})</option>`;}).join('')+'</select> <span style="color:var(--ink3)">← 切人看谁能改哪格(仅演示版)</span></div>';
-}
-function bgSwitchUser(un){const u=users.find(x=>x.username===un);if(!u)return;currentUser=u;try{applyChrome();}catch(e){}renderBudget();}
 async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}

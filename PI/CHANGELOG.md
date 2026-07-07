@@ -14,6 +14,23 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v39] — 2026-07-07 · Budget 升级为完整流程:分工到人 + 决策仲裁 + 自动投放 + 留痕【预览版】
+
+按团队确认的规则,把 Budget 从「一张表」升级成完整流程:
+
+- **分工到人**(`budget_assignments`,兜底默认 `BG_DEFAULT_ASSIGN`):每个品牌指定 mkt 负责人 / usc 负责人 / 决策人。本期:决策人全 = ZQ;USC:OK188=Anna、17WIN=JK、SBKH=WJ、INZ9=空;MKT:OK188=Joey、17WIN/SBKH=Bryan、INZ9=Joey。
+- **按人 gate 编辑**(`bgCanEdit`):只有被分工到 (品牌,侧) 的人或 Admin 能改对应格子;其余只读。
+- **申请/核批各带理由 + 谁 + 时间**;**核批 < 申请 强制写原因**并自动升级状态。
+- **状态机**(`bgStatus`):待填 → 待核批 → 🟠待决策(核批<申请)→ ✅已定。核批≥申请自动已定;不一致进「待决策」。
+- **决策仲裁**(`bgDecide`):决策人/Admin 填最终金额 + 原因 → 已定并**锁定**(`bgLocked`,事后只有决策人能重开)。
+- **已投放自动汇总**(`bgSpent` + `isoWeekMonthLabel`):按素材 run 的 spend、经所属假设的品牌、归到当月求和;使用率 = 已投放/最终。
+- **留痕**:每步进 `audit_log`;点「🕘 历史」看该格完整时间线(申请→核批→[升级]→决策,金额/人/时间/理由)。
+- **Slack 触发点**(`bgSlack`):进「待决策」通知决策人、「已定」通知双方;演示版用 toast 展示会发的内容,**真正发送(经 n8n + @人)为 Phase B,待 Slack user id**。
+- 顶部汇总条:总申请/总核批/最终合计/已投放/使用率。**演示版身份切换条**(`bgRenderDemoBar`,仅 `window.__DEMO__`)可切 Joey/Anna/ZQ… 看各自能编辑哪些格。
+- demo:seed 分工表 + 4 品牌覆盖四态(OK已定/17WIN待决策/SBKH已决策锁定/INZ9待核批)+ July 素材 run 供自动汇总(OK $17.5k / 17WIN $9.2k / SBKH $8.1k)。
+- 验证:`node --check` 通过;headless 实测——四态、⚖️决策、自动投放三品牌数值、决策锁定只读、汇总条全部正确,无 pageerror。
+- **待办(上线前)**:① 建 `budgets`(全字段)+ `budget_assignments` 表 + RLS ② Slack:同一频道 + @相关人(需要各人 Slack user id)③ 分工表 Admin 编辑面板。
+
 ## [v38] — 2026-07-07 · 新增 Budget 页(Marketing 申请 → USC 核批)【预览版,待确认设计】
 
 - **新页面 `Budget`**(Planning Intelligence 组,Creatives 之后):每月各品牌预算表。
