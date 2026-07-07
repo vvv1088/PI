@@ -2672,7 +2672,7 @@ async function confirmMonthlyPlan(br){
   const rec={month:mpMonth,brand:br,confirmed_by:bgMe(),confirmed_at:new Date().toISOString(),summary:summary};
   if(idx>=0)monthlyPlans[idx]=rec;else monthlyPlans.push(rec);
   logAction('budget','确认计划',br+' '+mpMonth);
-  // TODO(Slack Phase B):POST summary 到 n8n webhook → point-form → 发频道 + @负责人
+  misNotify({kind:'plan_confirmed',by:bgMe(),summary:summary});
   if(window.__DEMO__)toast('📨(演示)'+br+' 已确认 — Slack 接入后自动通知');else toast('✔ '+br+' '+mpMonth+' 计划已确认(Slack 通知待接入)');
   renderMonthlyPlan();
 }
@@ -2871,14 +2871,18 @@ function bgHistory(mo,br){
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
 }
-// Slack 触发点(Phase B 接 n8n webhook + @ 需要 Slack user id 映射);演示版用 toast 展示会发什么
+// 通知链路:POST 到 adam mkt n8n 的 mis-notify webhook(格式化+@人+发 Slack feed-ci)
+const MIS_NOTIFY_URL='https://adammkt.app.n8n.cloud/webhook/mis-notify';
+function misNotify(payload){if(window.__DEMO__)return;try{fetch(MIS_NOTIFY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(e){}}
+// Slack 触发点
 function bgSlack(kind,e,br,mo){
   const a=bgAssign(br);let msg;
   if(kind==='decide')msg='预算待决 · '+br+' · '+mo+' — 申请 '+bgMoney(bgNum(e.requested))+' / 核批 '+bgMoney(bgNum(e.allocated))+'。请 @'+bgUserName(a.decider)+' 定夺。';
   else msg='预算已定 · '+br+' · '+mo+' — 最终 '+bgMoney(bgFinalAmt(e))+(e.final_reason?'(原因:'+e.final_reason+')':'')+' cc @'+bgUserName(a.mkt)+(a.usc?' @'+bgUserName(a.usc):'');
   logAction('budget','slack',br+' '+mo+' '+kind);
-  if(window.__DEMO__)toast('📨(演示)会发 Slack:'+msg);
-  // TODO(Phase B): fetch(BUDGET_SLACK_WEBHOOK,{method:'POST',body:JSON.stringify({text:msg,...@mentions})})
+  if(window.__DEMO__){toast('📨(演示)会发 Slack:'+msg);return;}
+  if(kind==='decide')misNotify({kind:'budget_decide',month:mo,brand:br,requested:bgNum(e.requested),allocated:bgNum(e.allocated),decider:a.decider});
+  else misNotify({kind:'budget_settled',month:mo,brand:br,final:bgFinalAmt(e),reason:e.final_reason||'',mkt:a.mkt,usc:a.usc||''});
 }
 // 演示版身份切换条(仅 demo,方便看不同人能编辑哪些格子)
 function bgRenderDemoBar(){

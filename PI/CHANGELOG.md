@@ -14,6 +14,16 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v60] — 2026-07-07 · Slack 通知链路接通(Phase B)
+
+- **前端**:`misNotify()` → POST 到 adam mkt n8n `webhook/mis-notify`;三个触发点接上 —— Monthly Overview「确认发送」(整月计划 point-form)、Budget 升级「待决策」(@决策人)、「已定」(cc mkt+usc)。demo 模式不发。
+- **n8n(adam mkt,与 ohmeidaa 的 CI 各跑各的,无冲突)**:
+  - `MIS Slack Notify`(已激活):webhook 收事件 → 格式化 + @人(**按名字 tag,不用 ID**)→ POST Slack incoming webhook(feed-ci)。
+  - `MIS Daily Reminders`(草稿,等贴 URL 后激活):每天 09:00 调 `mis_reminders` RPC → 逐条转发。
+- **DB**:`mis_reminders(p_secret)` RPC(密钥存 app_config)—— 每日:测试到期未判定 @owner、该上线未上线 @owner、效果告警(周花费>$50 且 FDC=0);月度节奏 **20 号**催 mkt 填下月申请 → **25 号**催 usc 核批 → **30 号**催确认发送;周一汇总(AI 想法/超期想法/待审候选)。
+- Slack ID 全部查实(Joey/Bryan/Anna/JK/WenJie/ZQ);正式频道 #dept-crm-marketing-feed-ci,测试消息已发 #test-test。
+- **剩最后一步(用户)**:把 feed-ci 的 incoming webhook URL 贴进「MIS Slack Notify」的 Send to Slack 节点,然后激活「MIS Daily Reminders」。
+
 ## [v59] — 2026-07-07 · Monthly Plan 改名 Monthly Overview + 品牌筛选
 
 - 页面/导航改名 **Monthly Overview**。
