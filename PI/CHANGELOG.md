@@ -14,6 +14,12 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v47] — 2026-07-07 · 文案:Creatives「预计排期」→ Schedule + 去掉「(取自基础卡)」灰字
+
+- Creatives 表头「预计排期」→ **Schedule**(与其它英文表头统一)。
+- New Hypothesis 右侧 Capacity Check 周期回显去掉灰字说明:填了显示 `14 天`,未填显示 `—`(原「14 天(取自基础卡)」/「= 基础卡「测试周期」」)。
+- 验证:`node --check` 通过。
+
 ## [v46] — 2026-07-07 · New Hypothesis:「测试周期」与 Capacity Check「周期」合一
 
 - 问题:基础卡新加的「测试周期(天)」和右侧 Capacity Check 的「周期(天)」重复,同一个测试窗口填两遍还可能填不一致。

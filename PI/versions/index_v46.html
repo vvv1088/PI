@@ -664,7 +664,7 @@
 
   <table>
     <thead><tr>
-      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:190px;color:var(--violet);padding-right:24px">Schedule</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
+      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:190px;color:var(--violet);padding-right:24px">预计排期</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
     </tr></thead>
     <tbody id="creativeBody"></tbody>
   </table>
@@ -1928,7 +1928,7 @@ function capacity(own,brand,metric,target,manual){
   const out=document.getElementById('cc-out');
   // 周期 = 基础卡「测试周期(天)」(hf-plan-days),单一事实源,不再单独填
   const budRaw=(document.getElementById('cc-budget')||{}).value,daysRaw=(document.getElementById('hf-plan-days')||{}).value;
-  const echo=document.getElementById('cc-days-echo');if(echo)echo.textContent=daysRaw?(daysRaw+' 天'):'—';
+  const echo=document.getElementById('cc-days-echo');if(echo)echo.textContent=daysRaw?(daysRaw+' 天(取自基础卡)'):'= 基础卡「测试周期」';
   if(!budRaw||!daysRaw){out.innerHTML='<div class="light gray"><div class="tt"><span class="dot"></span>请填日预算与测试周期(基础卡)</div></div>';return;}
   const bud=parseFloat(budRaw)||0;
   const days=parseFloat(daysRaw)||0;
