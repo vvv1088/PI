@@ -512,8 +512,8 @@
       <h1>New Hypothesis</h1>
     </div>
     <div class="filters">
-      <button class="btn ghost" data-perm="hypo:add" onclick="saveHypothesis('草稿')">Draft</button>
-      <button class="btn" data-perm="hypo:add" onclick="saveHypothesis('待锁定')">Save</button>
+      <button class="btn ghost" data-perm="hypo:add" onclick="guard(()=>saveHypothesis('草稿'))">Draft</button>
+      <button class="btn" data-perm="hypo:add" onclick="guard(()=>saveHypothesis('待锁定'))">Save</button>
     </div>
   </div>
 
@@ -919,9 +919,9 @@ function renderPool(){
    const canSpawn=i.st!=='搁置'&&i.st!=='已归档';
    return `
    <tr class="${over?'overdue':''} ${i.st==='已归档'?'archived':''}">
-    <td><span class="code">${i.id}</span> &nbsp;${i.txt}</td>
-    <td><span class="src src-${i.src}">${i.src}</span></td>
-    <td>${i.tags.length?i.tags.map(t=>`<span class="tag" title="${ZH[t]||t}">${t}</span>`).join(''):'<span class="code" style="color:var(--ink3)">—</span>'}</td>
+    <td><span class="code">${i.id}</span> &nbsp;${esc(i.txt)}</td>
+    <td><span class="src src-${i.src}">${esc(i.src)}</span></td>
+    <td>${i.tags.length?i.tags.map(t=>`<span class="tag" title="${esc(ZH[t]||t)}">${esc(t)}</span>`).join(''):'<span class="code" style="color:var(--ink3)">—</span>'}</td>
     <td><span class="pill pri-${i.pri}">${i.pri}</span></td>
     <td>${i.by==='AI'?'<span class="byai">AI</span>':esc(i.by)}</td>
     <td class="code">2026/${i.date}</td>
@@ -1112,7 +1112,7 @@ function renderTagMatrix(){
   applyPerms();
 }
 function dictName(dimKey,code){const tab=DIM_DICT_TAB[dimKey],r=(DICT[tab]||[]).find(x=>x.c===code);return r?esc(r.n||r.c):esc(code);}
-function tmEditable(){const hyp=hypos.find(h=>h.id===window._tmHyp);const lk=hyp&&hyp.lockedTags&&hyp.lockedTags._locked;const admin=typeof curRole==='function'&&curRole()&&curRole().admin;return !lk||admin;}
+function tmEditable(){const hyp=hypos.find(h=>h.id===window._tmHyp);const lk=hyp&&hyp.lockedTags&&hyp.lockedTags._locked;const admin=typeof curRole==='function'&&curRole()&&curRole().admin;if(!admin&&!can('hypo','edit')&&!can('creative','edit'))return false;return !lk||admin;}
 async function tmSaveHyp(hyp,patch){try{const {error}=await db.from('hypotheses').update(Object.assign({updated_at:new Date().toISOString()},patch)).eq('code',hyp.id);if(error)throw error;}catch(e){toast('保存失败: '+rpcErr(e));}}
 async function tmEnsureRows(hyp,target){
   const existing=creatives.filter(c=>(c.hyp||'').startsWith(hyp.id));
@@ -1292,14 +1292,14 @@ function renderHypo(){
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
     <td>
      ${h.idea?`<div class="hcell-idea"><span class="pill ideam" title="来自想法: ${esc(h.idea)}">💡${esc((h.idea+'').split(' ')[0])}</span></div>`:''}
-     <div class="hcell-main"><span class="code">${h.id}</span> <span class="hx">${h.x}</span></div>
+     <div class="hcell-main"><span class="code">${h.id}</span> <span class="hx">${esc(h.x)}</span></div>
     </td>
     <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?`<div>${new Date(h.created).toLocaleDateString('zh-CN')}</div><div style="color:var(--ink3);font-size:11px">${new Date(h.created).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</div>`:'—'}</td>
     <td>${h.stage?`<span class="pill" style="background:${stageColor(h.stage)[0]};color:${stageColor(h.stage)[1]};font-size:11px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span>`:'<span style="color:var(--ink3)">—</span>'}</td>
-    <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
+    <td><div class="qt"><b>${esc(h.metric)}</b></div><div class="hmeta">${esc(h.from)} → ${esc(h.to)}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
     <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>
-    <td>${h.brand}</td><td>${h.type}</td><td>${h.owner}</td>
+    <td>${esc(h.brand)}</td><td>${esc(h.type)}</td><td>${esc(h.owner)}</td>
     <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':'绿'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
    </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
@@ -1355,7 +1355,7 @@ function openDrawer(i){
   const h=hypos[i];
   document.getElementById('d-title').textContent=h.id+' · '+h.brand+' · '+h.month;
   let tests=h.tests.length?h.tests.map(t=>`
-    <tr><td>${t.n.includes('主力')?'<b style="color:var(--green)">'+t.n+'</b>':t.n}</td><td class="code">${t.meta}</td><td>${t.bud}</td><td>${t.st.includes('异常')?'<span style="color:var(--red);font-weight:600">'+t.st+'</span>':t.st}</td></tr>`).join('')
+    <tr><td>${t.n.includes('主力')?'<b style="color:var(--green)">'+esc(t.n)+'</b>':esc(t.n)}</td><td class="code">${esc(t.meta)}</td><td>${esc(t.bud)}</td><td>${t.st.includes('异常')?'<span style="color:var(--red);font-weight:600">'+esc(t.st)+'</span>':esc(t.st)}</td></tr>`).join('')
     :'<tr><td colspan="4" style="color:var(--ink3)">暂无测试记录 — 锁定后创建</td></tr>';
   const cr=creatives.filter(c=>c.hyp.startsWith(h.id));
   let crHtml=`<div class="card" style="margin-top:14px"><h3>Creatives · 关联素材(${cr.length})<button class="btn ghost sm" style="float:right" onclick="openTagMatrix('${h.id}')">素材管理 & 标签 →</button></h3>
@@ -1369,8 +1369,8 @@ function openDrawer(i){
       <h3>Verdict · 验证结论</h3>
       <div class="kv" style="margin:0">
         <dt>结果</dt><dd><span class="res-${h.verdict.res}">${h.verdict.res}</span> <span class="conf-${h.verdict.conf}">数据${h.verdict.conf}</span>${h.verdict.conf==='勉强'?' <small style="color:var(--ink3)">不计入胜率统计</small>':''}</dd>
-        <dt>学到了什么</dt><dd>${h.verdict.learn}</dd>
-        <dt>下月约束</dt><dd><b>${h.verdict.next}</b></dd>
+        <dt>学到了什么</dt><dd>${esc(h.verdict.learn)}</dd>
+        <dt>下月约束</dt><dd><b>${esc(h.verdict.next)}</b></dd>
       </div>
     </div>`:'';
   const canDel=cr.every(c=>(!c.versions||c.versions.length===0)&&(!c.runs||c.runs.length===0));
@@ -1398,7 +1398,7 @@ function openDrawer(i){
       <dt>人群</dt><dd>${h.persona?dictName('audience',h.persona):'—'}</dd>
       <dt>年龄段</dt><dd>${h.age?dictName('age',h.age):'—'}</dd>
       <dt>本次测维度</dt><dd>${(h.testDims&&h.testDims.length)?h.testDims.map(dimLabel).join(' × '):'<span style="color:var(--ink3)">在「素材管理 & 标签」页勾选</span>'}</dd>
-      <dt>证据</dt><dd>${h.evi}</dd>
+      <dt>证据</dt><dd>${esc(h.evi)}</dd>
       <dt>提出人</dt><dd>${h.owner}</dd>
       <dt>创建时间</dt><dd class="sm">${h.created?new Date(h.created).toLocaleString('zh-CN'):'—'}</dd>
     </div>
@@ -1453,7 +1453,7 @@ function openCreative(i){
   const perf=vs.filter(v=>v.ev==='perf'),K=perf.length,Kc=perf.filter(v=>v.chg==='copy'||v.chg==='both').length,Ki=perf.filter(v=>v.chg==='image'||v.chg==='both').length;
   const isDraft=cur.status==='draft';
   const F=[['Primary text','p'],['Headline','h'],['Description','d'],['CTA','c']];
-  const curRows=F.map(([lab,k])=>`<div class="cprow"><div class="cplab">${lab}</div><div class="cpcell" style="grid-column:span 2">${cc[k]||'—'}</div></div>`).join('');
+  const curRows=F.map(([lab,k])=>`<div class="cprow"><div class="cplab">${lab}</div><div class="cpcell" style="grid-column:span 2">${esc(cc[k]||'—')}</div></div>`).join('');
   const overview=noVer
     ?`还没有版本 — 填了第一版后这里显示版本数、被拒 / 迭代次数`
     :isDraft
@@ -1467,7 +1467,7 @@ function openCreative(i){
     </div>
     <div style="margin:2px 0 6px"><span class="cst cst-${c.stc}">${c.st}</span></div>
     <div class="kv">
-      <dt>关联假设</dt><dd>${c.hyp}</dd>
+      <dt>关联假设</dt><dd>${esc(c.hyp)}</dd>
       <dt>Format</dt><dd class="code">${c.fmt}</dd>
       <dt>Hook</dt><dd>${c.hook} · ${ZH[c.hook]||''}</dd>
       <dt>Visual Style</dt><dd>${c.vs} · ${ZH[c.vs]||''}</dd>
@@ -1505,14 +1505,14 @@ function openCreativeDetail(i){
         <div><span class="vno">v${v.v}</span> ${sb(v)} <span style="color:var(--ink3);font-size:11px">· ${v.date} · ${evlab[v.ev]||''}</span></div>
         <div>${snap}</div>
       </div>
-      <div class="vreason">${v.reason||''}</div>
+      <div class="vreason">${esc(v.reason||'')}</div>
       <div class="vbody">
         ${thumbBox(v.img,v.imgSrc,c.label,64)}
         <div class="vcopy">
-          <div><span class="vk">Primary</span>${co.p||'—'}</div>
-          <div><span class="vk">Headline</span>${co.h||'—'}</div>
-          <div><span class="vk">Description</span>${co.d||'—'}</div>
-          <div><span class="vk">CTA</span>${co.c||'—'}</div>
+          <div><span class="vk">Primary</span>${esc(co.p||'—')}</div>
+          <div><span class="vk">Headline</span>${esc(co.h||'—')}</div>
+          <div><span class="vk">Description</span>${esc(co.d||'—')}</div>
+          <div><span class="vk">CTA</span>${esc(co.c||'—')}</div>
         </div>
       </div>
     </div>`;
@@ -1523,11 +1523,11 @@ function openCreativeDetail(i){
         <div><span class="vno">运行 ${r.r}</span> ${pb(r.phase)} <span style="color:var(--ink3);font-size:11px">· ${r.start} → ${r.end||'至今'}</span></div>
         <div>${r.snap?`<span class="code">花费 ${r.snap.spend} · FDC ${r.snap.fdc} · CPA ${r.snap.cpa}</span>`:''}</div>
       </div>
-      <div class="vreason">${r.note||''}</div>
+      <div class="vreason">${esc(r.note||'')}</div>
       <div class="kv" style="margin:6px 0 0">
-        <dt>Campaign</dt><dd class="code">${r.camp}</dd>
-        <dt>Adset</dt><dd class="code">${r.adset}</dd>
-        <dt>Meta 广告 id</dt><dd class="code">${r.meta}</dd>
+        <dt>Campaign</dt><dd class="code">${esc(r.camp)}</dd>
+        <dt>Adset</dt><dd class="code">${esc(r.adset)}</dd>
+        <dt>Meta 广告 id</dt><dd class="code">${esc(r.meta)}</dd>
       </div>
     </div>`).join(''):'<div class="remark">尚未上线,无运行记录。</div>';
   const rej=vs.filter(v=>v.status==='rejected'),Mc=rej.filter(v=>v.cause==='copy').length,Mi=rej.filter(v=>v.cause==='image').length;
@@ -1538,7 +1538,7 @@ function openCreativeDetail(i){
     <div class="head">
       <div>
         <h1>版本记录 · <span class="code" style="font-size:14px">${c.code}</span> ${phaseTag}</h1>
-        <div class="sub">${c.hyp} · ${c.hook} · 内容 ${vs.length} 版(被拒 ${rej.length} · 效果迭代 ${K}) · 运行 ${runs.length} 段</div>
+        <div class="sub">${esc(c.hyp)} · ${esc(c.hook)} · 内容 ${vs.length} 版(被拒 ${rej.length} · 效果迭代 ${K}) · 运行 ${runs.length} 段</div>
       </div>
       <div class="filters"><button class="btn ghost" onclick="closeCreativeDetail()">← 返回 Creatives</button></div>
     </div>
@@ -1717,8 +1717,8 @@ async function saveFirstVersion(i,mode){
   renderCreatives();openCreative(i);toast(mode==='save'?'第一版已保存':'草稿已存');
 }
 function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return firstVersion(i);
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
   const vs=creatives[i].versions||[],cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{},isDraft=cur.status==='draft';
-  const esc=(s)=>(s||'').replace(/"/g,'&quot;');
   window._ecImgSrc=null;
   document.getElementById('d-title').textContent=creatives[i].code+' · 编辑这版';
   document.getElementById('d-body').innerHTML=`
@@ -1743,7 +1743,7 @@ function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return fi
     </div>
     <div class="row" id="ec-causerow" style="display:none"><div class="fld"><label>拒因(被 Meta 拒的是哪部分)</label><select id="ec-cause"><option value="copy">文案</option><option value="image">图 / 视频</option></select></div></div>
     <div class="row" id="ec-chgrow" style="display:none"><div class="fld"><label>改了什么(效果迭代:动的是文案还是图)</label><select id="ec-chg"><option value="copy">文案</option><option value="image">图 / 视频</option><option value="both">两者</option></select></div></div>
-    <div class="row"><div class="fld"><label>Primary text</label><textarea id="ec-p" rows="2">${cc.p||''}</textarea></div></div>
+    <div class="row"><div class="fld"><label>Primary text</label><textarea id="ec-p" rows="2">${esc(cc.p||'')}</textarea></div></div>
     <div class="row2">
       <div class="fld"><label>Headline</label><input id="ec-h" type="text" value="${esc(cc.h)}"></div>
       <div class="fld"><label>CTA</label><input id="ec-c" type="text" value="${esc(cc.c)}"></div>
@@ -1757,6 +1757,7 @@ function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return fi
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
 }
 async function saveCreativeCopy(i,mode){
+  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
   const vs=creatives[i].versions,last=vs[vs.length-1];
   const newImg=window._ecImgSrc;
   if(mode==='save'){const miss=creativeContentMissing('ec',!!(newImg||(last&&(last.imgSrc||last.img))));if(miss.length){toast('保存前需填完:'+miss.join('、')+'(存草稿可留空)');return;}}
@@ -1838,6 +1839,7 @@ function renderCreatives(){
       ${c.act==='confirm'?`<button class="btn danger sm" onclick="confirmPaused('${c.code}')">确认已暂停</button>`:''}
     </td>
    </tr>`).join('');
+  if(currentUser)applyPerms();   // 重建行后重新按权限显隐按钮
 }
 
 async function addDict(){
@@ -1851,6 +1853,7 @@ async function addDict(){
   logAction('dict','add',dictTab+' / '+code.trim());await loadDict();renderDict();toast('已新增词条 '+code.trim());
 }
 async function toggleDict(tab,idx){
+  if(!can('dict','edit')){toast('当前岗位没有「编辑词条」权限');return;}
   const r=DICT[tab][idx];
   if(r.on&&!confirm(r.c+' 停用?\n停用后新记录不可选,历史记录不受影响,可随时启用恢复。'))return;
   const nv=!r.on;
@@ -1864,10 +1867,11 @@ function renderDict(){
   const noToggle=dictTab==='Capacity';
   document.getElementById('dictBody').innerHTML=(DICT[dictTab]||[]).map((r,i)=>`
    <tr class="${r.on?'':'inactive'}">
-    <td class="code"><b style="color:var(--ink)">${r.c}</b></td><td>${r.n}</td><td>${r.d}</td><td class="code">${r.u}</td>
+    <td class="code"><b style="color:var(--ink)">${esc(r.c)}</b></td><td>${esc(r.n)}</td><td>${esc(r.d)}</td><td class="code">${esc(r.u)}</td>
     <td>${noToggle?'<span class="code">—</span>':`<button class="btn ${r.on?'danger':'ghost'} sm" data-perm="dict:edit" onclick="toggleDict('${dictTab}',${i})">${r.on?'停用':'启用'}</button>`}</td>
    </tr>`).join('');
   document.getElementById('dictNote').textContent=DICT_NOTES[dictTab]||DICT_NOTES['default'];
+  if(currentUser)applyPerms();
 }
 
 function getBase(){
@@ -1980,7 +1984,10 @@ async function loadBaselines(){
 let ads=[],operators=[],reports=[],candidates=[],brands=[],galRows=[],hookCh=null,styleCh=null;
 let reportWeeks=[],reportTabIdx=0;
 
-function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// 双击防连点:包住会写库的按钮动作,进行中忽略再次点击
+let _busy=false;
+async function guard(fn){if(_busy)return;_busy=true;try{await fn();}finally{_busy=false;}}
 // 数据生命周期:按 last_seen 距今天数判活跃/休眠/已停(≤14 / ≤30 / >30);无日期=已停
 function lifeStatus(ls){if(!ls)return 'dead';const d=Math.floor((Date.now()-new Date(ls).getTime())/86400000);if(isNaN(d))return 'dead';return d<=14?'active':d<=30?'dormant':'dead';}
 function lifeBadge(ls){const st=lifeStatus(ls);const m={active:['Active','la'],dormant:['Dormant','ld'],dead:['Inactive','lx']};const x=m[st];return '<span class="life '+x[1]+'">'+x[0]+'</span>';}
@@ -2153,7 +2160,7 @@ function renderReport(){
   if(!reportWeeks.length){body.innerHTML='<div class="empty">暂无周报。</div>';return;}
   const wi=+document.getElementById('reportWeek').value||0;
   const item=reportWeeks[wi].items[reportTabIdx]||reportWeeks[wi].items[0];
-  body.innerHTML=marked.parse((item&&item.report_md)||'(空)');
+  body.innerHTML=marked.parse(((item&&item.report_md)||'(空)').replace(/</g,'&lt;'));
 }
 
 function renderCandidates(){
@@ -2342,7 +2349,7 @@ function openIdeaEditor(id){
   h+='<div class="fld" style="margin-bottom:12px"><label>来源 Source</label><select id="ni-src">'+srcOpts+'</select></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>优先级 Priority</label><select id="ni-pri">'+['高','中','低'].map(p=>'<option'+(((it&&it.pri)||'中')===p?' selected':'')+'>'+p+'</option>').join('')+'</select></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>Tag(必填 · 多选,来自 Hook 词表)</label><div id="ni-tags" class="tagpick">'+tagOpts+'</div><small style="color:var(--ink3);margin-top:5px">手动想法需自己选 Tag(必填);只有 AI 从 CI 拉的想法才自动打 Tag。</small></div>';
-  h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveIdea()">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="guard(()=>saveIdea())">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
   document.getElementById('d-title').textContent=isNew?'新增想法':'编辑想法';
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
@@ -2384,7 +2391,7 @@ const BG_DEFAULT_ASSIGN={
 };
 function bgCurMonth(){const n=new Date();return n.toLocaleString('en-US',{month:'short'})+' '+n.getFullYear();}
 async function loadBudgets(){
-  try{const {data,error}=await db.from('budgets').select('*');if(error)throw error;budgets=data||[];}catch(e){budgets=[];}
+  try{const {data,error}=await db.from('budgets').select('*');if(error)throw error;budgets=data||[];}catch(e){budgets=[];showErr('budgets 加载失败: '+(e.message||e));}
   try{const {data,error}=await db.from('budget_assignments').select('*');if(error)throw error;
     budgetAssign={};(data||[]).forEach(r=>{budgetAssign[r.brand]={mkt:r.mkt_user||'',usc:r.usc_user||'',decider:r.decider_user||''};});
     if(!Object.keys(budgetAssign).length)budgetAssign=JSON.parse(JSON.stringify(BG_DEFAULT_ASSIGN));
@@ -2394,7 +2401,7 @@ function bgAssign(br){return budgetAssign[br]||BG_DEFAULT_ASSIGN[br]||{mkt:'',us
 function bgUserName(un){if(!un)return '—';const u=users.find(x=>x.username===un);return u?u.name:un;}
 function bgMe(){return currentUser?currentUser.username:'';}
 function bgIsAdmin(){const r=curRole();return !!(r&&r.admin);}
-function bgCanEdit(br,side){if(bgIsAdmin())return true;const a=bgAssign(br);return !!a[side]&&a[side]===bgMe();}
+function bgCanEdit(br,side){if(bgIsAdmin())return true;if(!can('budget','edit'))return false;const a=bgAssign(br);return !!a[side]&&a[side]===bgMe();}
 function bgNum(v){return (v==null||v==='')?null:+v;}
 function bgMoney(n){return (n==null)?'—':'$'+Number(n).toLocaleString('en-US');}
 function bgEntry(mo,br){return budgets.find(b=>b.month===mo&&b.brand===br)||null;}
@@ -2446,7 +2453,7 @@ function bgEditCell(mo,br,side){
   h+='<div class="fld" style="margin-bottom:12px"><label>金额 <span style="color:var(--red)">(必填)</span></label><input id="bg-amt" type="number" min="0" step="100" value="'+(cur==null?'':cur)+'" placeholder="如 20000"></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>理由 <span style="color:var(--red)">(必填)</span></label><textarea id="bg-reason" style="width:100%;min-height:70px" placeholder="为什么是这个数">'+esc(reason)+'</textarea></div>';
   if(side==='usc'&&req!=null)h+='<div style="color:var(--ink3);font-size:12px;margin-bottom:12px">参考:Marketing 申请 '+bgMoney(req)+'</div>';
-  h+='<div style="display:flex;gap:8px"><button class="btn" onclick="bgSaveCell(\''+mo+'\',\''+br+'\',\''+side+'\')">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn" onclick="guard(()=>bgSaveCell(\''+mo+'\',\''+br+'\',\''+side+'\'))">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
   document.getElementById('d-title').textContent='填写预算';
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
@@ -2464,7 +2471,7 @@ async function bgSaveCell(mo,br,side){
   const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
   try{
     if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-    else{const {error}=await db.from('budgets').insert(patch);if(error)throw error;budgets.push(patch);}
+    else{const {error}=await db.from('budgets').upsert(patch,{onConflict:'month,brand'});if(error)throw error;budgets.push(patch);}
   }catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
   closeDrawer();
@@ -2532,7 +2539,7 @@ async function bgSaveAmt(mo,br,side,value){
   const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
   try{
     if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-    else{const {error}=await db.from('budgets').insert(patch);if(error)throw error;budgets.push(patch);}
+    else{const {error}=await db.from('budgets').upsert(patch,{onConflict:'month,brand'});if(error)throw error;budgets.push(patch);}
   }catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
   if(after==='decide'&&prev!=='decide')bgSlack('decide',bgEntry(mo,br),br,mo);
@@ -2550,7 +2557,7 @@ function bgDecide(mo,br){
     +'<div><div style="color:var(--ink3)">USC 核批</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(all)+'</div>'+(e.allocated_reason?'<div class="bgsub">'+esc(e.allocated_reason)+'</div>':'')+'</div></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>最终预算</label><input id="bg-fin" type="number" min="0" step="100" value="'+((all!=null?all:req)||'')+'" placeholder="如 16000"></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>决定原因 <span style="color:var(--red)">(必填)</span></label><textarea id="bg-finreason" style="width:100%;min-height:70px" placeholder="为什么定这个数 —— 会通知双方并留痕">'+esc(e.final_reason||'')+'</textarea></div>';
-  h+='<div style="display:flex;gap:8px"><button class="btn" style="background:var(--red);border-color:var(--red);color:#fff" onclick="bgSaveDecision(\''+mo+'\',\''+br+'\')">确认决策</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn" style="background:var(--red);border-color:var(--red);color:#fff" onclick="guard(()=>bgSaveDecision(\''+mo+'\',\''+br+'\'))">确认决策</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
   document.getElementById('d-title').textContent='最终决策';
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
@@ -2625,9 +2632,9 @@ async function saveBgAssign(br,field,val){
   logAction('budget','分工',br+' '+key+'→'+(v||'空'));
   toast('已更新分工');renderBudget();
 }
-async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
-async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
-async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
+async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
+async function loadIdeas(){const {data,error}=await db.from('ideas').select('*').order('created_at',{ascending:false});if(error){showErr('loadIdeas 加载失败: '+error.message);}ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
+async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
 async function editAdsCode(i){
   if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
   const c=creatives[i];if(!c)return;
@@ -2641,7 +2648,7 @@ async function editAdsCode(i){
     await loadCreatives();renderCreatives();toast('Ads Code 已更新');
   }catch(e){alert('更新失败: '+rpcErr(e));}
 }
-async function loadCreatives(){const {data}=await db.from('creatives').select('*').order('created_at',{ascending:false});creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
+async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
 function daysSince(ts){try{return Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/86400000));}catch(e){return 0;}}
 function fmtMMDD(ts){try{const d=new Date(ts);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}catch(e){return '';}}
 async function doLogin(){const u=(document.getElementById('lg-user').value||'').trim().toLowerCase();const p=document.getElementById('lg-pwd').value||'';const msg=document.getElementById('lg-msg');if(!u||!p){msg.textContent='Enter username and password';return;}msg.textContent='Signing in…';try{const {error}=await db.auth.signInWithPassword({email:u+AUTH_DOMAIN,password:p});if(error){msg.textContent='Incorrect username or password';return;}await loadAuthData();if(!currentUser){msg.textContent='This account has no profile — contact admin';await db.auth.signOut();return;}document.getElementById('loginGate').style.display='none';try{logAction('auth','login','');}catch(e){}initApp();}catch(e){msg.textContent='Sign-in failed: '+((e&&e.message)||e);}}
@@ -2651,11 +2658,12 @@ async function logout(){try{if(currentUser)await db.from('audit_log').insert({us
 let _idleTimer=null;
 function resetIdleTimer(){if(_idleTimer)clearTimeout(_idleTimer);_idleTimer=setTimeout(function(){if(currentUser){try{toast('闲置 10 分钟,已自动登出');}catch(e){}logout();}},600000);}
 ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(function(ev){document.addEventListener(ev,resetIdleTimer,{passive:true});});
+try{db.auth.onAuthStateChange(function(ev){if(ev==='SIGNED_OUT'&&currentUser){currentUser=null;location.reload();}});}catch(e){}
 function curRole(){return currentUser?roles.find(r=>r.id===currentUser.roleId):null;}
 function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][act]):false;}
 function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
 function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});if(document.getElementById('auditBody'))renderAudit();if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
-function applyChrome(){const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
+function applyChrome(){if(!currentUser){showLogin();return;}const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
 async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderBgAssign();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
 /* 岗位管理 */
 function renderRoles(){const el=document.getElementById('rolesBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openRoleEditor(null)">＋ New Role</button></div>';h+='<table class="dt"><thead><tr><th>Role</th><th>Admin Access</th><th>Permissions</th><th></th></tr></thead><tbody>';const tot=PERM_SECTIONS.reduce((n,s)=>n+s.acts.length,0);roles.forEach(r=>{const cnt=PERM_SECTIONS.reduce((n,s)=>n+s.acts.filter(a=>r.perms[s.k]&&r.perms[s.k][a]).length,0);h+='<tr><td><b>'+esc(r.name)+'</b></td><td>'+(r.admin?'<span class="life la">Yes</span>':'<span class="life lx">No</span>')+'</td><td class="sm">'+cnt+' / '+tot+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openRoleEditor(\''+r.id+'\')">Edit</button> <button class="cbtn" onclick="dupRole(\''+r.id+'\')">Duplicate</button> <button class="cbtn danger" onclick="delRole(\''+r.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
