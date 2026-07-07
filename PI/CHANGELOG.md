@@ -14,6 +14,36 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v49] — 2026-07-07 · 大修:两轮 QA 后的三批修复(安全/数据正确性/功能)
+
+双轮 QA(6 个审查代理逐页走查 + headless 全页扫描)共查出 60+ 问题,本版修掉 P0/P1 主体:
+
+### 批 1 · 安全与权限
+- esc() 增加单引号转义(关闭竞品抓取数据经 onclick 注入 JS 的面);全站补转义:想法/假设陈述/证据/判定/测试行/素材文案/运行记录/字典;周报 markdown 禁原生 HTML。
+- 权限门补齐:标签矩阵全链(tmEditable 需 hypo|creative edit)、saveCreativeCopy/editCreativeCopy/toggleDict 补 can();bgCanEdit 接入 can('budget','edit')(Roles 矩阵 Budget 行从此真实生效);列表重渲染后重新 applyPerms。
+- guard() 防连点(假设/想法/预算保存);加载器报错显性化;budgets 保存改 upsert 防重复行;登录态失效自动回登录门;applyChrome 空用户守卫。
+
+### 批 2 · 数据正确性
+- **编辑假设不再破坏数据**:mode/month/owner/val_from 保留原值;已锁定/测试中等状态不被按钮重置;capacity 无新结果时保留;锁指标品牌(指标未迁移)正常回填目标值/防守阈值。
+- validateHypo 跳过 disabled 字段(SBKH 可以 Save 了);容量体检目标空 → 灰灯提示(不再 Infinity 假绿);capacity gray 渲染灰「—」。
+- 月份筛选动态生成;Results 胜率读 verdict.res 精确匹配「成立」(修掉「不成立」算赢),conf=勉强不计。
+- **Run 运行记录真正落库** + week(ISO)/spend 字段 + 表单加「本周花费」→ Budget 已投放自动汇总从此有真数。
+- saveCreativeCopy 同步行 status/stc(素材状态不再冻结在待上线);草稿被拒补记拒因;补 cst-wait/rej/off 样式。
+- Budget 状态机补「待申请」(USC 先填不再假已定);汇总使用率只计已定品牌。
+
+### 批 3 · 功能修补 + 速效性能
+- Creatives 筛选修复:品牌经所属假设匹配、假设下拉动态生成、加空态行、null 值兜底。
+- 一致性引擎三处边判:2×2 需恰好 4 条(重复组合不再假 clean)、单维漏标报 nodiff、锁定维「有设有不设」报污染;tmTrimRows 删已打标签行前确认。
+- Ads Library:drill 重置全部筛选;operator 横幅随筛选自愈;搜索防抖 250ms;渲染上限 300 条 +「加载更多」。
+- 周报:period 为空不再整批合并只剩最新;周选择器保持当前选择。
+- Watchlist Ad Status 双向包含匹配(关键词≠运营商全名也能亮灯)。
+- 三处硬编码统计条(想法/假设/素材)改真数据;audit 只在 Activity Log 页可见时刷新(不再每操作全量查 200 行);字典禁止同 tab 重复 code。
+- 死代码清理:bgSaveAmt/quickAddIdea/toggleAddForms/renderAdsReport 全家/editAdsCode/openVersionForm/openRunForm。
+
+**本版未做(待拍板/外部依赖)**:判定 UI(新功能)、Slack 真发(等 member id)、Budget 写入改 RPC、图片迁 Storage、并发 updated_at 锁。
+- 验证:每批 node --check + headless 17 页零报错;统计条/月份下拉/素材筛选/hypo 编辑回填实测正确。
+- ⚠️ **需重新上传 index.html 到 cPanel 生效。**
+
 ## [v48] — 2026-07-07 · Ads Library:Game Type 下拉选项改英文
 
 - 「All Game Types」下拉的选项从中文名(老虎机/真人/体育…)改为英文 code(slots / live_casino / sports / lottery / fishing / cockfight / unknown),与 Hooks / Styles 下拉风格一致。

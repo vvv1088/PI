@@ -438,7 +438,7 @@
   </div>
 
   <div class="strip">
-    <div class="stat"><b>12</b><label>本月入池 In Pool (Jun)</label></div>
+    <div class="stat"><b id="stat-pool-total">—</b><label>想法总数 In Pool</label></div>
     <div class="stat"><b id="stat-promoted">—</b><label>已立假设 With Hypothesis</label></div>
     <div class="stat"><b id="stat-rate">—</b><label>立假设率 Hypothesis Rate</label></div>
     <div class="stat"><b id="stat-fromci">—</b><label>竞品情报来源 From CI</label></div>
@@ -470,11 +470,11 @@
   </div>
 
   <div class="strip">
-    <div class="stat"><b>7</b><label>本月假设 Total</label></div>
-    <div class="stat"><b style="color:var(--amber)">3</b><label>测试中 Testing</label></div>
-    <div class="stat"><b style="color:var(--violet)">1</b><label>待判定 Pending Verdict</label></div>
-    <div class="stat"><b style="color:var(--green)">2</b><label>已沉淀 Settled</label></div>
-    <div class="stat"><b>2</b><label>主力运行 Scaling Runs</label></div>
+    <div class="stat"><b id="stat-h-total">—</b><label>假设总数 Total</label></div>
+    <div class="stat"><b style="color:var(--amber)" id="stat-h-testing">—</b><label>测试中 Testing</label></div>
+    <div class="stat"><b style="color:var(--violet)" id="stat-h-pending">—</b><label>待判定 Pending Verdict</label></div>
+    <div class="stat"><b style="color:var(--green)" id="stat-h-settled">—</b><label>已沉淀 Settled</label></div>
+    <div class="stat"><b id="stat-h-scaling">—</b><label>主力运行 Scaling Runs</label></div>
   </div>
 
   <div class="tablebar">
@@ -650,19 +650,19 @@
   </div>
 
   <div class="strip">
-    <div class="stat"><b>23</b><label>素材总数 Total</label></div>
-    <div class="stat"><b style="color:var(--amber)">9</b><label>投放中 Live</label></div>
-    <div class="stat"><b style="color:var(--green)">2</b><label>主力运行 Scaling</label></div>
-    <div class="stat"><b>5</b><label>制作中 In Production</label></div>
+    <div class="stat"><b id="stat-c-total">—</b><label>素材总数 Total</label></div>
+    <div class="stat"><b style="color:var(--amber)" id="stat-c-live">—</b><label>投放中 Live</label></div>
+    <div class="stat"><b style="color:var(--green)" id="stat-c-done">—</b><label>已下线 Retired</label></div>
+    <div class="stat"><b id="stat-c-wait">—</b><label>待上线 Waiting</label></div>
     <div class="stat click" onclick="toast('筛选:待人工确认暂停的素材')"><b style="color:var(--red)">1</b><label>🔔 规则触发 · 待暂停</label></div>
   </div>
 
   <div class="tablebar">
     <select id="f-cbrand" onchange="renderCreatives()">
-      <option value="">All Brands</option><option>OK188</option><option>17WIN</option><option>SBKH</option><option>INZ9</option>
+      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
     </select>
     <select id="f-chyp" onchange="renderCreatives()">
-      <option value="">All Hypotheses</option><option>HYP-012</option><option>HYP-011</option><option>HYP-010</option><option>HYP-005</option>
+      <option value="">All Hypotheses</option>
     </select>
   </div>
 
@@ -779,7 +779,7 @@
     <select id="fGameType" onchange="renderGallery()"><option value="">All Game Types</option></select>
     <select id="fStatus" onchange="renderGallery()"><option value="active">Status: Active</option><option value="archive">Status: Inactive</option><option value="all">Status: All</option></select>
     <select id="fSort" onchange="renderGallery()"><option value="new" selected>Sort: Newest</option><option value="dur">Sort: Longest running</option><option value="recent">Sort: Recently seen</option><option value="op">Sort: Operator</option></select>
-    <input type="text" id="fSearch" placeholder="Search text / selling point / theme…" oninput="renderGallery()" style="min-width:300px">
+    <input type="text" id="fSearch" placeholder="Search text / selling point / theme…" oninput="clearTimeout(window._galT);window._galT=setTimeout(renderGallery,250)" style="min-width:300px">
     <span class="sub" id="galCount"></span>
   </div>
   <div class="tablewrap"><table>
@@ -943,6 +943,7 @@ function renderPool(){
   const spawnedN=ideas.filter(i=>{const c=hypos.filter(h=>(h.idea||'').split(' ')[0]===i.id).length;return c>0||i.st==='已立假设'||i.st==='已转正';}).length;
   const live=ideas.filter(i=>i.st!=='已归档').length;
   const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setT('stat-pool-total',ideas.filter(i=>i.st!=='已归档').length);
   setT('stat-promoted',spawnedN);
   setT('stat-rate',live?Math.round(spawnedN/live*100)+'%':'0%');
   setT('stat-fromci',ideas.filter(i=>i.src==='竞品情报').length);
@@ -1034,15 +1035,16 @@ function checkHypoConsistency(hyp,overrideCr){
   if(cr.length<2)return {state:'insufficient',n:cr.length,dims};
   const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v);});return s;};
   const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变
-  const noDiff=tested.filter(t=>!t.vary);
-  const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>({dim:d,vals:[...distinct(d)]})).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
+  const untagged=dims.filter(d=>cr.some(c=>!c[d]));   // 勾了的维度有素材没打标
+  const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim));
+  const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>{const vals=[...distinct(d)];const partial=vals.length===1&&cr.some(c=>!c[d]);return {dim:d,vals:partial?vals.concat('(未设)'):vals};}).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
   if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length};
   // 2 维 = 交叉测:必须凑成干净的 2×2(每维恰 2 个值、4 种组合各出现一次、无空格)
   if(dims.length===2){
     const [A,B]=dims,va=distinct(A),vb=distinct(B);
     const over=(va.size>2?[A]:[]).concat(vb.size>2?[B]:[]);   // 值超过 2 个的维度
     const combos=new Set(cr.map(c=>(c[A]||'∅')+'∥'+(c[B]||'∅')));
-    const cleanGrid=va.size===2&&vb.size===2&&combos.size===4&&![...combos].some(k=>k.includes('∅'));
+    const cleanGrid=va.size===2&&vb.size===2&&combos.size===4&&cr.length===4&&![...combos].some(k=>k.includes('∅'));
     if(!cleanGrid)return {state:'crossbad',over,combos:combos.size,dims,tested,conflicts,n:cr.length};
   }
   const state=conflicts.length?'polluted':'clean';
@@ -1132,9 +1134,11 @@ async function tmTrimRows(hyp,target){
   const existing=creatives.filter(c=>(c.hyp||'').startsWith(hyp.id))
     .sort((a,b)=>{const ma=(a.gen||'').match(/-V(\d+)$/),mb=(b.gen||'').match(/-V(\d+)$/);return (mb?+mb[1]:0)-(ma?+ma[1]:0);}); // 按 V 序号倒序,优先删最新加的
   if(existing.length<=target)return false;
+  const hasTags=(c)=>MATRIX_DIM_KEYS.some(k=>c[k]);
   const removable=existing.filter(c=>(!c.versions||c.versions.length===0)&&(!c.runs||c.runs.length===0));
   const toRemove=removable.slice(0,existing.length-target);
   if(!toRemove.length)return false;
+  if(toRemove.some(hasTags)&&!confirm('要删的 '+toRemove.length+' 条素材里有已打标签的,确认删除?(取消则保留)'))return false;
   try{const {error}=await db.from('creatives').delete().in('gen_code',toRemove.map(c=>c.gen));if(error)throw error;}catch(e){toast('自动减素材失败: '+rpcErr(e));return false;}
   return true;
 }
@@ -1314,6 +1318,10 @@ function renderHypo(){
     <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':h.cap==='green'?'绿':'—'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
    </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
+  const setN=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setN('stat-h-total',hypos.length);setN('stat-h-testing',hypos.filter(h=>h.st==='测试中').length);
+  setN('stat-h-pending',hypos.filter(h=>h.st==='待判定').length);setN('stat-h-settled',hypos.filter(h=>h.st==='已沉淀').length);
+  setN('stat-h-scaling',hypos.filter(h=>h.mode==='主力运行').length);
 }
 function fillIdeaFilter(){
   const sel=document.getElementById('f-idea');if(!sel)return;
@@ -1384,7 +1392,7 @@ function openDrawer(i){
     ${cr.length?cr.map(c=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
       <div class="thumb ${c.empty?'empty':c.th}" style="width:44px;height:44px;font-size:8px">${c.label}</div>
       <div style="flex:1"><span class="code">${c.code}</span><br><small style="color:var(--ink3)">${c.st}</small></div>
-      <div class="code" style="text-align:right">FDC ${c.fdc}<br>CPA ${c.cpa}</div></div>`).join(''):'<div style="padding:10px 0;color:var(--ink3)">还没有素材 — 点「素材管理 & 标签 →」进去加素材、打标签。</div>'}
+      <div class="code" style="text-align:right">FDC ${esc(c.fdc||'—')}<br>CPA ${esc(c.cpa||'—')}</div></div>`).join(''):'<div style="padding:10px 0;color:var(--ink3)">还没有素材 — 点「素材管理 & 标签 →」进去加素材、打标签。</div>'}
     </div>`;
   let v=h.verdict?`
     <div class="card" style="margin-top:14px;background:var(--bg2)">
@@ -1509,7 +1517,7 @@ function openCreative(i){
       </div>
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
         ${thumbBox(cur.img,cur.imgSrc,c.label,56)}
-        <div class="code">${c.spend} · FDC ${c.fdc} · CPA ${c.cpa}</div>
+        <div class="code">${esc(c.spend||'—')} · FDC ${esc(c.fdc||'—')} · CPA ${esc(c.cpa||'—')}</div>
       </div>
       ${curRows}
     </div>
@@ -1642,21 +1650,6 @@ function closeCreativeDetail(){
 }
 function vfCauseToggle(){document.getElementById('vf-causerow').style.display=document.getElementById('vf-status').value==='rejected'?'flex':'none';}
 function vfChgToggle(){const t=document.getElementById('vf-trig').value;document.getElementById('vf-chgrow').style.display=(t==='perf'||t==='self')?'flex':'none';}
-function openVersionForm(){
-  const i=window._vformI,vs=creatives[i].versions,cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{};
-  const isDraft=cur.status==='draft';
-  document.getElementById('vf-trig').value=isDraft?'initial':'reject';
-  document.getElementById('vf-status').value=isDraft?'draft':'live';
-  document.getElementById('vf-cause').value='copy';
-  document.getElementById('vf-chg').value='copy';
-  document.getElementById('vf-p').value=cc.p||'';
-  document.getElementById('vf-h').value=cc.h||'';
-  document.getElementById('vf-d').value=cc.d||'';
-  document.getElementById('vf-c').value=cc.c||'';
-  document.getElementById('vf-reason').value='';
-  vfCauseToggle();vfChgToggle();
-  const f=document.getElementById('vform');f.classList.remove('hidden');f.scrollIntoView({behavior:'smooth',block:'center'});
-}
 function cancelVersion(){document.getElementById('vform').classList.add('hidden');}
 // 单条素材任一时间只能有一版在线:新版上线 → 之前在线的版本自动「已下线」(被替换)。修掉「衍生新版后旧版仍显示上线中」。
 function retirePriorLive(vs){
@@ -1682,15 +1675,6 @@ async function saveVersion(){
   catch(e){alert('保存失败: '+rpcErr(e));return;}
   logAction('creative','edit',(creatives[i].gen||'')+' 换版 v'+vs.length);
   renderCreatives();openCreativeDetail(i);toast('版本已保存');
-}
-function openRunForm(){
-  document.getElementById('rf-phase').value='scale';
-  document.getElementById('rf-start').value='';
-  document.getElementById('rf-camp').value='';
-  document.getElementById('rf-adset').value='';
-  document.getElementById('rf-meta').value='';
-  document.getElementById('rf-note').value='';
-  const f=document.getElementById('rform');f.classList.remove('hidden');f.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function cancelRun(){document.getElementById('rform').classList.add('hidden');}
 function ecCauseToggle(){const r=document.getElementById('ec-causerow');if(r)r.style.display=document.getElementById('ec-status').value==='rejected'?'flex':'none';}
@@ -1853,24 +1837,34 @@ function schedCell(c){
 }
 // 素材的预计排期 = 继承其所属假设(填写入口在 New Hypothesis,一个测试一个窗口,组内素材共用)
 function hypSchedOf(c){const lab=c&&(c.hyp||'');const h=hypos.find(x=>lab&&(''+lab).startsWith(x.id));return h||{};}
+function fillCHypFilter(){
+  const sel=document.getElementById('f-chyp');if(!sel)return;
+  const cur=sel.value,set={};creatives.forEach(c=>{const k=((c.hyp||'').split(' ')[0]||'').trim();if(k)set[k]=1;});
+  sel.innerHTML='<option value="">All Hypotheses</option>'+Object.keys(set).sort().map(k=>`<option${k===cur?' selected':''}>${esc(k)}</option>`).join('');
+}
+function crBrandOf(c){const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));return h?h.brand:'';}
 function renderCreatives(){
+  fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
-  document.getElementById('creativeBody').innerHTML=creatives.filter(c=>(!fb||((c.code||'')+(c.ads||'')+(c.hyp||'')).includes(fb))&&(!fh||(c.hyp||'').startsWith(fh))).map(c=>`
+  document.getElementById('creativeBody').innerHTML=creatives.filter(c=>(!fb||crBrandOf(c)===fb)&&(!fh||(c.hyp||'').startsWith(fh))).map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
     <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
     <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
-    <td><span class="qt"><b>${c.fmt}</b></span></td>
-    <td><span class="qt" title="${ZH[c.hook]||c.hook}">${c.hook}</span></td>
-    <td><span class="qt" title="${ZH[c.vs]||c.vs}">${c.vs}</span></td>
-    <td class="code">${c.spend}</td><td class="code"><b>${c.fdc}</b></td><td class="code">${c.cpa}</td>
-    <td><span class="cst cst-${c.stc}">${c.st}</span></td>
+    <td><span class="qt"><b>${esc(c.fmt||'—')}</b></span></td>
+    <td><span class="qt" title="${esc(ZH[c.hook]||c.hook||'')}">${esc(c.hook||'—')}</span></td>
+    <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${esc(c.vs||'—')}</span></td>
+    <td class="code">${esc(c.spend||'—')}</td><td class="code"><b>${esc(c.fdc||'—')}</b></td><td class="code">${esc(c.cpa||'—')}</td>
+    <td><span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span></td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
       ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
       ${c.act==='confirm'?`<button class="btn danger sm" onclick="confirmPaused('${c.code}')">确认已暂停</button>`:''}
     </td>
-   </tr>`).join('');
+   </tr>`).join('')||'<tr><td colspan="12" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无素材</td></tr>';
+  const setN=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setN('stat-c-total',creatives.length);setN('stat-c-live',creatives.filter(c=>c.st==='上线中').length);
+  setN('stat-c-done',creatives.filter(c=>c.st==='已下线').length);setN('stat-c-wait',creatives.filter(c=>c.st==='待上线').length);
   if(currentUser)applyPerms();   // 重建行后重新按权限显隐按钮
 }
 
@@ -1880,6 +1874,7 @@ async function addDict(){
   const name=prompt('名称 (name):');if(name===null)return;
   const descr=prompt('说明 (description):');if(descr===null)return;
   const arr=DICT[dictTab]||[];
+  if(arr.some(r=>r.c===code.trim())){toast('该 code 已存在于「'+dictTab+'」,不能重复');return;}
   try{const {error}=await db.from('dict_entries').insert({tab:dictTab,code:code.trim(),name:(name||'').trim(),descr:(descr||'').trim(),usage:'—',active:true,sort:arr.length});if(error)throw error;}
   catch(e){alert('Add failed: '+rpcErr(e));return;}
   logAction('dict','add',dictTab+' / '+code.trim());await loadDict();renderDict();toast('已新增词条 '+code.trim());
@@ -2036,7 +2031,6 @@ const GAME_ZH={slots:'老虎机',live_casino:'真人娱乐',sports:'体育',lott
 function gameTypesOf(a){return (a.game_type||'').split(',').map(s=>s.trim()).filter(Boolean);}
 function gameZh(code){const r=(DICT['Game Type']||[]).find(x=>x.c===code);return r?(r.n||r.c):(GAME_ZH[code]||code);}
 function langCode(l){const m={chinese:'ZH',english:'EN',malay:'MS',khmer:'KH',mixed:'MX'};return m[(l||'').toLowerCase()]||(l?String(l).toUpperCase().slice(0,2):'');}
-function toggleAddForms(){document.getElementById('addForms').classList.toggle('hidden');}
 
 async function loadAll(){
   document.getElementById('errbox').innerHTML='';document.getElementById('status').textContent='加载中…';
@@ -2100,12 +2094,15 @@ function filteredAds(){
   return r;
 }
 function renderGallery(){
+  {const bn=document.getElementById('opBanner');if(bn&&bn.innerHTML&&bn.dataset.op!==fOperator.value)bn.innerHTML='';}
   galRows=filteredAds();galRows.forEach((a,i)=>a._i=i);
   document.getElementById('galCount').textContent=galRows.length+' ads';
   renderKpis(galRows);
   let h='';
   if(!galRows.length)h='<tr><td colspan="14" class="empty">No ads match.</td></tr>';
-  galRows.forEach(a=>{
+  const CAP=window._galCap||300;
+  const rowsToDraw=galRows.slice(0,CAP);
+  rowsToDraw.forEach(a=>{
     const dur=a.duration_days==null?'':'<span class="pl '+(a.duration_days>=180?'win':'dur')+'">'+(a.duration_days>=180?'🏆 ':'')+a.duration_days+'</span>';
     const newb=isNew(a)?'<span class="pl new">NEW</span> ':'';
     const fn=[];if(a.extracted_telegram)fn.push('TG '+esc(a.extracted_telegram));if(a.extracted_domain)fn.push(esc(a.extracted_domain));if(a.extracted_ref_code)fn.push('ref '+esc(a.extracted_ref_code));
@@ -2125,25 +2122,10 @@ function renderGallery(){
       '<td>'+(a.snapshot_url?'<a class="fb" href="'+esc(a.snapshot_url)+'" target="_blank">↗</a>':'')+'</td></tr>';
   });
   if(galRows.length)h+='<tr><td colspan="14" style="text-align:center;color:var(--ink3);padding:14px;font-size:12px">— 共 '+galRows.length+' 条，已全部显示 —</td></tr>';
+  if(galRows.length>(window._galCap||300))h+='<tr><td colspan="14" style="text-align:center;padding:14px"><button class="btn ghost" onclick="window._galCap=(window._galCap||300)+300;renderGallery()">加载更多(已显示 '+(window._galCap||300)+' / '+galRows.length+')</button></td></tr>';
   document.getElementById('galBody').innerHTML=h;
 }
-function renderAdsReport(){
-  const cf=document.getElementById('rMarket').value;
-  const sub=ads.filter(a=>!cf||(a.country||'').toUpperCase()===cf);
-  drawDonut('hookChart',hookCounts(sub),c=>hookCh=c,hookCh);
-  drawDonut('styleChart',countBy(sub,'visual_style'),c=>styleCh=c,styleCh);
-}
-function hookCounts(arr){const m={};arr.forEach(a=>hooksOf(a).forEach(h=>m[h]=(m[h]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
-function countBy(arr,k){const m={};arr.forEach(a=>{if(a[k])m[a[k]]=(m[a[k]]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
-function drawDonut(id,entries,setRef,prev){
-  if(prev)prev.destroy();
-  let e=entries;
-  const ctx=document.getElementById(id);if(!ctx)return;
-  if(!e.length){setRef(null);return;}
-  setRef(new Chart(ctx,{type:'doughnut',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:DONUT,borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,font:{size:11},color:'#444',padding:8}}}}}));
-}
-function drill(op){fMarket.value='';buildFilters();fOperator.value=op;fHook.value='';fStyle.value='';go('gallery',document.querySelector('[data-v="gallery"]'));document.getElementById('opBanner').innerHTML='<div class="opbanner"><span><b>'+esc(op)+'</b> · all ads</span><span class="link" onclick="clearDrill()">✕ clear</span></div>';renderGallery();window.scrollTo(0,0);}
+function drill(op){fMarket.value='';buildFilters();fOperator.value=op;fHook.value='';fStyle.value='';fFormat.value='';fGameType.value='';fSearch.value='';const st=document.getElementById('fStatus');if(st)st.value='all';go('gallery',document.querySelector('[data-v="gallery"]'));const bn=document.getElementById('opBanner');bn.dataset.op=op;bn.innerHTML='<div class="opbanner"><span><b>'+esc(op)+'</b> · all ads</span><span class="link" onclick="clearDrill()">✕ clear</span></div>';renderGallery();window.scrollTo(0,0);}
 function clearDrill(){fOperator.value='';document.getElementById('opBanner').innerHTML='';renderGallery();}
 
 function renderOperators(){
@@ -2169,14 +2151,16 @@ function renderFunnel(){
 function buildReportWeeks(){
   const seen={},rows=[];
   for(const r of reports){
-    const key=(r.period||'')+'||'+(r.market||'');
+    const key=(r.period||(r.generated_at||'').slice(0,10))+'||'+(r.market||'');
     if(seen[key])continue;seen[key]=1;rows.push(r);
   }
   const byWeek={};
   rows.forEach(r=>{const wk=r.period||(r.generated_at||'').slice(0,10)||'未知';(byWeek[wk]=byWeek[wk]||[]).push(r);});
   reportWeeks=Object.entries(byWeek).sort((a,b)=>b[0].localeCompare(a[0])).map(e=>({week:e[0],items:e[1].sort((a,b)=>(''+(a.market||'')).localeCompare(''+(b.market||'')))}));
   const sel=document.getElementById('reportWeek');
+  const keep=sel.selectedOptions&&sel.selectedOptions[0]?sel.selectedOptions[0].textContent:null;
   sel.innerHTML=reportWeeks.map((w,i)=>'<option value="'+i+'">'+esc(w.week)+'</option>').join('');
+  if(keep){const idx=reportWeeks.findIndex(w=>w.week===keep);if(idx>=0)sel.value=String(idx);}
   renderReportTabs();
 }
 function renderReportTabs(){
@@ -2209,7 +2193,9 @@ function renderBrands(){
   const rows=[...brands].filter(b=>!mf||(b.country||'').toUpperCase()===mf).sort((a,b)=>(''+(a.country||'')).localeCompare(''+(b.country||''))||(''+(a.keyword||'')).localeCompare(''+(b.keyword||'')));
   let h='<thead><tr><th>Keyword</th><th>Market</th><th>Ad Status</th><th>Monitoring (click to toggle)</th><th>Source</th><th>Rescan</th></tr></thead><tbody>';
   if(!rows.length)h+='<tr><td colspan="6" class="empty">No data</td></tr>';
-  rows.forEach(b=>{const on=b.is_active!==false;const ls=opLs[(b.keyword||'').toUpperCase()];const act=ls?lifeBadge(ls):'<span class="sm">No ads</span>';h+='<tr><td>'+esc(b.keyword)+'</td><td>'+pc(b.country)+'</td><td>'+act+'</td><td><span class="pill2 '+(on?'son':'soff')+'" data-perm="watchlist:edit" onclick="toggleBrand('+b.id+','+(!on)+')">'+(on?'Activated':'Inactivated')+'</span></td><td>'+esc(b.source||'-')+'</td><td>'+(on?'<button class="cbtn rescan" data-perm="watchlist:edit" onclick="rescanBrand(\''+esc(b._kw||'')+'\',this)">↻ rescan</button>':'<span class="sm">-</span>')+'</td></tr>';});
+  rows.forEach(b=>{const on=b.is_active!==false;const kw=(b.keyword||'').toUpperCase();
+    let ls=opLs[kw];
+    if(ls==null&&kw){const hit=Object.keys(opLs).find(n=>n.includes(kw)||kw.includes(n));if(hit)ls=opLs[hit];}const act=ls?lifeBadge(ls):'<span class="sm">No ads</span>';h+='<tr><td>'+esc(b.keyword)+'</td><td>'+pc(b.country)+'</td><td>'+act+'</td><td><span class="pill2 '+(on?'son':'soff')+'" data-perm="watchlist:edit" onclick="toggleBrand('+b.id+','+(!on)+')">'+(on?'Activated':'Inactivated')+'</span></td><td>'+esc(b.source||'-')+'</td><td>'+(on?'<button class="cbtn rescan" data-perm="watchlist:edit" onclick="rescanBrand(\''+esc(b._kw||'')+'\',this)">↻ rescan</button>':'<span class="sm">-</span>')+'</td></tr>';});
   document.getElementById('brandTable').innerHTML=h+'</tbody>';
 }
 async function rescanBrand(kw,btn){
@@ -2558,29 +2544,6 @@ function renderBudget(){
     stat('$'+tFin.toLocaleString('en-US'),'最终合计 Final')+stat('$'+tSp.toLocaleString('en-US'),'已投放 Spent')+
     stat(tFin?Math.round(tSp/tFin*100)+'%':'—','使用率 Utilization');
 }
-async function bgSaveAmt(mo,br,side,value){
-  const field=side==='mkt'?'requested':'allocated';
-  if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');renderBudget();return;}
-  const v=bgNum(value);if(value!==''&&(v==null||isNaN(v)||v<0)){toast('请输入非负数字');renderBudget();return;}
-  let e=bgEntry(mo,br)||{};
-  if(bgLocked(e)){toast('已定并锁定,需决策人重开');renderBudget();return;}
-  let reason=e[field+'_reason']||null;
-  if(field==='allocated'&&v!=null){
-    const req=bgNum(e.requested);
-    if(req!=null&&v<req){const r=prompt('核批低于申请('+bgMoney(v)+' < '+bgMoney(req)+'),必须写原因:',reason||'');if(r===null){renderBudget();return;}if(!(r||'').trim()){toast('核批低于申请必须写原因');renderBudget();return;}reason=r.trim();}
-    else{const r=prompt('核批理由(可选):',reason||'');if(r!==null)reason=(r||'').trim()||null;}
-  }else if(field==='requested'&&v!=null){const r=prompt('申请理由(建议填):',reason||'');if(r!==null)reason=(r||'').trim()||null;}
-  const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();
-  const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
-  try{
-    if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-    else{const {error}=await db.from('budgets').upsert(patch,{onConflict:'month,brand'});if(error)throw error;budgets.push(patch);}
-  }catch(err){toast('保存失败: '+rpcErr(err));return;}
-  logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
-  if(after==='decide'&&prev!=='decide')bgSlack('decide',bgEntry(mo,br),br,mo);
-  else if(after==='settled'&&prev!=='settled')bgSlack('settled',bgEntry(mo,br),br,mo);
-  renderBudget();
-}
 // 最终决策:抽屉表单(与填写格同风格),原因必填
 function bgDecide(mo,br){
   const a=bgAssign(br);
@@ -2670,19 +2633,6 @@ async function saveBgAssign(br,field,val){
 async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data,error}=await db.from('ideas').select('*').order('created_at',{ascending:false});if(error){showErr('loadIdeas 加载失败: '+error.message);}ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
-async function editAdsCode(i){
-  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
-  const c=creatives[i];if(!c)return;
-  const v=prompt('Ads Code(成员手动命名,可留空):', c.ads||'');
-  if(v===null)return;
-  const val=(v||'').trim()||null;
-  try{
-    const {error}=await db.from('creatives').update({ads_code:val,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);
-    if(error)throw error;
-    logAction('creative','edit',(c.gen||'')+' ads_code');
-    await loadCreatives();renderCreatives();toast('Ads Code 已更新');
-  }catch(e){alert('更新失败: '+rpcErr(e));}
-}
 async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
 function daysSince(ts){try{return Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/86400000));}catch(e){return 0;}}
 function fmtMMDD(ts){try{const d=new Date(ts);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}catch(e){return '';}}
@@ -2697,7 +2647,7 @@ try{db.auth.onAuthStateChange(function(ev){if(ev==='SIGNED_OUT'&&currentUser){cu
 function curRole(){return currentUser?roles.find(r=>r.id===currentUser.roleId):null;}
 function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][act]):false;}
 function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
-function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});if(document.getElementById('auditBody'))renderAudit();if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
+function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});{const av=document.getElementById('v-audit');if(av&&av.classList.contains('on'))renderAudit();}if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
 function applyChrome(){if(!currentUser){showLogin();return;}const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
 async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderBgAssign();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
 /* 岗位管理 */
@@ -2719,7 +2669,6 @@ function fmtTs(ts){try{return new Date(ts).toLocaleString('zh-CN',{month:'2-digi
 function secName(k){const s=PERM_SECTIONS.find(x=>x.k===k);return s?s.n:k;}
 async function renderAudit(){const el=document.getElementById('auditBody');if(!el)return;let rows=[];try{const {data}=await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(200);rows=data||[];}catch(e){}let h='<table class="dt"><thead><tr><th>Time</th><th>User</th><th>Section</th><th>Action</th><th>Target</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="5" class="empty">No activity yet — every add / edit / delete is logged here automatically</td></tr>';rows.forEach(e=>{h+='<tr><td class="sm">'+esc(fmtTs(e.created_at))+'</td><td>'+esc(e.name||e.username||'?')+'</td><td>'+esc(secName(e.section))+'</td><td>'+esc(ACT_LABEL[e.action]||e.action)+'</td><td class="sm">'+esc(e.target||'')+'</td></tr>';});el.innerHTML=h+'</tbody></table>';}
 /* 新增想法:提出人 = 当前账号 */
-async function quickAddIdea(){if(!can('idea','add')){toast('当前岗位没有「新增想法」权限');return;}const t=prompt('新想法(一句话):');if(!t||!t.trim())return;try{const {data,error}=await db.from('ideas').insert({txt:t.trim(),src:'原创直觉',tags:[],pri:'中',status:'待评估',created_by:currentUser.name}).select('code').single();if(error)throw error;logAction('idea','add',data.code);await loadIdeas();if(typeof refreshOverdue==='function')refreshOverdue();renderPool();applyPerms();toast('已加入 Idea Pool · 提出人 '+currentUser.name);}catch(e){alert('Add failed: '+rpcErr(e));}}
 
 try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();updateAll();}catch(e){console.error('startup render error:',e);}
 (async()=>{
