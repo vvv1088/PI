@@ -14,6 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v52] — 2026-07-07 · Budget 写入升级 RPC(服务端强制分工)
+
+- 新建 SECURITY DEFINER RPC:`budget_save_cell / budget_decide / budget_reopen` —— 服务端校验:分工到人(mkt/usc/decider 对号)、金额/理由必填、已定锁定;绕过前端直打 API 也改不了别人的格子。
+- `budgets` 表 RLS 收紧:insert/update 仅 admin,业务写入一律走 RPC(与用户管理同模式)。
+- 前端 bgSaveCell/bgSaveDecision/bgReopen 切换 db.rpc;rpcErr 补错误码中文(NOT_ASSIGNED/NOT_DECIDER/REASON_REQUIRED/LOCKED)。
+- demo mock 同步实现三个 RPC,演示照常可交互;headless 实测 RPC 流程写入成功。
+- 图片迁 Storage 为第三部分剩余项,下一轮做(压缩止血已在 v50)。
+
 ## [v51] — 2026-07-07 · 判定 UI:测试闭环补上最后一步
 
 - 假设抽屉(非已沉淀)新增**「判定」按钮** → 表单:结论(成立/不成立/无定论)+ 数据置信度(充分/勉强,勉强不计胜率)+ 学到了什么(必填)+ 下月约束。

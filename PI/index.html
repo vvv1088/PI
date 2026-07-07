@@ -2439,7 +2439,7 @@ async function saveIdea(){
     }
   }catch(e){alert((ed?'Update':'Add')+' failed: '+rpcErr(e));}
 }
-function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_AUTHORIZED:'You are not an admin',USERNAME_REQUIRED:'Username required',PASSWORD_TOO_SHORT:'Password too short (min 4)',ROLE_NOT_FOUND:'Role not found',USERNAME_EXISTS:'Username already exists',CANNOT_DELETE_SELF:'Cannot delete yourself',USER_NOT_FOUND:'User not found'};for(const k in map){if(m.indexOf(k)>=0)return map[k];}return m;}
+function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_ASSIGNED:'这格没有分工给你',NOT_DECIDER:'只有决策人可操作',REASON_REQUIRED:'必须填写理由',LOCKED:'已定并锁定,需决策人重开',BAD_AMOUNT:'金额无效',NOT_AUTHORIZED:'You are not an admin',USERNAME_REQUIRED:'Username required',PASSWORD_TOO_SHORT:'Password too short (min 4)',ROLE_NOT_FOUND:'Role not found',USERNAME_EXISTS:'Username already exists',CANNOT_DELETE_SELF:'Cannot delete yourself',USER_NOT_FOUND:'User not found'};for(const k in map){if(m.indexOf(k)>=0)return map[k];}return m;}
 function showLogin(){document.getElementById('loginGate').style.display='flex';}
 async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives(),loadBudgets()]);}
 
@@ -2542,9 +2542,8 @@ async function bgSaveCell(mo,br,side){
   if(bgEntry(mo,br)&&await bgStale(mo,br,bgEntry(mo,br))){closeDrawer();return;}
   const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();patch.updated_at=new Date().toISOString();
   const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
-  try{
-    if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
-    else{const {error}=await db.from('budgets').upsert(patch,{onConflict:'month,brand'});if(error)throw error;budgets.push(patch);}
+  try{const {error}=await db.rpc('budget_save_cell',{p_month:mo,p_brand:br,p_side:side,p_amount:v,p_reason:reason});if(error)throw error;
+    if(bgEntry(mo,br))Object.assign(e,patch);else budgets.push(patch);
   }catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
   closeDrawer();
@@ -2556,7 +2555,7 @@ async function bgReopen(mo,br){
   const a=bgAssign(br);if(!(bgIsAdmin()||a.decider===bgMe())){toast('只有决策人('+bgUserName(a.decider)+')或 Admin 可重开');return;}
   if(!confirm('重开会清除最终决定,回到可编辑状态。确认?'))return;
   const patch={final_amount:null,final_by:null,final_reason:null,decided_at:null};
-  try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;const e=bgEntry(mo,br);if(e)Object.assign(e,patch);}
+  try{const {error}=await db.rpc('budget_reopen',{p_month:mo,p_brand:br});if(error)throw error;const e=bgEntry(mo,br);if(e)Object.assign(e,patch);}
   catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget','重开',br+' '+mo);toast('已重开,可重新编辑');renderBudget();
 }
@@ -2622,7 +2621,7 @@ async function bgSaveDecision(mo,br){
   const e=bgEntry(mo,br)||{};
   if(bgEntry(mo,br)&&await bgStale(mo,br,bgEntry(mo,br))){closeDrawer();return;}
   const patch={final_amount:v,final_by:bgMe(),final_reason:rr,decided_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-  try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
+  try{const {error}=await db.rpc('budget_decide',{p_month:mo,p_brand:br,p_amount:v,p_reason:rr});if(error)throw error;Object.assign(e,patch);}
   catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget','决策',br+' '+mo+' → '+bgMoney(v));
   closeDrawer();bgSlack('settled',e,br,mo);toast('已定 '+bgMoney(v));renderBudget();

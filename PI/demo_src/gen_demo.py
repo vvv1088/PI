@@ -282,6 +282,17 @@ function __qb(table){
 }
 async function __rpc(fn,args){
   if(fn==='get_brand_baselines')return {data:null,error:null};
+  if(fn==='budget_save_cell'){var B=window.__STORE__.budgets;var row=B.find(function(r){return r.month===args.p_month&&r.brand===args.p_brand;});
+    if(!row){row={month:args.p_month,brand:args.p_brand};B.push(row);}
+    var side=args.p_side==='mkt'?'requested':'allocated';var me=(window.currentUser||{}).username||'demo';
+    row[side]=args.p_amount;row[side+'_by']=me;row[side+'_reason']=args.p_reason;row[side+'_at']=new Date().toISOString();row.updated_at=new Date().toISOString();
+    return {data:null,error:null};}
+  if(fn==='budget_decide'){var B2=window.__STORE__.budgets;var r2=B2.find(function(r){return r.month===args.p_month&&r.brand===args.p_brand;});
+    if(r2){r2.final_amount=args.p_amount;r2.final_by=(window.currentUser||{}).username||'demo';r2.final_reason=args.p_reason;r2.decided_at=new Date().toISOString();r2.updated_at=new Date().toISOString();}
+    return {data:null,error:null};}
+  if(fn==='budget_reopen'){var B3=window.__STORE__.budgets;var r3=B3.find(function(r){return r.month===args.p_month&&r.brand===args.p_brand;});
+    if(r3){r3.final_amount=null;r3.final_by=null;r3.final_reason=null;r3.decided_at=null;}
+    return {data:null,error:null};}
   if(fn==='admin_create_user'){var id='demo_'+Math.random().toString(36).slice(2);
     var role=(window.__STORE__.roles.find(function(r){return r.key===args.p_role_key;})||{});
     window.__STORE__.profiles.push({id:id,username:(args.p_username||'').toLowerCase(),name:args.p_name||args.p_username,role_id:role.id});
