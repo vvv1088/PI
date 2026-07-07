@@ -84,6 +84,10 @@
   tr.inactive{opacity:.45}
   .code{font-family:var(--mono);font-size:11.5px;color:var(--ink2)}
   .pill{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  /* 表格里做整格 label 的胶囊:抵消自身左内距,让胶囊文字与表头文字对齐(否则视觉上歪右) */
+  tbody td>.pill:first-child{margin-left:-9px}
+  tbody td>.mode:first-child{margin-left:-8px}
+  tbody td>.bgst:first-child{margin-left:-10px}
   .pri-高{background:var(--red-bg);color:var(--red)}
   .pri-中{background:var(--amber-bg);color:var(--amber)}
   .byai{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
@@ -384,7 +388,7 @@
       <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
       <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
-      <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget</div>
+      <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget Allocation</div>
       <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
     </div>
@@ -394,7 +398,7 @@
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="roles" onclick="go('roles',this)">Roles & Permissions</div>
-      <div class="nitem" data-v="bgassign" onclick="go('bgassign',this)">Budget 分工</div>
+      <div class="nitem" data-v="bgassign" onclick="go('bgassign',this)">Budget Permission</div>
       <div class="nitem" data-v="users" onclick="go('users',this)">Users</div>
       <div class="nitem" data-v="audit" onclick="go('audit',this)">Activity Log</div>
     </div>
@@ -673,7 +677,7 @@
 <section class="view" id="v-budget">
   <div class="head">
     <div>
-      <h1>Budget</h1>
+      <h1>Budget Allocation</h1>
       <div class="sub">每月各品牌预算:分工到人 · Marketing 申请 → USC 核批 → 不一致自动升级「待决策」→ 决策人拍板 · 全程留痕。</div>
     </div>
     <div class="filters">
@@ -690,15 +694,15 @@
     </tr></thead>
     <tbody id="budgetBody"></tbody>
   </table>
-  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定(决策人可「重开」),金额/理由/时间全部留痕(点「历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。分工在 Administration → Budget 分工 里配。</p>
+  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定(决策人可「重开」),金额/理由/时间全部留痕(点「历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。分工在 Administration → Budget Permission 里配。</p>
 </section>
 
 <!-- ============ BUDGET 分工(Admin 配 谁管哪个品牌的哪一侧)============ -->
 <section class="view" id="v-bgassign">
   <div class="head">
     <div>
-      <h1>Budget 分工</h1>
-      <div class="sub">配每个品牌:谁填「申请」(Marketing)、谁填「核批」(USC)、谁「决策」。只有被指派的人才能改 Budget 页对应的格子。仅 Admin 可改本表。</div>
+      <h1>Budget Permission</h1>
+      <div class="sub">配每个品牌:谁填「申请」(Marketing)、谁填「核批」(USC)、谁「决策」。只有被指派的人才能改 Budget Allocation 页对应的格子。仅 Admin 可改本表。</div>
     </div>
   </div>
   <table>
@@ -2267,6 +2271,7 @@ const PERM_SECTIONS=[
   {k:'idea',g:'PI',n:'Idea Pool',acts:['add','edit','delete']},
   {k:'hypo',g:'PI',n:'Hypotheses',acts:['add','edit','delete']},
   {k:'creative',g:'PI',n:'Creatives',acts:['add','edit','delete']},
+  {k:'budget',g:'PI',n:'Budget Allocation',acts:['add','edit','delete']},
   {k:'dict',g:'PI',n:'Dictionary',acts:['add','edit']}
 ];
 const READ_ONLY=['Weekly Summary','Ads Library','Operators','Funnels','Results'];
@@ -2419,8 +2424,8 @@ function bgAmtCell(e,mo,br,side){
   const val=bgNum(e[field]),by=e[field+'_by'],reason=e[field+'_reason'];
   const canEdit=bgCanEdit(br,side)&&!bgLocked(e);
   let top;
-  if(val!=null)top=`<span class="bgro"><b>${bgMoney(val)}</b></span>`+(canEdit?` <a class="bglink" onclick="bgEditCell('${mo}','${br}','${side}')" title="编辑金额/理由">编辑</a>`:'');
-  else top=canEdit?`<button class="btn ghost sm" onclick="bgEditCell('${mo}','${br}','${side}')">填写</button>`:'<span class="bgro" style="color:var(--ink3)">—</span>';
+  if(val!=null)top=`<span class="bgro"><b>${bgMoney(val)}</b></span>`+(canEdit?` <a class="bglink" onclick="bgEditCell('${mo}','${br}','${side}')" title="编辑金额/理由">✏️</a>`:'');
+  else top=canEdit?`<button class="btn ghost sm" onclick="bgEditCell('${mo}','${br}','${side}')">✏️ 填写</button>`:'<span class="bgro" style="color:var(--ink3)">—</span>';
   let sub='';
   if(val!=null)sub=`<div class="bgsub">${esc(bgUserName(by))}${reason?` · <span title="${esc(reason)}">${esc(reason.length>14?reason.slice(0,14)+'…':reason)}</span>`:''}</div>`;
   else sub=`<div class="bgsub" style="color:var(--ink3)">${canEdit?'待你填':'待 '+esc(bgUserName(bgAssign(br)[side]))}</div>`;
@@ -2435,8 +2440,8 @@ function bgEditCell(mo,br,side){
   const label=side==='mkt'?'Marketing 申请':'USC 核批';
   const cur=bgNum(e[field]),reason=e[field+'_reason']||'',req=bgNum(e.requested);
   let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:16px">'+label+'</div>';
-  h+='<div class="fld" style="margin-bottom:12px"><label>金额</label><input id="bg-amt" type="number" min="0" step="100" value="'+(cur==null?'':cur)+'" placeholder="如 20000"></div>';
-  h+='<div class="fld" style="margin-bottom:12px"><label>理由 '+(side==='usc'?'<span style="color:var(--red)">(核批低于申请必填)</span>':'<span style="color:var(--ink3)">(建议填)</span>')+'</label><textarea id="bg-reason" style="width:100%;min-height:70px" placeholder="为什么是这个数">'+esc(reason)+'</textarea></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>金额 <span style="color:var(--red)">(必填)</span></label><input id="bg-amt" type="number" min="0" step="100" value="'+(cur==null?'':cur)+'" placeholder="如 20000"></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>理由 <span style="color:var(--red)">(必填)</span></label><textarea id="bg-reason" style="width:100%;min-height:70px" placeholder="为什么是这个数">'+esc(reason)+'</textarea></div>';
   if(side==='usc'&&req!=null)h+='<div style="color:var(--ink3);font-size:12px;margin-bottom:12px">参考:Marketing 申请 '+bgMoney(req)+'</div>';
   h+='<div style="display:flex;gap:8px"><button class="btn" onclick="bgSaveCell(\''+mo+'\',\''+br+'\',\''+side+'\')">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
   document.getElementById('d-title').textContent='填写预算';
@@ -2447,10 +2452,11 @@ async function bgSaveCell(mo,br,side){
   const field=side==='mkt'?'requested':'allocated';
   if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');return;}
   const raw=document.getElementById('bg-amt').value;
-  const v=bgNum(raw);if(raw!==''&&(v==null||isNaN(v)||v<0)){toast('请输入非负数字');return;}
-  const reason=(document.getElementById('bg-reason').value||'').trim()||null;
+  const v=bgNum(raw);
+  if(raw===''||v==null||isNaN(v)||v<0){toast('金额必填(非负数字)');return;}
+  const reason=(document.getElementById('bg-reason').value||'').trim();
+  if(!reason){toast('理由必填');return;}
   let e=bgEntry(mo,br)||{};
-  if(field==='allocated'&&v!=null){const req=bgNum(e.requested);if(req!=null&&v<req&&!reason){toast('核批低于申请,必须写原因');return;}}
   const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();
   const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
   try{
@@ -2593,7 +2599,7 @@ function bgSwitchUser(un){const u=users.find(x=>x.username===un);if(!u)return;cu
 function renderBgAssign(){
   const el=document.getElementById('bgAssignBody');if(!el)return;
   const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
-  const opt=(sel)=>'<option value="">— 空 —</option>'+users.map(u=>`<option value="${u.username}"${u.username===sel?' selected':''}>${esc(u.name)} (${esc(u.username)})</option>`).join('');
+  const opt=(sel)=>'<option value="">— 空 —</option>'+users.map(u=>`<option value="${u.username}"${u.username===sel?' selected':''}>${esc(u.name)}</option>`).join('');
   const dis=bgIsAdmin()?'':' disabled';
   el.innerHTML=allBrands.map(br=>{const a=bgAssign(br);return `<tr>
     <td><b>${br}</b></td>

@@ -14,6 +14,16 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v43] — 2026-07-07 · 改名 Budget Allocation/Permission + 必填校验 + 全站胶囊标签对齐修复
+
+- **「编辑」改回 ✏️**(填写按钮也回到 `✏️ 填写`)。
+- **填写抽屉:金额 + 理由都必填** —— 任一为空直接拦下不保存(标签都标红「(必填)」)。
+- **改名**:页面 `Budget` → **Budget Allocation**(导航 + 标题);Administration 的 `Budget 分工` → **Budget Permission**(导航 + 标题 + 相关提示文案)。
+- **Budget Permission 下拉只显示人名**:去掉右边 `(username)` 括号(值仍存 username)。
+- **全站胶囊标签对齐修复**:凡是整格作 label 的胶囊(Budget 状态 `.bgst`、Hypothesis 的 Stage `.pill`/Mode `.mode`/Market),胶囊自带左内距导致**文字比表头歪右 8–10px**。加 CSS `tbody td>.pill/.mode/.bgst:first-child{margin-left:-内距}` 抵消 —— headless 实测三处 表头文字x = 胶囊文字x 完全对齐。
+- **Roles & Permissions 加回 budget 段**:`PERM_SECTIONS` 新增 `Budget Allocation`(add/edit/delete),权限矩阵可见可配;demo 种子同步(admin 全量、po/pe/USC add+edit,与生产库一致)。
+- 验证:`node --check` 通过;headless 实测——对齐(3 处 x 相等)、改名、下拉去括号、必填标签、✏️ 恢复全部正常。
+
 ## [v42] — 2026-07-07 · Budget 去 emoji + 去掉「自动(核批≥申请)」说明
 
 - **去掉全部装饰性 emoji**:状态 `✅已定/🟠待决策`→`已定/待决策`;编辑 `✏️`→「编辑」文字链;`✏️填写`→「填写」;`🕘`→「历史」;`⚖️决策`→「决策」;`🔓重开`→「重开」;理由/历史/决策抽屉里的 `💬` 一并去掉;Slack 文案去掉 `🟠/✅`。(演示版身份切换条的 🎭 保留——那只是 demo 辅助。)

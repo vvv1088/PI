@@ -13,7 +13,7 @@ ROLES = [
  {"id":"3e03a76a-8410-45f5-a7c2-9b898150f9eb","key":"role_1782743701757","name":"USC Team","is_admin":False},
 ]
 PERMS = [
- {"role_id":"75753a49-110b-47c7-981f-2cb18ebca8ed","section":s,"can_add":True,"can_edit":True,"can_delete":(s!="dict")} for s in ["watchlist","pending","idea","hypo","creative","dict"]
+ {"role_id":"75753a49-110b-47c7-981f-2cb18ebca8ed","section":s,"can_add":True,"can_edit":True,"can_delete":(s!="dict")} for s in ["watchlist","pending","idea","hypo","creative","budget","dict"]
 ] + [
  {"role_id":"ec3d5ce5-a64b-474d-a7c5-7ef29b12128a","section":"watchlist","can_add":True,"can_edit":True,"can_delete":False},
  {"role_id":"ec3d5ce5-a64b-474d-a7c5-7ef29b12128a","section":"pending","can_add":False,"can_edit":True,"can_delete":True},
@@ -26,6 +26,9 @@ PERMS = [
  {"role_id":"3e03a76a-8410-45f5-a7c2-9b898150f9eb","section":"watchlist","can_add":True,"can_edit":False,"can_delete":False},
  {"role_id":"3e03a76a-8410-45f5-a7c2-9b898150f9eb","section":"idea","can_add":True,"can_edit":False,"can_delete":False},
  {"role_id":"3e03a76a-8410-45f5-a7c2-9b898150f9eb","section":"hypo","can_add":True,"can_edit":False,"can_delete":False},
+ {"role_id":"ec3d5ce5-a64b-474d-a7c5-7ef29b12128a","section":"budget","can_add":True,"can_edit":True,"can_delete":False},
+ {"role_id":"01d33c0a-bb07-47a2-a3b0-4207383f8471","section":"budget","can_add":True,"can_edit":True,"can_delete":False},
+ {"role_id":"3e03a76a-8410-45f5-a7c2-9b898150f9eb","section":"budget","can_add":True,"can_edit":True,"can_delete":False},
 ]
 PROFILES = [
  {"id":"bd51fe10-0766-4ddf-b32f-8ac5c8b7bca6","username":"eling","name":"Eling","role_id":"75753a49-110b-47c7-981f-2cb18ebca8ed"},
