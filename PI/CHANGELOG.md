@@ -14,6 +14,15 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v44] — 2026-07-07 · 表头统一英文(Budget Allocation/Permission + Hypothesis)
+
+- **Budget Allocation 表头全英文**(与其它页统一):品牌→Brand、Marketing 申请→Marketing Request、USC 核批→USC Approval、状态→Status、最终→Final、已投放→Spent、使用率→Utilization、历史→History。
+- **Budget Permission 表头同步英文**:Brand / Marketing Owner (Request) / USC Owner (Approval) / Decider。
+- **汇总条改双语**(与其它页 stat 风格一致):总申请 Requested / 总核批 Approved / 最终合计 Final / 已投放 Spent / 使用率 Utilization。
+- **Hypothesis 表头精简**:`Hypothesis(改变 X)` → `Hypothesis`;`Metric · 基准 → 目标` → `Metric`。
+- 表格内的中文内容(状态胶囊、按钮、理由等)不动 —— 只改表头/标签。
+- 验证:`node --check` 通过;headless 实测表头渲染正确。
+
 ## [v43] — 2026-07-07 · 改名 Budget Allocation/Permission + 必填校验 + 全站胶囊标签对齐修复
 
 - **「编辑」改回 ✏️**(填写按钮也回到 `✏️ 填写`)。

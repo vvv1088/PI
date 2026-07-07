@@ -563,7 +563,7 @@ window.supabase={createClient:function(){return __mockClient;}};
 
   <table>
     <thead><tr>
-      <th style="width:32%">Hypothesis(改变 X)</th><th style="width:92px">Create Date</th><th style="width:96px">Stage</th><th>Metric · 基准 → 目标</th><th>Mode</th><th>Market</th><th>Brand</th><th>Type</th><th>Owner</th><th>Capacity</th><th>Status</th>
+      <th style="width:32%">Hypothesis</th><th style="width:92px">Create Date</th><th style="width:96px">Stage</th><th>Metric</th><th>Mode</th><th>Market</th><th>Brand</th><th>Type</th><th>Owner</th><th>Capacity</th><th>Status</th>
     </tr></thead>
     <tbody id="hypoBody"></tbody>
   </table>
@@ -754,7 +754,7 @@ window.supabase={createClient:function(){return __mockClient;}};
 
   <table>
     <thead><tr>
-      <th style="width:120px">品牌</th><th style="width:170px">Marketing 申请</th><th style="width:170px">USC 核批</th><th style="width:104px">状态</th><th style="width:150px">最终</th><th style="width:96px">已投放</th><th style="width:80px">使用率</th><th style="width:56px">历史</th>
+      <th style="width:120px">Brand</th><th style="width:170px">Marketing Request</th><th style="width:170px">USC Approval</th><th style="width:104px">Status</th><th style="width:150px">Final</th><th style="width:96px">Spent</th><th style="width:80px">Utilization</th><th style="width:56px">History</th>
     </tr></thead>
     <tbody id="budgetBody"></tbody>
   </table>
@@ -770,7 +770,7 @@ window.supabase={createClient:function(){return __mockClient;}};
     </div>
   </div>
   <table>
-    <thead><tr><th style="width:140px">品牌</th><th>Marketing 负责人(申请)</th><th>USC 负责人(核批)</th><th>决策人</th></tr></thead>
+    <thead><tr><th style="width:140px">Brand</th><th>Marketing Owner (Request)</th><th>USC Owner (Approval)</th><th>Decider</th></tr></thead>
     <tbody id="bgAssignBody"></tbody>
   </table>
   <p class="note" style="margin-top:10px">留「— 空 —」表示该品牌该侧暂无负责人(例如 INZ9 的 USC),那一侧就没人能填,直到指派。</p>
@@ -2573,9 +2573,9 @@ function renderBudget(){
   }).join('');
   const stat=(v,l)=>`<div class="stat"><b>${v}</b><label>${l}</label></div>`;
   document.getElementById('bgStrip').innerHTML=
-    stat('$'+tReq.toLocaleString('en-US'),'总申请')+stat('$'+tAll.toLocaleString('en-US'),'总核批')+
-    stat('$'+tFin.toLocaleString('en-US'),'最终合计')+stat('$'+tSp.toLocaleString('en-US'),'已投放')+
-    stat(tFin?Math.round(tSp/tFin*100)+'%':'—','使用率');
+    stat('$'+tReq.toLocaleString('en-US'),'总申请 Requested')+stat('$'+tAll.toLocaleString('en-US'),'总核批 Approved')+
+    stat('$'+tFin.toLocaleString('en-US'),'最终合计 Final')+stat('$'+tSp.toLocaleString('en-US'),'已投放 Spent')+
+    stat(tFin?Math.round(tSp/tFin*100)+'%':'—','使用率 Utilization');
 }
 async function bgSaveAmt(mo,br,side,value){
   const field=side==='mkt'?'requested':'allocated';
