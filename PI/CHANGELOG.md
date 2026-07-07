@@ -14,6 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v46] — 2026-07-07 · New Hypothesis:「测试周期」与 Capacity Check「周期」合一
+
+- 问题:基础卡新加的「测试周期(天)」和右侧 Capacity Check 的「周期(天)」重复,同一个测试窗口填两遍还可能填不一致。
+- 改法(按 V 方案):**留基础卡的「测试周期(天)」为唯一入口**;Capacity Check 删掉周期输入框,只留「日预算」,周期位置改为只读回显「N 天(取自基础卡)」,容量体检自动用基础卡的天数算(`capacity()` 改读 `hf-plan-days`)。
+- 联动:`hf-plan-days` 输入即触发 `updateAll()` 重算容量;Save 必填校验从 `cc-days` 换成 `hf-plan-days`(测试周期);reset 同步。
+- 附带收益:预计结束日(排期)与容量体检用的周期天然一致,不会再出现「排期 7 天、体检按 14 天算」的错位。
+- 验证:`node --check` 通过;headless 交互实测——旧输入框已移除、回显「14 天(取自基础卡)」、清空后提示「请填日预算与测试周期(基础卡)」,联动正确。
+
 ## [v45] — 2026-07-07 · Budget Allocation 移到 PI 组第一位
 
 - 左侧导航:Budget Allocation 从 Creatives 后移到 **Idea Pool 前**(PI 组第一项)。

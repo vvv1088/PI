@@ -557,7 +557,7 @@
             <input type="date" id="hf-plan-launch">
           </div>
           <div class="fld"><label>测试周期(天)</label>
-            <input type="number" id="hf-plan-days" placeholder="如 7" min="1">
+            <input type="number" id="hf-plan-days" placeholder="如 7" min="1" oninput="updateAll()">
           </div>
         </div>
       </div>
@@ -618,7 +618,7 @@
         <h3>Capacity Check · 容量体检</h3>
         <div class="row">
           <div class="fld" style="max-width:110px"><label>日预算 $</label><input type="number" id="cc-budget" value="20" oninput="updateAll()"></div>
-          <div class="fld" style="max-width:110px"><label>周期(天)</label><input type="number" id="cc-days" value="7" oninput="updateAll()"></div>
+          <div class="fld"><label>周期(天)</label><div style="padding:7px 0;font-size:13px;color:var(--ink3)" id="cc-days-echo">= 基础卡「测试周期」</div></div>
         </div>
         <div id="cc-out"></div>
       </div>
@@ -1220,7 +1220,7 @@ function resetHypoForm(){
   const ae=document.getElementById('hf-age');if(ae)ae.innerHTML=dimTabOpts('age','');
   const se=document.getElementById('hf-stage');if(se)se.innerHTML=stageOpts('');
   ['hf-brand','hf-persona','hf-age','hf-stage','hf-type','hf-trigger','hf-evi','hf-metric','hf-guard-m'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  ['hf-x','hf-target','hf-pct','hf-guard-v','cc-budget','cc-days','hf-plan-launch','hf-plan-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['hf-x','hf-target','hf-pct','hf-guard-v','cc-budget','hf-plan-launch','hf-plan-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const w=document.getElementById('hf-why');if(w){w.value='';w.readOnly=false;w.style.background='';w.title='';}
   syncMetricByBrand();
   document.querySelectorAll('#v-form .reqstar').forEach(s=>s.remove());
@@ -1229,7 +1229,7 @@ function resetHypoForm(){
 function validateHypo(){
   document.querySelectorAll('#v-form .reqstar').forEach(s=>s.remove());
   document.querySelectorAll('#v-form .reqbad').forEach(e=>e.classList.remove('reqbad'));
-  const fields=[['hf-brand','品牌'],['hf-persona','人群'],['hf-age','年龄段'],['hf-type','测试类型'],['hf-trigger','起因'],['hf-evi','证据'],['hf-metric','主指标'],['hf-guard-m','防守底线'],['hf-x','改变 X'],['cc-budget','日预算'],['cc-days','周期']];
+  const fields=[['hf-brand','品牌'],['hf-persona','人群'],['hf-age','年龄段'],['hf-type','测试类型'],['hf-trigger','起因'],['hf-evi','证据'],['hf-metric','主指标'],['hf-guard-m','防守底线'],['hf-x','改变 X'],['cc-budget','日预算'],['hf-plan-days','测试周期']];
   // figure(目标值 / 护栏阈值)本期 TBD —— 仅对非锁定品牌(INZ9/其他)仍必填;OK188/17WIN/SBKH 留空待定
   if(!BRAND_METRIC[(document.getElementById('hf-brand')||{}).value]){fields.push(['hf-target','目标值'],['hf-guard-v','防守底线阈值']);}
   const miss=[];
@@ -1926,8 +1926,10 @@ function updateAll(skipSync){
 }
 function capacity(own,brand,metric,target,manual){
   const out=document.getElementById('cc-out');
-  const budRaw=(document.getElementById('cc-budget')||{}).value,daysRaw=(document.getElementById('cc-days')||{}).value;
-  if(!budRaw||!daysRaw){out.innerHTML='<div class="light gray"><div class="tt"><span class="dot"></span>请填日预算与周期</div></div>';return;}
+  // 周期 = 基础卡「测试周期(天)」(hf-plan-days),单一事实源,不再单独填
+  const budRaw=(document.getElementById('cc-budget')||{}).value,daysRaw=(document.getElementById('hf-plan-days')||{}).value;
+  const echo=document.getElementById('cc-days-echo');if(echo)echo.textContent=daysRaw?(daysRaw+' 天(取自基础卡)'):'= 基础卡「测试周期」';
+  if(!budRaw||!daysRaw){out.innerHTML='<div class="light gray"><div class="tt"><span class="dot"></span>请填日预算与测试周期(基础卡)</div></div>';return;}
   const bud=parseFloat(budRaw)||0;
   const days=parseFloat(daysRaw)||0;
   const have=bud*days;
