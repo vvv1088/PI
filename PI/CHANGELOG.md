@@ -14,7 +14,18 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v31] — 2026-06-29 · 修复「重置密码变回 123123」+ AI 周报想法接回(当前基线)
+## [v32] — 2026-07-07 · Hypothesis 页筛选优化(默认全月 + Idea 关联/筛选)+ Ads 默认最新(当前基线)
+
+团队反馈的 4 处 UI 优化,纯前端,不动后端/数据:
+
+- **Hypothesis 月份筛选默认 6 月 → 全部** —— `#f-month` 默认选项从「Jun 2026」改为 `All Months`(value 空),进页面即看全部假设,不再被默认月份藏住。
+- **Hypothesis 行内显示所挂 Idea(紧凑)** —— 每条假设首列在编号/陈述后加一枚小 pill `💡 <idea code>`(如 `💡 IDE-007`),`title` 悬浮显示完整来源标签(`来自想法: IDE-007 · 原创直觉`)。只显示 code 不显示全称,避免行太长太密;无关联想法的行不显示。
+- **新增 Idea 筛选** —— 筛选栏加 `#f-idea` 下拉,`fillIdeaFilter()` 在每次 `renderHypo` 时按现有假设去重生成选项(option 值=idea code、显示=完整标签),选中后按 `(h.idea||'').split(' ')[0]===fi` 精确筛该想法下的所有假设。
+- **Ads Library 默认排序 最长在投 → 最新** —— `#fSort` 默认选项从「Longest running」改为 `Sort: Newest`(value `new`,已存在的 `start_date` 降序逻辑),打开画廊先看最新广告。
+- 验证:`node --check` 通过;`fillIdeaFilter` + 筛选谓词单测 PASS(去重/精确筛/月份筛均符合预期)。
+- ⚠️ **需重新上传 `index.html` 到 cPanel 才在线上生效。**
+
+## [v31] — 2026-06-29 · 修复「重置密码变回 123123」+ AI 周报想法接回
 
 - **Bug 修复:Reset PW 改完变回 123123** —— `resetUserPw` 的 `prompt` 默认值原本预填 `'123123'`,管理员点「Reset PW」时框里已是 123123,没清空重打就确认 = 把密码设回 123123(手机尤甚)。改:默认值置空 + 最少 4 位校验(`np.length<4` 直接拦下不调 RPC) + 提示语明确。后端 `admin_set_password` / `is_admin()` 经验证完全正常,问题纯在前端预填值。
   - (另:已按 V 要求在后台直接改了 bryan/gg/joey 三个密码。)

@@ -519,7 +519,10 @@ window.supabase={createClient:function(){return __mockClient;}};
       <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
     </select>
     <select id="f-month" onchange="renderHypo()">
-      <option value="">All Months</option><option selected>Jun 2026</option><option>May 2026</option>
+      <option value="" selected>All Months</option><option>Jun 2026</option><option>May 2026</option>
+    </select>
+    <select id="f-idea" onchange="renderHypo()">
+      <option value="">All Ideas</option>
     </select>
     <select id="f-mode" onchange="renderHypo()">
       <option value="">All Modes</option><option>新测试</option><option>主力运行</option>
@@ -758,7 +761,7 @@ window.supabase={createClient:function(){return __mockClient;}};
     <select id="fFormat" onchange="renderGallery()"><option value="">All Formats</option><option value="VIDEO">VIDEO</option><option value="IMAGE">IMAGE</option><option value="DCO">DCO</option><option value="CAROUSEL">CAROUSEL</option></select>
     <select id="fGameType" onchange="renderGallery()"><option value="">All Game Types</option></select>
     <select id="fStatus" onchange="renderGallery()"><option value="active">Status: Active</option><option value="archive">Status: Inactive</option><option value="all">Status: All</option></select>
-    <select id="fSort" onchange="renderGallery()"><option value="dur">Sort: Longest running</option><option value="new">Sort: Newest</option><option value="recent">Sort: Recently seen</option><option value="op">Sort: Operator</option></select>
+    <select id="fSort" onchange="renderGallery()"><option value="new" selected>Sort: Newest</option><option value="dur">Sort: Longest running</option><option value="recent">Sort: Recently seen</option><option value="op">Sort: Operator</option></select>
     <input type="text" id="fSearch" placeholder="Search text / selling point / theme…" oninput="renderGallery()" style="min-width:300px">
     <span class="sub" id="galCount"></span>
   </div>
@@ -1246,10 +1249,11 @@ function marketChange(){
   renderHypo();
 }
 function renderHypo(){
-  const fm=document.getElementById('f-market').value,fb=document.getElementById('f-hbrand').value,fmo=document.getElementById('f-month').value,fmd=document.getElementById('f-mode').value,f=document.getElementById('f-hst').value;
-  document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)).map(h=>`
+  fillIdeaFilter();
+  const fm=document.getElementById('f-market').value,fb=document.getElementById('f-hbrand').value,fmo=document.getElementById('f-month').value,fmd=document.getElementById('f-mode').value,f=document.getElementById('f-hst').value,fi=document.getElementById('f-idea').value;
+  document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)&&(!fi||(h.idea||'').split(' ')[0]===fi)).map(h=>`
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
-    <td><span class="code">${h.id}</span> &nbsp;<span class="hx">${h.x}</span>${(h.testDims&&h.testDims.length)?` <span class="pill" style="background:var(--bg2);color:var(--ink2);font-size:10px">测·${h.testDims.map(dimLabel).join('×')}</span>`:''}</td>
+    <td><span class="code">${h.id}</span> &nbsp;<span class="hx">${h.x}</span>${(h.testDims&&h.testDims.length)?` <span class="pill" style="background:var(--bg2);color:var(--ink2);font-size:10px">测·${h.testDims.map(dimLabel).join('×')}</span>`:''}${h.idea?` <span class="pill" style="background:var(--bg2);color:var(--ink3);font-size:10px" title="来自想法: ${esc(h.idea)}">💡 ${esc((h.idea+'').split(' ')[0])}</span>`:''}</td>
     <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?new Date(h.created).toLocaleString('zh-CN'):'—'}</td>
     <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
@@ -1258,6 +1262,12 @@ function renderHypo(){
     <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':'绿'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
    </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
+}
+function fillIdeaFilter(){
+  const sel=document.getElementById('f-idea');if(!sel)return;
+  const cur=sel.value,m={};
+  hypos.forEach(h=>{const c=(h.idea||'').split(' ')[0];if(c)m[c]=h.idea;});
+  sel.innerHTML='<option value="">All Ideas</option>'+Object.keys(m).sort().map(c=>`<option value="${esc(c)}"${c===cur?' selected':''}>${esc(m[c])}</option>`).join('');
 }
 function editHypothesis(i){
   const h=hypos[i];if(!h)return;
