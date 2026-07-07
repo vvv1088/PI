@@ -690,7 +690,7 @@
     </tr></thead>
     <tbody id="budgetBody"></tbody>
   </table>
-  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定(决策人可「重开」),金额/理由/时间全部留痕(点「历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。分工在 Administration → Budget 分工 里配。</p>
+  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定(决策人可「🔓 重开」),金额/理由/时间全部留痕(点「🕘 历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。分工在 Administration → Budget 分工 里配。</p>
 </section>
 
 <!-- ============ BUDGET 分工(Admin 配 谁管哪个品牌的哪一侧)============ -->
@@ -2404,7 +2404,7 @@ function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated)
   if(all!=null&&req!=null&&all<req)return 'decide';
   return 'settled';}
 function bgFinalAmt(e){e=e||{};const fin=bgNum(e.final_amount);if(fin!=null)return fin;const all=bgNum(e.allocated),req=bgNum(e.requested);if(all!=null&&(req==null||all>=req))return all;return null;}
-const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],decide:['待决策','var(--amber-bg)','var(--amber)'],settled:['已定','var(--green-bg)','var(--green)']};
+const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],decide:['🟠 待决策','var(--amber-bg)','var(--amber)'],settled:['✅ 已定','var(--green-bg)','var(--green)']};
 function bgLocked(e){return bgNum(e&&e.final_amount)!=null;} // 决策拍板后锁
 function bgFillMonths(){
   const sel=document.getElementById('bg-month');if(!sel)return;
@@ -2419,10 +2419,10 @@ function bgAmtCell(e,mo,br,side){
   const val=bgNum(e[field]),by=e[field+'_by'],reason=e[field+'_reason'];
   const canEdit=bgCanEdit(br,side)&&!bgLocked(e);
   let top;
-  if(val!=null)top=`<span class="bgro"><b>${bgMoney(val)}</b></span>`+(canEdit?` <a class="bglink" onclick="bgEditCell('${mo}','${br}','${side}')" title="编辑金额/理由">编辑</a>`:'');
-  else top=canEdit?`<button class="btn ghost sm" onclick="bgEditCell('${mo}','${br}','${side}')">填写</button>`:'<span class="bgro" style="color:var(--ink3)">—</span>';
+  if(val!=null)top=`<span class="bgro"><b>${bgMoney(val)}</b></span>`+(canEdit?` <a class="bglink" onclick="bgEditCell('${mo}','${br}','${side}')" title="编辑金额/理由">✏️</a>`:'');
+  else top=canEdit?`<button class="btn ghost sm" onclick="bgEditCell('${mo}','${br}','${side}')">✏️ 填写</button>`:'<span class="bgro" style="color:var(--ink3)">—</span>';
   let sub='';
-  if(val!=null)sub=`<div class="bgsub">${esc(bgUserName(by))}${reason?` · <span title="${esc(reason)}">${esc(reason.length>14?reason.slice(0,14)+'…':reason)}</span>`:''}</div>`;
+  if(val!=null)sub=`<div class="bgsub">${esc(bgUserName(by))}${reason?` · <span title="${esc(reason)}">💬 ${esc(reason.length>12?reason.slice(0,12)+'…':reason)}</span>`:''}</div>`;
   else sub=`<div class="bgsub" style="color:var(--ink3)">${canEdit?'待你填':'待 '+esc(bgUserName(bgAssign(br)[side]))}</div>`;
   return top+sub;
 }
@@ -2484,11 +2484,11 @@ function renderBudget(){
     let finCell;
     if(stt==='decide'){
       finCell=(bgIsAdmin()||a.decider===bgMe())
-        ?`<button class="btn sm" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="bgDecide('${bgMonth}','${br}')">决策</button>`
+        ?`<button class="btn sm" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="bgDecide('${bgMonth}','${br}')">⚖️ 决策</button>`
         :`<span class="bgro" style="color:var(--amber)">待 ${esc(bgUserName(a.decider))} 决策</span>`;
     }else if(fin!=null){
       const decided=bgNum(e.final_amount)!=null,canReopen=decided&&(bgIsAdmin()||a.decider===bgMe());
-      finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(canReopen?` <a class="bglink" onclick="bgReopen('${bgMonth}','${br}')" title="清除决定,回到可编辑">重开</a>`:'')+(decided?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">${esc(e.final_reason.length>14?e.final_reason.slice(0,14)+'…':e.final_reason)}</span>`:''}</div>`:'');
+      finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(canReopen?` <a class="bglink" onclick="bgReopen('${bgMonth}','${br}')" title="清除决定,回到可编辑">🔓 重开</a>`:'')+(decided?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">💬 ${esc(e.final_reason.length>12?e.final_reason.slice(0,12)+'…':e.final_reason)}</span>`:''}</div>`:'<div class="bgsub" style="color:var(--green)">自动(核批≥申请)</div>');
     }else finCell='<span class="bgro" style="color:var(--ink3)">—</span>';
     return `<tr>
       <td><b>${br}</b></td>
@@ -2498,7 +2498,7 @@ function renderBudget(){
       <td>${finCell}</td>
       <td><span class="bgro">${sp?bgMoney(sp):'—'}</span></td>
       <td>${usePct==null?'<span class="bgro" style="color:var(--ink3)">—</span>':`<span class="bgro" style="color:${usePct>100?'var(--red)':usePct>85?'var(--amber)':'var(--green)'}">${usePct}%</span>`}</td>
-      <td><button class="btn ghost sm" title="看时间线" onclick="bgHistory('${bgMonth}','${br}')">历史</button></td>
+      <td><button class="btn ghost sm" title="看时间线" onclick="bgHistory('${bgMonth}','${br}')">🕘</button></td>
     </tr>`;
   }).join('');
   const stat=(v,l)=>`<div class="stat"><b>${v}</b><label>${l}</label></div>`;
@@ -2537,8 +2537,8 @@ function bgDecide(mo,br){
   const e=bgEntry(mo,br)||{},req=bgNum(e.requested),all=bgNum(e.allocated);
   let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:16px">最终决策(申请与核批不一致)</div>';
   h+='<div style="display:flex;gap:24px;margin-bottom:16px;font-size:13px">'
-    +'<div><div style="color:var(--ink3)">Marketing 申请</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(req)+'</div>'+(e.requested_reason?'<div class="bgsub">'+esc(e.requested_reason)+'</div>':'')+'</div>'
-    +'<div><div style="color:var(--ink3)">USC 核批</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(all)+'</div>'+(e.allocated_reason?'<div class="bgsub">'+esc(e.allocated_reason)+'</div>':'')+'</div></div>';
+    +'<div><div style="color:var(--ink3)">Marketing 申请</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(req)+'</div>'+(e.requested_reason?'<div class="bgsub">💬 '+esc(e.requested_reason)+'</div>':'')+'</div>'
+    +'<div><div style="color:var(--ink3)">USC 核批</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(all)+'</div>'+(e.allocated_reason?'<div class="bgsub">💬 '+esc(e.allocated_reason)+'</div>':'')+'</div></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>最终预算</label><input id="bg-fin" type="number" min="0" step="100" value="'+((all!=null?all:req)||'')+'" placeholder="如 16000"></div>';
   h+='<div class="fld" style="margin-bottom:12px"><label>决定原因 <span style="color:var(--red)">(必填)</span></label><textarea id="bg-finreason" style="width:100%;min-height:70px" placeholder="为什么定这个数 —— 会通知双方并留痕">'+esc(e.final_reason||'')+'</textarea></div>';
   h+='<div style="display:flex;gap:8px"><button class="btn" style="background:var(--red);border-color:var(--red);color:#fff" onclick="bgSaveDecision(\''+mo+'\',\''+br+'\')">确认决策</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
@@ -2562,12 +2562,12 @@ async function bgSaveDecision(mo,br){
 }
 function bgHistory(mo,br){
   const e=bgEntry(mo,br)||{},rows=[];
-  if(e.requested!=null)rows.push(['申请',e.requested,e.requested_by,e.requested_reason,e.requested_at]);
-  if(e.allocated!=null)rows.push(['核批',e.allocated,e.allocated_by,e.allocated_reason,e.allocated_at]);
-  if(bgStatus(e)==='decide')rows.push(['升级待决策','','','申请与核批不一致,已通知决策人 '+bgUserName(bgAssign(br).decider),'']);
-  if(e.final_amount!=null)rows.push(['决策',e.final_amount,e.final_by,e.final_reason,e.decided_at]);
+  if(e.requested!=null)rows.push(['📝 申请',e.requested,e.requested_by,e.requested_reason,e.requested_at]);
+  if(e.allocated!=null)rows.push(['🏦 核批',e.allocated,e.allocated_by,e.allocated_reason,e.allocated_at]);
+  if(bgStatus(e)==='decide')rows.push(['🟠 升级待决策','','','申请与核批不一致,已通知决策人 '+bgUserName(bgAssign(br).decider),'']);
+  if(e.final_amount!=null)rows.push(['⚖️ 决策',e.final_amount,e.final_by,e.final_reason,e.decided_at]);
   let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:14px">预算时间线(留痕)</div>';
-  h+= rows.length?('<div class="bgtl">'+rows.map(r=>`<div class="bgtli"><div class="bgtlk">${r[0]}</div><div>${r[1]!==''?`<b>${bgMoney(bgNum(r[1]))}</b> · `:''}${r[2]?esc(bgUserName(r[2])):''}${r[4]?` · <span style="color:var(--ink3)">${new Date(r[4]).toLocaleString('zh-CN')}</span>`:''}${r[3]?`<div class="bgsub" style="color:var(--ink2)">${esc(r[3])}</div>`:''}</div></div>`).join('')+'</div>'):'<p style="color:var(--ink3)">还没有任何记录。</p>';
+  h+= rows.length?('<div class="bgtl">'+rows.map(r=>`<div class="bgtli"><div class="bgtlk">${r[0]}</div><div>${r[1]!==''?`<b>${bgMoney(bgNum(r[1]))}</b> · `:''}${r[2]?esc(bgUserName(r[2])):''}${r[4]?` · <span style="color:var(--ink3)">${new Date(r[4]).toLocaleString('zh-CN')}</span>`:''}${r[3]?`<div class="bgsub" style="color:var(--ink2)">💬 ${esc(r[3])}</div>`:''}</div></div>`).join('')+'</div>'):'<p style="color:var(--ink3)">还没有任何记录。</p>';
   document.getElementById('d-title').textContent='Budget 历史';
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
@@ -2575,8 +2575,8 @@ function bgHistory(mo,br){
 // Slack 触发点(Phase B 接 n8n webhook + @ 需要 Slack user id 映射);演示版用 toast 展示会发什么
 function bgSlack(kind,e,br,mo){
   const a=bgAssign(br);let msg;
-  if(kind==='decide')msg='预算待决 · '+br+' · '+mo+' — 申请 '+bgMoney(bgNum(e.requested))+' / 核批 '+bgMoney(bgNum(e.allocated))+'。请 @'+bgUserName(a.decider)+' 定夺。';
-  else msg='预算已定 · '+br+' · '+mo+' — 最终 '+bgMoney(bgFinalAmt(e))+(e.final_reason?'(原因:'+e.final_reason+')':'')+' cc @'+bgUserName(a.mkt)+(a.usc?' @'+bgUserName(a.usc):'');
+  if(kind==='decide')msg='🟠 预算待决 · '+br+' · '+mo+' — 申请 '+bgMoney(bgNum(e.requested))+' / 核批 '+bgMoney(bgNum(e.allocated))+'。请 @'+bgUserName(a.decider)+' 定夺。';
+  else msg='✅ 预算已定 · '+br+' · '+mo+' — 最终 '+bgMoney(bgFinalAmt(e))+(e.final_reason?'(原因:'+e.final_reason+')':'')+' cc @'+bgUserName(a.mkt)+(a.usc?' @'+bgUserName(a.usc):'');
   logAction('budget','slack',br+' '+mo+' '+kind);
   if(window.__DEMO__)toast('📨(演示)会发 Slack:'+msg);
   // TODO(Phase B): fetch(BUDGET_SLACK_WEBHOOK,{method:'POST',body:JSON.stringify({text:msg,...@mentions})})
