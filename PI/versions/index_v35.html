@@ -69,8 +69,7 @@
   .alertbar .act{margin-left:auto;white-space:nowrap}
   .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .tablebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-  select,input[type=text],input[type=number],input[type=date]{font:inherit;border:1px solid var(--line2);border-radius:6px;padding:6px 9px;background:#fff;color:var(--ink)}
-  input[type=date]{min-height:34px;line-height:1.2}
+  select,input[type=text],input[type=number]{font:inherit;border:1px solid var(--line2);border-radius:6px;padding:6px 9px;background:#fff;color:var(--ink)}
   select:focus,input:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
   table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
   thead th{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3);font-weight:600;text-align:left;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line)}
@@ -108,7 +107,6 @@
   .schedpill .cd{display:block;font-family:inherit;font-size:10.5px;font-weight:600;margin-top:2px;color:var(--ink3)}
   .schedpill .cd.soon{color:var(--amber)}.schedpill .cd.over{color:var(--red)}.schedpill .cd.ok{color:var(--green)}
   .hx{font-weight:600}
-  .hcell-idea{margin-bottom:3px}
   .hcell-main{line-height:1.5}
   .hcell-sub{margin-top:4px}
   .ideam{background:var(--bg2);color:var(--ink3);font-size:10px;font-weight:600;vertical-align:1px}
@@ -244,7 +242,7 @@
   .vid{position:relative}
   .vid:after{content:'▶';position:absolute;right:4px;bottom:2px;font-size:10px;opacity:.85}
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
-  .tabbtn{padding:8px 10px;font-size:12.5px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;font-weight:500;white-space:nowrap}
+  .tabbtn{padding:8px 16px;font-size:13px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;font-weight:500}
   .tabbtn:hover{color:var(--ink)}
   .tabbtn.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
   @media(max-width:1000px){body{flex-direction:column}aside.nav{width:100%;height:auto;position:static}.formwrap{grid-template-columns:1fr}.side{position:static}.drawer{width:100vw;right:-100vw}.row2{grid-template-columns:1fr}.row3{grid-template-columns:1fr}}
@@ -953,14 +951,6 @@ function stageOpts(cur){
 }
 // 顾客阶段中文名(列表 pill 用)
 function stageZh(code){if(!code)return '';const r=(DICT['Customer Stage']||[]).find(x=>x.c===code);return r?(r.n||r.c):code;}
-// 顾客阶段配色(每个漏斗环节一个色,沿用系统色板)→ [背景, 文字]
-function stageColor(code){return ({
-  'Acquisition':['var(--accent-soft)','var(--accent)'],
-  'Activation':['var(--violet-bg)','var(--violet)'],
-  'Retention':['var(--green-bg)','var(--green)'],
-  'Repeat Conversion':['var(--amber-bg)','var(--amber)'],
-  'Reactivation':['var(--red-bg)','var(--red)']
-})[code]||['var(--bg2)','var(--ink2)'];}
 // 对比页 / 裁判用的 5 维(人群、年龄已上移到 New Hypothesis 假设级);[key,label,required]
 const MATRIX_DIMS=[['format','Format',1],['hook','Hook',1],['visual_style','视觉风格'],['offer','Offer'],['game_type','游戏类型']];
 const MATRIX_DIM_KEYS=MATRIX_DIMS.map(d=>d[0]);
@@ -1234,11 +1224,10 @@ function renderHypo(){
   document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)&&(!fi||(h.idea||'').split(' ')[0]===fi)&&(!fs||h.stage===fs)).map(h=>`
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
     <td>
-     ${h.idea?`<div class="hcell-idea"><span class="pill ideam" title="来自想法: ${esc(h.idea)}">💡${esc((h.idea+'').split(' ')[0])}</span></div>`:''}
-     <div class="hcell-main"><span class="code">${h.id}</span> <span class="hx">${h.x}</span></div>
+     <div class="hcell-main">${h.idea?`<span class="pill ideam" title="来自想法: ${esc(h.idea)}">💡${esc((h.idea+'').split(' ')[0])}</span> `:''}<span class="code">${h.id}</span> <span class="hx">${h.x}</span></div>
     </td>
     <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?`<div>${new Date(h.created).toLocaleDateString('zh-CN')}</div><div style="color:var(--ink3);font-size:11px">${new Date(h.created).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</div>`:'—'}</td>
-    <td>${h.stage?`<span class="pill" style="background:${stageColor(h.stage)[0]};color:${stageColor(h.stage)[1]};font-size:11px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span>`:'<span style="color:var(--ink3)">—</span>'}</td>
+    <td>${h.stage?`<span class="pill" style="background:var(--violet-bg);color:var(--violet);font-size:11px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span>`:'<span style="color:var(--ink3)">—</span>'}</td>
     <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
     <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>

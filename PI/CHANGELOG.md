@@ -14,7 +14,16 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v35] — 2026-07-07 · Hypothesis 表格:Stage 独立成列 + Create Date 双行 + 排期改日历选择(当前基线)
+## [v36] — 2026-07-07 · 微调:首列 idea/hyp 双行 + Stage 分色 + 日历框统一 + 字典标签同排(当前基线)
+
+- **假设首列改双行**:`💡IDE-xxx` 在上、`HYP-xxx 陈述` 在下(`.hcell-idea` + `.hcell-main`),首列更窄省位。
+- **Stage 分色**:5 个漏斗环节各一色(沿用系统色板)——拉新=蓝 / 激活=紫 / 留存=绿 / 复购转化=琥珀 / 唤回=红(`stageColor()`)。
+- **日历框统一样式**:`input[type=date]` 之前没进输入框样式选择器,渲染成浏览器默认丑框;已加入 `select,input[type=text|number|date]` 统一规则(边框/圆角/内距/高度),现与其它输入框一致。
+- **Dictionary 标签同排**:`.tabbtn` 内距 `16px→10px`、字号 `13→12.5`、加 `nowrap`;实测 1400px 内容宽下 15 个标签(含 Customer Stage)全部落在**同一行**,不再单独换到第二行。
+- 验证:`node --check` 通过;headless 实测——首列双行、Stage 四色、标签单行(measure=1 row),无 pageerror。
+- ⚠️ **需重新上传 `index.html` 到 cPanel 才在线上生效。**
+
+## [v35] — 2026-07-07 · Hypothesis 表格:Stage 独立成列 + Create Date 双行 + 排期改日历选择
 
 - **顾客阶段独立成列**:从假设首列的 pill 移出,新增独立 **Stage** 列(在 Create Date 之后),◑ 紫色 pill 居中显示,无则「—」。
 - **移除首列的「测·维度」标签**:首列现在只保留 `💡IDE-xxx → HYP-xxx → 陈述` 一行,更干净。
