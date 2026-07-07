@@ -2484,7 +2484,7 @@ function renderBudget(){
     let finCell;
     if(stt==='decide'){
       finCell=(bgIsAdmin()||a.decider===bgMe())
-        ?`<button class="btn sm" style="background:var(--amber);color:#fff;border:none" onclick="bgDecide('${bgMonth}','${br}')">⚖️ 决策</button>`
+        ?`<button class="btn sm" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="bgDecide('${bgMonth}','${br}')">⚖️ 决策</button>`
         :`<span class="bgro" style="color:var(--amber)">待 ${esc(bgUserName(a.decider))} 决策</span>`;
     }else if(fin!=null){
       const decided=bgNum(e.final_amount)!=null,canReopen=decided&&(bgIsAdmin()||a.decider===bgMe());
@@ -2530,18 +2530,35 @@ async function bgSaveAmt(mo,br,side,value){
   else if(after==='settled'&&prev!=='settled')bgSlack('settled',bgEntry(mo,br),br,mo);
   renderBudget();
 }
-async function bgDecide(mo,br){
+// 最终决策:抽屉表单(与填写格同风格),原因必填
+function bgDecide(mo,br){
   const a=bgAssign(br);
   if(!(bgIsAdmin()||a.decider===bgMe())){toast('只有决策人('+bgUserName(a.decider)+')或 Admin 可拍板');return;}
-  const e=bgEntry(mo,br)||{};const req=bgNum(e.requested),all=bgNum(e.allocated);
-  const dv=prompt('最终预算(申请 '+bgMoney(req)+' / 核批 '+bgMoney(all)+'):',(all!=null?all:req)||'');
-  if(dv===null)return;const v=bgNum(dv);if(v==null||isNaN(v)||v<0){toast('请输入非负数字');return;}
-  const rr=prompt('决定原因(必填):',e.final_reason||'');if(rr===null)return;if(!(rr||'').trim()){toast('决策必须写原因');return;}
-  const patch={final_amount:v,final_by:bgMe(),final_reason:rr.trim(),decided_at:new Date().toISOString()};
+  const e=bgEntry(mo,br)||{},req=bgNum(e.requested),all=bgNum(e.allocated);
+  let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:16px">最终决策(申请与核批不一致)</div>';
+  h+='<div style="display:flex;gap:24px;margin-bottom:16px;font-size:13px">'
+    +'<div><div style="color:var(--ink3)">Marketing 申请</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(req)+'</div>'+(e.requested_reason?'<div class="bgsub">💬 '+esc(e.requested_reason)+'</div>':'')+'</div>'
+    +'<div><div style="color:var(--ink3)">USC 核批</div><div style="font-family:var(--mono);font-weight:700">'+bgMoney(all)+'</div>'+(e.allocated_reason?'<div class="bgsub">💬 '+esc(e.allocated_reason)+'</div>':'')+'</div></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>最终预算</label><input id="bg-fin" type="number" min="0" step="100" value="'+((all!=null?all:req)||'')+'" placeholder="如 16000"></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>决定原因 <span style="color:var(--red)">(必填)</span></label><textarea id="bg-finreason" style="width:100%;min-height:70px" placeholder="为什么定这个数 —— 会通知双方并留痕">'+esc(e.final_reason||'')+'</textarea></div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn" style="background:var(--red);border-color:var(--red);color:#fff" onclick="bgSaveDecision(\''+mo+'\',\''+br+'\')">确认决策</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  document.getElementById('d-title').textContent='最终决策';
+  document.getElementById('d-body').innerHTML=h;
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function bgSaveDecision(mo,br){
+  const a=bgAssign(br);
+  if(!(bgIsAdmin()||a.decider===bgMe())){toast('无权决策');return;}
+  const v=bgNum(document.getElementById('bg-fin').value);
+  if(v==null||isNaN(v)||v<0){toast('请输入非负数字');return;}
+  const rr=(document.getElementById('bg-finreason').value||'').trim();
+  if(!rr){toast('决策必须写原因');return;}
+  const e=bgEntry(mo,br)||{};
+  const patch={final_amount:v,final_by:bgMe(),final_reason:rr,decided_at:new Date().toISOString()};
   try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
   catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget','决策',br+' '+mo+' → '+bgMoney(v));
-  bgSlack('settled',e,br,mo);toast('已定 '+bgMoney(v));renderBudget();
+  closeDrawer();bgSlack('settled',e,br,mo);toast('已定 '+bgMoney(v));renderBudget();
 }
 function bgHistory(mo,br){
   const e=bgEntry(mo,br)||{},rows=[];
