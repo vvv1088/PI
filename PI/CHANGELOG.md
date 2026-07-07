@@ -14,6 +14,12 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v53] — 2026-07-07 · 判定按钮样式统一 + 图片上传迁 Supabase Storage
+
+- 判定按钮改 `btn ghost sm`,与抽屉里 Edit 等按钮统一。
+- **图片上传正式迁 Storage**:`uploadImage()` 把压缩后的图传 `creatives` bucket(`pi/` 前缀,公链),versions 里只存 URL;上传失败自动回退 base64 不阻断保存;demo 模式跳过上传。Storage 加 authenticated 上传策略(仅 pi/ 路径);存量 base64 行 = 0,无需迁移。
+- 验证:node --check + headless 17 页零报错。
+
 ## [v52] — 2026-07-07 · Budget 写入升级 RPC(服务端强制分工)
 
 - 新建 SECURITY DEFINER RPC:`budget_save_cell / budget_decide / budget_reopen` —— 服务端校验:分工到人(mkt/usc/decider 对号)、金额/理由必填、已定锁定;绕过前端直打 API 也改不了别人的格子。

@@ -1445,7 +1445,7 @@ function openDrawer(i){
         <div class="sl"><span class="lab">因为</span><span>${ds(dwhy?esc(dwhy):'','fill')}</span></div>
       </div>
       <div style="display:flex;gap:6px;flex:none">
-        ${h.st!=='已沉淀'?`<button class="btn sm" data-perm="hypo:edit" onclick="openVerdictForm(${i})">判定</button>`:''}
+        ${h.st!=='已沉淀'?`<button class="btn ghost sm" data-perm="hypo:edit" onclick="openVerdictForm(${i})">判定</button>`:''}
         <button class="btn ghost sm" data-perm="hypo:edit" onclick="editHypothesis(${i})">Edit</button>
         ${canDel?`<button class="btn danger sm" data-perm="hypo:delete" onclick="delHypothesis(${i})">Delete</button>`:''}
       </div>
@@ -1526,6 +1526,18 @@ function shrinkImage(file,cb){
     cb(cv.toDataURL('image/jpeg',0.82));
   };img.src=e.target.result;};
   r.readAsDataURL(file);
+}
+// 图片上链:压缩后的 dataURL 传 Supabase Storage(creatives/pi/),存公链 URL;失败回退 base64,不阻断保存
+async function uploadImage(dataUrl,tag){
+  if(!dataUrl||window.__DEMO__||dataUrl.indexOf('data:')!==0)return dataUrl;
+  try{
+    const blob=await (await fetch(dataUrl)).blob();
+    const path='pi/'+(tag||'img').replace(/[^A-Za-z0-9_-]/g,'')+'-'+Date.now()+'.jpg';
+    const {error}=await db.storage.from('creatives').upload(path,blob,{contentType:'image/jpeg'});
+    if(error)throw error;
+    const {data}=db.storage.from('creatives').getPublicUrl(path);
+    return (data&&data.publicUrl)||dataUrl;
+  }catch(e){console.warn('storage upload fallback:',e.message||e);return dataUrl;}
 }
 function ecImgPick(input){const f=input.files&&input.files[0];if(!f)return;shrinkImage(f,src=>{window._ecImgSrc=src;const p=document.getElementById('ec-imgprev');if(p)p.innerHTML='<img src="'+src+'" style="width:64px;height:64px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';});}
 function openCreative(i){
@@ -1764,7 +1776,8 @@ async function saveFirstVersion(i,mode){
   const copy={p:document.getElementById('fv-p').value,h:document.getElementById('fv-h').value,d:document.getElementById('fv-d').value,c:document.getElementById('fv-c').value};
   const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
   const vstatus=mode==='save'?'live':'draft';
-  const v1={v:1,date:today,ev:'first',status:vstatus,cause:null,chg:null,reason:null,snap:null,img:'',imgSrc:window._fvImgSrc||null,copy:copy};
+  const upImg=window._fvImgSrc?await uploadImage(window._fvImgSrc,c.gen):null;
+  const v1={v:1,date:today,ev:'first',status:vstatus,cause:null,chg:null,reason:null,snap:null,img:'',imgSrc:upImg,copy:copy};
   const rowStatus=mode==='save'?'上线中':'待上线';
   const adsv=((document.getElementById('fv-ads')||{}).value||'').trim()||null;
   try{const {error}=await db.from('creatives').update({versions:[v1],status:rowStatus,ads_code:adsv,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
@@ -1816,7 +1829,7 @@ function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return fi
 async function saveCreativeCopy(i,mode){
   if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
   const vs=creatives[i].versions,last=vs[vs.length-1];
-  const newImg=window._ecImgSrc;
+  const newImg=window._ecImgSrc?await uploadImage(window._ecImgSrc,creatives[i].gen):null;
   if(mode==='save'){const miss=creativeContentMissing('ec',!!(newImg||(last&&(last.imgSrc||last.img))));if(miss.length){toast('保存前需填完:'+miss.join('、')+'(存草稿可留空)');return;}}
   let status=mode==='draft'?'draft':(document.getElementById('ec-status').value||'live');
   if(mode==='save'&&status==='draft')status='live';
