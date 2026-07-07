@@ -385,10 +385,10 @@
   <div class="grp">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Planning Intelligence <span class="car">▾</span></div>
     <div class="grp-items">
+      <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget Allocation</div>
       <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
       <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
-      <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget Allocation</div>
       <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
     </div>
@@ -2268,10 +2268,10 @@ async function hook(payload){if(WEBHOOK_URL.indexOf('PASTE_')===0)throw new Erro
 const PERM_SECTIONS=[
   {k:'watchlist',g:'CI',n:'Watchlist',acts:['add','edit','delete']},
   {k:'pending',g:'CI',n:'Pending List',acts:['edit','delete']},
+  {k:'budget',g:'PI',n:'Budget Allocation',acts:['add','edit','delete']},
   {k:'idea',g:'PI',n:'Idea Pool',acts:['add','edit','delete']},
   {k:'hypo',g:'PI',n:'Hypotheses',acts:['add','edit','delete']},
   {k:'creative',g:'PI',n:'Creatives',acts:['add','edit','delete']},
-  {k:'budget',g:'PI',n:'Budget Allocation',acts:['add','edit','delete']},
   {k:'dict',g:'PI',n:'Dictionary',acts:['add','edit']}
 ];
 const READ_ONLY=['Weekly Summary','Ads Library','Operators','Funnels','Results'];

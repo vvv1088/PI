@@ -14,6 +14,12 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v45] — 2026-07-07 · Budget Allocation 移到 PI 组第一位
+
+- 左侧导航:Budget Allocation 从 Creatives 后移到 **Idea Pool 前**(PI 组第一项)。
+- Roles & Permissions 权限矩阵同步:`PERM_SECTIONS` 里 Budget Allocation 移到 PI 组最前。
+- 验证:`node --check` 通过;导航与矩阵顺序实测正确。
+
 ## [v44] — 2026-07-07 · 表头统一英文(Budget Allocation/Permission + Hypothesis)
 
 - **Budget Allocation 表头全英文**(与其它页统一):品牌→Brand、Marketing 申请→Marketing Request、USC 核批→USC Approval、状态→Status、最终→Final、已投放→Spent、使用率→Utilization、历史→History。
