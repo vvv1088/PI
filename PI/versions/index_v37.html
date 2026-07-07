@@ -108,10 +108,6 @@
   .schedpill .cd{display:block;font-family:inherit;font-size:10.5px;font-weight:600;margin-top:2px;color:var(--ink3)}
   .schedpill .cd.soon{color:var(--amber)}.schedpill .cd.over{color:var(--red)}.schedpill .cd.ok{color:var(--green)}
   .hx{font-weight:600}
-  .bgnum{width:120px;font-family:var(--mono);font-size:13px;padding:5px 8px;border:1px solid var(--line2);border-radius:6px}
-  .bgtext{width:100%;min-width:120px;font-size:12.5px;padding:5px 8px;border:1px solid var(--line2);border-radius:6px}
-  .bgro{font-family:var(--mono);font-size:13px;color:var(--ink2)}
-  .bgst{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 10px;white-space:nowrap}
   .hcell-idea{margin-bottom:3px}
   .hcell-main{line-height:1.5}
   .hcell-sub{margin-top:4px}
@@ -376,7 +372,6 @@
       <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
       <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
-      <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget</div>
       <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
     </div>
@@ -658,29 +653,6 @@
   <p class="note" style="margin-top:10px">规则触发 ≠ 已暂停:系统推 Slack 通知 → 人在 Ads Manager 手动暂停 → 回来点「确认已暂停」。</p>
   </div>
   <div id="cv-detail" class="hidden"></div>
-</section>
-
-<!-- ============ BUDGET(每月各品牌:Marketing 申请 → USC 核批)============ -->
-<section class="view" id="v-budget">
-  <div class="head">
-    <div>
-      <h1>Budget</h1>
-      <div class="sub">每月各品牌预算:Marketing(PO/PE)填「申请」→ USC 填「核批」。差额 / 使用率自动算,改动即时保存。</div>
-    </div>
-    <div class="filters">
-      <select id="bg-month" onchange="bgMonth=this.value;renderBudget()"></select>
-    </div>
-  </div>
-
-  <div class="strip" id="bgStrip"></div>
-
-  <table>
-    <thead><tr>
-      <th style="width:130px">品牌</th><th>Marketing 申请</th><th>USC 核批</th><th>差额</th><th>已投放</th><th style="width:90px">使用率</th><th style="width:110px">状态</th><th>备注</th>
-    </tr></thead>
-    <tbody id="budgetBody"></tbody>
-  </table>
-  <p class="note" style="margin-top:10px">「申请」栏仅 Marketing(PO/PE)/Admin 可改;「核批」栏仅 USC Team/Admin 可改;其余角色只读。已投放先手填,后续可接实际投放自动汇总。</p>
 </section>
 
 <!-- ============ TAG MATRIX(假设级素材标签 & 对比)============ -->
@@ -2338,78 +2310,7 @@ async function saveIdea(){
 }
 function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_AUTHORIZED:'You are not an admin',USERNAME_REQUIRED:'Username required',PASSWORD_TOO_SHORT:'Password too short (min 4)',ROLE_NOT_FOUND:'Role not found',USERNAME_EXISTS:'Username already exists',CANNOT_DELETE_SELF:'Cannot delete yourself',USER_NOT_FOUND:'User not found'};for(const k in map){if(m.indexOf(k)>=0)return map[k];}return m;}
 function showLogin(){document.getElementById('loginGate').style.display='flex';}
-async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives(),loadBudgets()]);}
-
-/* ===== Budget:每月各品牌 Marketing 申请 → USC 核批 ===== */
-let budgets=[],bgMonth='';
-function bgCurMonth(){const n=new Date();return n.toLocaleString('en-US',{month:'short'})+' '+n.getFullYear();}
-async function loadBudgets(){try{const {data,error}=await db.from('budgets').select('*');if(error)throw error;budgets=data||[];}catch(e){budgets=[];}}
-function bgMoney(n){return (n==null||n==='')?'—':'$'+Number(n).toLocaleString('en-US');}
-function bgEntry(mo,br){return budgets.find(b=>b.month===mo&&b.brand===br)||null;}
-// 谁能改哪一栏:申请=Marketing(PO/PE);核批=USC Team;Admin 两者皆可
-function bgCan(kind){const r=curRole();if(!r)return false;if(r.admin)return true;
-  if(kind==='allocate')return (r.name||'').toUpperCase().indexOf('USC')>=0;
-  return r.key==='po'||r.key==='pe';}
-function bgFillMonths(){
-  const sel=document.getElementById('bg-month');if(!sel)return;
-  const set={};set[bgCurMonth()]=1;budgets.forEach(b=>{if(b.month)set[b.month]=1;});
-  const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
-  if(!bgMonth||arr.indexOf(bgMonth)<0)bgMonth=arr[0]||bgCurMonth();
-  sel.innerHTML=arr.map(m=>`<option${m===bgMonth?' selected':''}>${m}</option>`).join('');
-}
-function bgCell(mo,br,field,val,editable){
-  if(editable)return `<input type="number" class="bgnum" min="0" step="1" value="${val==null?'':val}" placeholder="—" onchange="saveBudget('${mo}','${br}','${field}',this.value)">`;
-  return `<span class="bgro">${bgMoney(val)}</span>`;
-}
-function renderBudget(){
-  bgFillMonths();
-  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
-  const canR=bgCan('request'),canA=bgCan('allocate');
-  let tReq=0,tAll=0,tSp=0;
-  document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{
-    const e=bgEntry(bgMonth,br)||{};
-    const req=(e.requested==null?null:+e.requested),all=(e.allocated==null?null:+e.allocated),sp=(e.spent==null?null:+e.spent);
-    tReq+=req||0;tAll+=all||0;tSp+=sp||0;
-    const diff=(all!=null&&req!=null)?(all-req):null;
-    const usePct=(all)?Math.round((sp||0)/all*100):null;
-    let st,sc;
-    if(all==null){st='待 USC 核批';sc=['var(--bg2)','var(--ink3)'];}
-    else if(req!=null&&all<req){st='部分核批';sc=['var(--amber-bg)','var(--amber)'];}
-    else{st='已满足';sc=['var(--green-bg)','var(--green)'];}
-    return `<tr>
-      <td><b>${br}</b></td>
-      <td>${bgCell(bgMonth,br,'requested',e.requested,canR)}</td>
-      <td>${bgCell(bgMonth,br,'allocated',e.allocated,canA)}</td>
-      <td class="bgro" style="color:${diff==null?'var(--ink3)':diff<0?'var(--red)':'var(--green)'}">${diff==null?'—':(diff>=0?'+':'−')+'$'+Math.abs(diff).toLocaleString('en-US')}</td>
-      <td>${bgCell(bgMonth,br,'spent',e.spent,canR)}</td>
-      <td>${usePct==null?'<span class="bgro" style="color:var(--ink3)">—</span>':`<span class="bgro" style="color:${usePct>100?'var(--red)':usePct>85?'var(--amber)':'var(--green)'}">${usePct}%</span>`}</td>
-      <td><span class="bgst" style="background:${sc[0]};color:${sc[1]}">${st}</span></td>
-      <td>${(canR||canA)?`<input type="text" class="bgtext" value="${esc(e.note||'')}" placeholder="备注…" onchange="saveBudget('${bgMonth}','${br}','note',this.value)">`:`<span class="bgro" style="color:var(--ink2)">${esc(e.note||'—')}</span>`}</td>
-    </tr>`;
-  }).join('');
-  const totDiff=tAll-tReq,totUse=tAll?Math.round(tSp/tAll*100):null;
-  document.getElementById('bgStrip').innerHTML=
-    `<div class="stat"><b>$${tReq.toLocaleString('en-US')}</b><label>总申请 Requested</label></div>`+
-    `<div class="stat"><b>$${tAll.toLocaleString('en-US')}</b><label>总核批 Allocated</label></div>`+
-    `<div class="stat"><b style="color:${totDiff<0?'var(--red)':'var(--green)'}">${totDiff>=0?'+':'−'}$${Math.abs(totDiff).toLocaleString('en-US')}</b><label>差额 Diff</label></div>`+
-    `<div class="stat"><b>$${tSp.toLocaleString('en-US')}</b><label>已投放 Spent</label></div>`+
-    `<div class="stat"><b>${totUse==null?'—':totUse+'%'}</b><label>使用率 Utilization</label></div>`;
-}
-async function saveBudget(mo,br,field,value){
-  const kind=field==='allocated'?'allocate':'request';
-  if(field!=='note'&&!bgCan(kind)){toast('当前岗位不可改这一栏');return;}
-  if(field==='note'&&!(bgCan('request')||bgCan('allocate'))){toast('当前岗位不可改备注');return;}
-  let v;
-  if(field==='note'){v=(value||'').trim()||null;}
-  else{v=(value===''||value==null)?null:Number(value);if(v!=null&&(isNaN(v)||v<0)){toast('请输入非负数字');renderBudget();return;}}
-  let e=bgEntry(mo,br);
-  try{
-    if(e){const patch={updated_at:new Date().toISOString()};patch[field]=v;const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;e[field]=v;}
-    else{const ins={month:mo,brand:br};ins[field]=v;const {error}=await db.from('budgets').insert(ins);if(error)throw error;budgets.push(ins);}
-  }catch(err){toast('保存失败: '+rpcErr(err));return;}
-  logAction('budget',field==='requested'?'申请':field==='allocated'?'核批':field==='spent'?'投放':'备注',br+' '+mo);
-  renderBudget();
-}
+async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives()]);}
 async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
@@ -2441,7 +2342,7 @@ function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][a
 function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
 function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});if(document.getElementById('auditBody'))renderAudit();if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
 function applyChrome(){const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
-async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
+async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
 /* 岗位管理 */
 function renderRoles(){const el=document.getElementById('rolesBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openRoleEditor(null)">＋ New Role</button></div>';h+='<table class="dt"><thead><tr><th>Role</th><th>Admin Access</th><th>Permissions</th><th></th></tr></thead><tbody>';const tot=PERM_SECTIONS.reduce((n,s)=>n+s.acts.length,0);roles.forEach(r=>{const cnt=PERM_SECTIONS.reduce((n,s)=>n+s.acts.filter(a=>r.perms[s.k]&&r.perms[s.k][a]).length,0);h+='<tr><td><b>'+esc(r.name)+'</b></td><td>'+(r.admin?'<span class="life la">Yes</span>':'<span class="life lx">No</span>')+'</td><td class="sm">'+cnt+' / '+tot+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openRoleEditor(\''+r.id+'\')">Edit</button> <button class="cbtn" onclick="dupRole(\''+r.id+'\')">Duplicate</button> <button class="cbtn danger" onclick="delRole(\''+r.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
 function openRoleEditor(id){const r=id?roles.find(x=>x.id===id):{id:'role_'+Date.now(),name:'',admin:false,perms:allPerms(false),_new:true};window._editRole=JSON.parse(JSON.stringify(r));document.getElementById('d-title').textContent='岗位权限';renderRoleEditor();document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');}

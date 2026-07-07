@@ -14,7 +14,21 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v37] — 2026-07-07 · 文案微调:去掉表单浅灰提示 + 「测试 period」→「测试周期」(当前基线)
+## [v38] — 2026-07-07 · 新增 Budget 页(Marketing 申请 → USC 核批)【预览版,待确认设计】
+
+- **新页面 `Budget`**(Planning Intelligence 组,Creatives 之后):每月各品牌预算表。
+  - 粒度:**品牌 × 月**(OK188KH/17WINKH/SBKH/INZ9 各一行)。
+  - 两栏两角色:`Marketing 申请`(PO/PE/Admin 可改)、`USC 核批`(USC Team/Admin 可改),`bgCan()` 按角色 gate;其余只读。
+  - 自动列:差额(核批−申请)、已投放(先手填)、使用率(已投放/核批,>100 红/>85 黄)、状态(待 USC 核批/部分核批/已满足)。
+  - 顶部月份选择器 + 汇总条(总申请/总核批/差额/已投放/使用率)。
+  - 改动即时保存(`saveBudget` upsert by month+brand),写 `audit_log`。
+- 前端:`loadBudgets`(带 try/catch,表不存在则空、不报错)、`renderBudget`、`bgCan/bgEntry/bgFillMonths/bgCell`;接入 `loadPIData` + `initApp`。
+- demo:seed 6 条(Jul 覆盖四种状态 + Jun 历史),STORE 加 `budgets`。
+- **DB 表 `budgets` 待用户确认设计后再建**(月/品牌/requested/allocated/spent/note + unique(month,brand) + RLS 允许 authenticated 写)。当前仅 demo(mock)可交互;正式库建表前 saveBudget 会优雅失败。
+- 验证:`node --check` 通过;headless 实测——Budget 页四品牌四状态、汇总条、Admin 可编辑输入全部正常渲染,无 pageerror。
+- ⚠️ 这是**预览版**,等确认页面设计 + 角色映射后再建 DB 表并上线。
+
+## [v37] — 2026-07-07 · 文案微调:去掉表单浅灰提示 + 「测试 period」→「测试周期」
 
 - 去掉 New Hypothesis 表单里两处浅灰提示文字(顾客阶段「← 打给漏斗哪一环」、预计上线日「← 点选日历」),标签更干净。
 - 「测试 period(天)」改为「测试周期(天)」。

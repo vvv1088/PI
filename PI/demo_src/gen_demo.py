@@ -191,9 +191,23 @@ AUDIT = [
  {"id":4,"user_id":"5bea4914-67e8-4dcd-a07a-d4056e44abfa","username":"joey","name":"Joey","section":"creative","action":"edit","target":"HYP-001-V1","created_at":ts("2026-06-17")},
 ]
 
+# ---------- budget (每月各品牌:Marketing 申请 → USC 核批) ----------
+def bud(month, brand, req, allo, spent, note=None):
+    return {"month":month,"brand":brand,"requested":req,"allocated":allo,"spent":spent,"note":note}
+BUDGETS = [
+ # Jul 2026 —— 覆盖四种状态:已满足 / 部分核批 / 已满足 / 待核批
+ bud("Jul 2026","OK188KH",30000,30000,18500,"主力品牌"),
+ bud("Jul 2026","17WINKH",25000,20000,12000,"体育季想加码,核批未到位"),
+ bud("Jul 2026","SBKH",15000,15000,9000,None),
+ bud("Jul 2026","INZ9",12000,None,None,"MY 新市场,待 USC 核批"),
+ # Jun 2026 —— 历史一条
+ bud("Jun 2026","OK188KH",28000,28000,27200,"上月已结"),
+ bud("Jun 2026","17WINKH",20000,18000,17600,None),
+]
+
 STORE = {
  "roles":ROLES,"role_permissions":PERMS,"profiles":PROFILES,"dict_entries":DICT,
- "ideas":IDEAS,"hypotheses":HYPS,"creatives":CREATIVES,"audit_log":AUDIT,
+ "ideas":IDEAS,"hypotheses":HYPS,"creatives":CREATIVES,"audit_log":AUDIT,"budgets":BUDGETS,
  "v_ads_gallery":ADS,"v_operator_intel":OPERATORS,"weekly_reports":REPORTS,
  "discovery_candidates":CANDIDATES,"monitor_brands":BRANDS,
 }
