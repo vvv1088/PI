@@ -214,6 +214,10 @@ window.supabase={createClient:function(){return __mockClient;}};
   .cst-done{background:var(--bg2);color:var(--ink2)}
   .cst-alarm{background:var(--red-bg);color:var(--red)}
   .cst-paused{background:#fff;color:var(--ink3);border:1px solid var(--line2)}
+  .cst-wait{background:var(--bg2);color:var(--ink2)}
+  .cst-rej{background:var(--red-bg);color:var(--red)}
+  .cst-off{background:var(--bg2);color:var(--ink3)}
+  .cst-null,.cst-undefined{background:var(--bg2);color:var(--ink2)}
   .conf-充分{color:var(--green);background:var(--green-bg);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600}
   .conf-勉强{color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600}
   .res-成立{color:var(--green);font-weight:700}.res-不成立{color:var(--red);font-weight:700}.res-不确定{color:var(--ink2);font-weight:700}
@@ -545,7 +549,7 @@ window.supabase={createClient:function(){return __mockClient;}};
       <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
     </select>
     <select id="f-month" onchange="renderHypo()">
-      <option value="" selected>All Months</option><option>Jun 2026</option><option>May 2026</option>
+      <option value="" selected>All Months</option>
     </select>
     <select id="f-idea" onchange="renderHypo()">
       <option value="">All Ideas</option>
@@ -1297,7 +1301,7 @@ function validateHypo(){
   // figure(目标值 / 护栏阈值)本期 TBD —— 仅对非锁定品牌(INZ9/其他)仍必填;OK188/17WIN/SBKH 留空待定
   if(!BRAND_METRIC[(document.getElementById('hf-brand')||{}).value]){fields.push(['hf-target','目标值'],['hf-guard-v','防守底线阈值']);}
   const miss=[];
-  fields.forEach(([id,name])=>{const el=document.getElementById(id);if(!el)return;if(!(el.value||'').trim()){el.classList.add('reqbad');const fld=el.closest('.fld'),lab=fld&&fld.querySelector('label');if(lab&&!lab.querySelector('.reqstar')){const s=document.createElement('span');s.className='reqstar';s.textContent=' *';lab.appendChild(s);}miss.push(name);}});
+  fields.forEach(([id,name])=>{const el=document.getElementById(id);if(!el||el.disabled)return;if(!(el.value||'').trim()){el.classList.add('reqbad');const fld=el.closest('.fld'),lab=fld&&fld.querySelector('label');if(lab&&!lab.querySelector('.reqstar')){const s=document.createElement('span');s.className='reqstar';s.textContent=' *';lab.appendChild(s);}miss.push(name);}});
   return miss;
 }
 async function saveHypothesis(status){
@@ -1324,6 +1328,13 @@ async function saveHypothesis(status){
   try{
     if(editCode){
       const upd=Object.assign({},row);delete upd.idea_code;delete upd.idea_label;delete upd.created_by;
+      // 编辑 ≠ 重建:这些字段保留原值,不被表单重新计算覆盖
+      const orig=hypos.find(x=>x.id===editCode)||{};
+      delete upd.mode;delete upd.month;delete upd.owner;delete upd.val_from;
+      // 状态:已进入锁定/测试等后续阶段的,编辑不改状态;还在草稿/待锁定阶段的按按钮走
+      if(orig.st&&!['草稿','待锁定'].includes(orig.st))delete upd.status;
+      // 容量:表单没算出结果(gray/null)时保留原体检结果
+      if(!upd.capacity||upd.capacity==='gray')delete upd.capacity;
       const {error}=await db.from('hypotheses').update(upd).eq('code',editCode);
       if(error)throw error;code=editCode;
     }else{
@@ -1350,7 +1361,7 @@ function marketChange(){
   renderHypo();
 }
 function renderHypo(){
-  fillIdeaFilter();fillStageFilter();
+  fillIdeaFilter();fillStageFilter();fillMonthFilter();
   const fm=document.getElementById('f-market').value,fb=document.getElementById('f-hbrand').value,fmo=document.getElementById('f-month').value,fmd=document.getElementById('f-mode').value,f=document.getElementById('f-hst').value,fi=document.getElementById('f-idea').value,fs=document.getElementById('f-stage').value;
   document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)&&(!fi||(h.idea||'').split(' ')[0]===fi)&&(!fs||h.stage===fs)).map(h=>`
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
@@ -1364,7 +1375,7 @@ function renderHypo(){
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
     <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>
     <td>${esc(h.brand)}</td><td>${esc(h.type)}</td><td>${esc(h.owner)}</td>
-    <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':'绿'}</span></td>
+    <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':h.cap==='green'?'绿':'—'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
    </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
 }
@@ -1373,6 +1384,12 @@ function fillIdeaFilter(){
   const cur=sel.value,m={};
   hypos.forEach(h=>{const c=(h.idea||'').split(' ')[0];if(c)m[c]=h.idea;});
   sel.innerHTML='<option value="">All Ideas</option>'+Object.keys(m).sort().map(c=>`<option value="${esc(c)}"${c===cur?' selected':''}>${esc(m[c])}</option>`).join('');
+}
+function fillMonthFilter(){
+  const sel=document.getElementById('f-month');if(!sel)return;
+  const cur=sel.value,set={};hypos.forEach(h=>{if(h.month)set[h.month]=1;});
+  const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
+  sel.innerHTML='<option value="">All Months</option>'+arr.map(m=>`<option${m===cur?' selected':''}>${m}</option>`).join('');
 }
 function fillStageFilter(){
   const sel=document.getElementById('f-stage');if(!sel)return;
@@ -1391,10 +1408,15 @@ function editHypothesis(i){
   setV('hf-type',h.type);setV('hf-trigger',h.trigger);setV('hf-persona',h.persona);setV('hf-age',h.age);
   {const se=document.getElementById('hf-stage');if(se){se.innerHTML=stageOpts(h.stage||'');}}
   setV('hf-plan-launch',h.planLaunch);setV('hf-plan-days',h.planDays!=null?String(h.planDays):'');
-  if(!(bcfg&&bcfg.lockMetric))setV('hf-metric',h.metric);   // 锁定主指标的品牌已固定,不回填旧指标
+  // 锁指标品牌:仅当存的指标 ≠ 锁定指标(旧数据迁移场景)才不回填;指标一致则照常回填,避免编辑清空
+  const metricMigrated=!!(bcfg&&bcfg.lockMetric&&bcfg.metrics&&bcfg.metrics[0]&&h.metric!==bcfg.metrics[0][0]);
+  if(!(bcfg&&bcfg.lockMetric))setV('hf-metric',h.metric);
   setV('hf-x',h.x);
-  if(!(bcfg&&bcfg.lockMetric))setV('hf-target',h.to);        // 主指标被替换 → 目标值不平移(留空 TBD)
-  if(!(bcfg&&bcfg.guardLock)&&h.guard&&h.guard!=='无'){const g=(''+h.guard).split(/\s+/);setV('hf-guard-m',g[0]);if(g[1])setV('hf-guard-op',g[1]);if(g[2])setV('hf-guard-v',g[2]);}
+  if(!metricMigrated)setV('hf-target',h.to);
+  if(h.guard&&h.guard!=='无'){
+    if(bcfg&&bcfg.guardLock){const g=(''+h.guard).trim().match(/^([\s\S]*?)\s*([≥≤>]+)\s*([\d.]+)$/);if(g&&g[3])setV('hf-guard-v',g[3]);} // 锁防守线品牌:指标/op 固定,只回填阈值数字
+    else{const g=(''+h.guard).split(/\s+/);setV('hf-guard-m',g[0]);if(g[1])setV('hf-guard-op',g[1]);if(g[2])setV('hf-guard-v',g[2]);}
+  }
   let evi=h.evi||'',eviType=evi,why='';const m=evi.match(/^([\s\S]*?)\s*—\s*([\s\S]*)$/);if(m){eviType=m[1];why=m[2];}
   const evEl=document.getElementById('hf-evi');if(evEl&&eviType){const o=[...evEl.options].find(o=>o.text.replace(/[(（][\s\S]*$/,'').trim()===eviType.trim());if(o)evEl.value=o.value;}
   const whyEl=document.getElementById('hf-why');if(whyEl){whyEl.value=why;whyEl.readOnly=false;whyEl.style.background='';whyEl.title='';}
@@ -1489,6 +1511,7 @@ function editCreativeRun(i){
     <div class="row2">
       <div class="fld"><label>阶段</label><select id="cr-phase"><option value="test">测试 Test</option><option value="scale">放量 Scale</option></select></div>
       <div class="fld"><label>起始日期</label><input id="cr-start" type="text" placeholder="如 6/16"></div>
+      <div class="fld"><label>本周花费 $(可后补)</label><input id="cr-spend" type="number" min="0" placeholder="如 320"></div>
     </div>
     <div class="row2">
       <div class="fld"><label>Campaign</label><input id="cr-camp" type="text"></div>
@@ -1502,12 +1525,19 @@ function editCreativeRun(i){
     </div>`;
   document.getElementById('cr-phase').value='scale';
 }
-function saveCreativeRun(i){
+function isoWeekOf(d){const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-((t.getDay()+6)%7));const w1=new Date(t.getFullYear(),0,4);return t.getFullYear()+'-W'+String(1+Math.round(((t-w1)/864e5-3+((w1.getDay()+6)%7))/7)).padStart(2,'0');}
+async function saveCreativeRun(i){
   const c=creatives[i];c.runs=c.runs||[];
   const start=document.getElementById('cr-start').value||new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
+  const spendRaw=(document.getElementById('cr-spend')||{value:''}).value;
+  const spend=spendRaw===''?null:+spendRaw;
+  const startD=parseMD(start)||new Date();
   const open=c.runs.find(r=>!r.end);if(open)open.end=start;
-  c.runs.push({r:c.runs.length+1,phase:document.getElementById('cr-phase').value,camp:document.getElementById('cr-camp').value,adset:document.getElementById('cr-adset').value,meta:document.getElementById('cr-meta').value,start:start,end:null,snap:null,note:document.getElementById('cr-note').value});
-  toast('运行记录已加(原型:内存,刷新重置)');
+  c.runs.push({r:c.runs.length+1,phase:document.getElementById('cr-phase').value,camp:document.getElementById('cr-camp').value,adset:document.getElementById('cr-adset').value,meta:document.getElementById('cr-meta').value,start:start,end:null,snap:null,note:document.getElementById('cr-note').value,week:isoWeekOf(startD),spend:spend});
+  try{const {error}=await db.from('creatives').update({runs:c.runs,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
+  catch(e){toast('运行记录保存失败: '+rpcErr(e));return;}
+  logAction('creative','edit',(c.gen||c.code||'')+' 运行记录');
+  toast('运行记录已保存');
   openCreative(i);
 }
 function ecImgPick(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{window._ecImgSrc=e.target.result;const p=document.getElementById('ec-imgprev');if(p)p.innerHTML='<img src="'+e.target.result+'" style="width:64px;height:64px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';};r.readAsDataURL(f);}
@@ -1830,12 +1860,14 @@ async function saveCreativeCopy(i,mode){
   const copy={p:document.getElementById('ec-p').value,h:document.getElementById('ec-h').value,d:document.getElementById('ec-d').value,c:document.getElementById('ec-c').value};
   const reason=document.getElementById('ec-reason').value;
   const today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'});
-  if(last.status==='draft'){last.copy=copy;last.status=status;if(reason)last.reason=reason;if(newImg)last.imgSrc=newImg;last.date=today;}
+  if(last.status==='draft'){last.copy=copy;last.status=status;if(reason)last.reason=reason;if(newImg)last.imgSrc=newImg;last.date=today;if(status==='rejected'){last.cause=document.getElementById('ec-cause').value;}}
   else{const trig=document.getElementById('ec-trig').value;const cause=status==='rejected'?document.getElementById('ec-cause').value:null;const chg=(trig==='perf'||trig==='self')?document.getElementById('ec-chg').value:null;vs.push({v:vs.length+1,date:today,ev:trig,status:status,cause:cause,chg:chg,reason:reason,snap:null,img:last.img||'',imgSrc:newImg||last.imgSrc,copy:copy});}
   retirePriorLive(vs);
   const adsv=((document.getElementById('ec-ads')||{}).value||'').trim()||null;
-  try{const {error}=await db.from('creatives').update({versions:vs,ads_code:adsv,updated_at:new Date().toISOString()}).eq('gen_code',creatives[i].gen);if(error)throw error;}catch(e){alert('保存失败: '+rpcErr(e));return;}
-  creatives[i].ads=adsv;
+  const stMap={live:['上线中','prod'],rejected:['被拒','rej'],retired:['已下线','off'],draft:['待上线','wait']};
+  const latest=vs[vs.length-1]||{};const rs=stMap[latest.status]||['待上线','wait'];
+  try{const {error}=await db.from('creatives').update({versions:vs,ads_code:adsv,status:rs[0],stc:rs[1],updated_at:new Date().toISOString()}).eq('gen_code',creatives[i].gen);if(error)throw error;}catch(e){alert('保存失败: '+rpcErr(e));return;}
+  creatives[i].ads=adsv;creatives[i].st=rs[0];creatives[i].stc=rs[1];
   logAction('creative','edit',(creatives[i].gen||'')+(mode==='save'?' 换版':' 草稿'));
   renderCreatives();openCreative(i);toast(mode==='save'?'已保存':'草稿已存');
 }
@@ -2007,6 +2039,7 @@ function capacity(own,brand,metric,target,manual){
     cost=data[sibling[brand]][metric].cost;borrow=`<span class="borrow">估算基于 ${sibling[brand]}</span>`;
   }
   if(!cost){out.innerHTML=`<div class="light gray"><div class="tt"><span class="dot"></span>该指标暂无单位成本</div><p>在左侧基准卡内手填参考成本即可体检</p></div>`;return;}
+  if(!target||!(target>0)){out.innerHTML='<div class="light gray"><div class="tt"><span class="dot"></span>目标值待定,暂无法体检</div><p>填了目标值(或该品牌方向确定)后自动出红/黄/绿</p></div>';return;}
   const weeks=days/7;const needUnits=Math.round(target*weeks);const needSpend=Math.round(needUnits*cost);
   const ratio=have/needSpend;const can=Math.floor(have/cost);
   let cls='green',title='🟢 预算充足',advice=`余量 ${Math.round(ratio*100)}%,结论有容错空间`;
@@ -2375,12 +2408,13 @@ async function loadAuthData(){
 }
 function renderResults(){
   const el=document.getElementById('resultsBody');if(!el)return;
-  const judged=(hypos||[]).filter(h=>h&&h.verdict);
+  const judged=(hypos||[]).filter(h=>h&&h.verdict&&h.verdict.conf!=='勉强');
   if(!judged.length){
     el.innerHTML='<div class="card"><div class="empty" style="padding:26px 18px;line-height:1.9">还没有已判定的假设。<br>Results 会从 <b>Hypotheses</b> 的判定结果自动汇总 —— 按来源 / Hook / Visual Style / 主指标统计胜率(同类案例 ≥5 条才显示百分比)。<br><span style="color:var(--ink3)">现在 hypotheses = 0,所以这里是空的。</span></div></div>';
     return;
   }
-  const won=v=>{const r=(v&&(v.result||v.verdict||v.outcome||v.status))||'';return /成立|win|pass|赢|hold/i.test(''+r);};
+  // 判定对象 {res,conf}: res 精确等于「成立」才算赢(避免「不成立」被子串误判); conf=勉强 不计入
+  const won=v=>{const r=(v&&(v.res||v.result||v.outcome))||'';return (''+r).trim()==='成立'||/^(win|pass)$/i.test((''+r).trim());};
   function bucket(keyFn,title){
     const m={};judged.forEach(h=>{const k=keyFn(h);if(!k)return;(m[k]=m[k]||{n:0,w:0});m[k].n++;if(won(h.verdict))m[k].w++;});
     const ks=Object.keys(m);
@@ -2480,10 +2514,11 @@ function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated)
   if(fin!=null)return 'settled';
   if(req==null&&all==null)return 'empty';
   if(req!=null&&all==null)return 'await_usc';
-  if(all!=null&&req!=null&&all<req)return 'decide';
+  if(req==null&&all!=null)return 'await_mkt';   // USC 先填:等 Marketing 申请,不能直接算已定
+  if(all<req)return 'decide';
   return 'settled';}
-function bgFinalAmt(e){e=e||{};const fin=bgNum(e.final_amount);if(fin!=null)return fin;const all=bgNum(e.allocated),req=bgNum(e.requested);if(all!=null&&(req==null||all>=req))return all;return null;}
-const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],decide:['待决策','var(--amber-bg)','var(--amber)'],settled:['已定','var(--green-bg)','var(--green)']};
+function bgFinalAmt(e){e=e||{};const fin=bgNum(e.final_amount);if(fin!=null)return fin;const all=bgNum(e.allocated),req=bgNum(e.requested);if(all!=null&&req!=null&&all>=req)return all;return null;}
+const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],await_mkt:['待申请','var(--accent-soft)','var(--accent)'],decide:['待决策','var(--amber-bg)','var(--amber)'],settled:['已定','var(--green-bg)','var(--green)']};
 function bgLocked(e){return bgNum(e&&e.final_amount)!=null;} // 决策拍板后锁
 function bgFillMonths(){
   const sel=document.getElementById('bg-month');if(!sel)return;
@@ -2558,7 +2593,7 @@ function renderBudget(){
   document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{
     const e=bgEntry(bgMonth,br)||{},a=bgAssign(br);
     const req=bgNum(e.requested),all=bgNum(e.allocated),fin=bgFinalAmt(e),sp=bgSpent(br,bgMonth);
-    tReq+=req||0;tAll+=all||0;tFin+=fin||0;tSp+=sp;
+    tReq+=req||0;tAll+=all||0;tFin+=fin||0;if(fin!=null)tSp+=sp;   // 使用率口径:只计已定品牌
     const stt=bgStatus(e),st=BG_ST[stt];
     const usePct=(fin)?Math.round(sp/fin*100):null;
     let finCell;
