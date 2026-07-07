@@ -113,6 +113,8 @@
   .bgro{font-family:var(--mono);font-size:13px;color:var(--ink2)}
   .bgst{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 10px;white-space:nowrap}
   .bgsub{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.35}
+  .bglink{color:var(--accent);cursor:pointer;font-size:11px;white-space:nowrap}
+  .bglink:hover{text-decoration:underline}
   .bgdemo{background:var(--violet-bg);border:1px solid var(--violet);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--violet)}
   .bgdemo select{margin:0 4px;font-size:13px;padding:3px 6px;border:1px solid var(--violet);border-radius:6px;background:#fff;color:var(--ink)}
   .bgtl{display:flex;flex-direction:column;gap:12px}
@@ -392,6 +394,7 @@
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="roles" onclick="go('roles',this)">Roles & Permissions</div>
+      <div class="nitem" data-v="bgassign" onclick="go('bgassign',this)">Budget 分工</div>
       <div class="nitem" data-v="users" onclick="go('users',this)">Users</div>
       <div class="nitem" data-v="audit" onclick="go('audit',this)">Activity Log</div>
     </div>
@@ -687,7 +690,22 @@
     </tr></thead>
     <tbody id="budgetBody"></tbody>
   </table>
-  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定,金额/理由/时间全部留痕(点「历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。</p>
+  <p class="note" style="margin-top:10px">每格只有被分工到的人(或 Admin)能改:申请=Marketing 负责人、核批=USC 负责人、决策=决策人。核批 &lt; 申请 会强制写理由并升级「待决策」;决策拍板后锁定(决策人可「🔓 重开」),金额/理由/时间全部留痕(点「🕘 历史」看时间线)。已投放按素材实际 spend 归到当月自动汇总。分工在 Administration → Budget 分工 里配。</p>
+</section>
+
+<!-- ============ BUDGET 分工(Admin 配 谁管哪个品牌的哪一侧)============ -->
+<section class="view" id="v-bgassign">
+  <div class="head">
+    <div>
+      <h1>Budget 分工</h1>
+      <div class="sub">配每个品牌:谁填「申请」(Marketing)、谁填「核批」(USC)、谁「决策」。只有被指派的人才能改 Budget 页对应的格子。仅 Admin 可改本表。</div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th style="width:140px">品牌</th><th>Marketing 负责人(申请)</th><th>USC 负责人(核批)</th><th>决策人</th></tr></thead>
+    <tbody id="bgAssignBody"></tbody>
+  </table>
+  <p class="note" style="margin-top:10px">留「— 空 —」表示该品牌该侧暂无负责人(例如 INZ9 的 USC),那一侧就没人能填,直到指派。</p>
 </section>
 
 <!-- ============ TAG MATRIX(假设级素材标签 & 对比)============ -->
@@ -2395,19 +2413,63 @@ function bgFillMonths(){
   if(!bgMonth||arr.indexOf(bgMonth)<0)bgMonth=arr[0]||bgCurMonth();
   sel.innerHTML=arr.map(m=>`<option${m===bgMonth?' selected':''}>${m}</option>`).join('');
 }
-// 金额格(申请/核批):数字(只有分工到的人能改,且未锁)+ 下面一行 谁·理由
+// 金额格(申请/核批):显示金额 + 谁·理由;分工到的人(且未锁)点 ✏️ 开表单填「金额+理由」
 function bgAmtCell(e,mo,br,side){
   const field=side==='mkt'?'requested':'allocated';
   const val=bgNum(e[field]),by=e[field+'_by'],reason=e[field+'_reason'];
   const canEdit=bgCanEdit(br,side)&&!bgLocked(e);
-  const amt=canEdit
-    ? `<input type="number" class="bgnum" min="0" step="100" value="${val==null?'':val}" placeholder="—" onchange="bgSaveAmt('${mo}','${br}','${side}',this.value)">`
-    : `<span class="bgro">${bgMoney(val)}</span>`;
+  let top;
+  if(val!=null)top=`<span class="bgro"><b>${bgMoney(val)}</b></span>`+(canEdit?` <a class="bglink" onclick="bgEditCell('${mo}','${br}','${side}')" title="编辑金额/理由">✏️</a>`:'');
+  else top=canEdit?`<button class="btn ghost sm" onclick="bgEditCell('${mo}','${br}','${side}')">✏️ 填写</button>`:'<span class="bgro" style="color:var(--ink3)">—</span>';
   let sub='';
   if(val!=null)sub=`<div class="bgsub">${esc(bgUserName(by))}${reason?` · <span title="${esc(reason)}">💬 ${esc(reason.length>12?reason.slice(0,12)+'…':reason)}</span>`:''}</div>`;
-  else if(canEdit)sub=`<div class="bgsub" style="color:var(--ink3)">待 ${esc(bgUserName(bgAssign(br)[side]))} 填</div>`;
-  else sub=`<div class="bgsub" style="color:var(--ink3)">${esc(bgUserName(bgAssign(br)[side]))}</div>`;
-  return amt+sub;
+  else sub=`<div class="bgsub" style="color:var(--ink3)">${canEdit?'待你填':'待 '+esc(bgUserName(bgAssign(br)[side]))}</div>`;
+  return top+sub;
+}
+// 填写入口:一个抽屉,金额 + 理由一起填
+function bgEditCell(mo,br,side){
+  if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');return;}
+  const e=bgEntry(mo,br)||{};
+  if(bgLocked(e)){toast('已定并锁定,需决策人「重开」后再改');return;}
+  const field=side==='mkt'?'requested':'allocated';
+  const label=side==='mkt'?'Marketing 申请':'USC 核批';
+  const cur=bgNum(e[field]),reason=e[field+'_reason']||'',req=bgNum(e.requested);
+  let h='<h2 style="margin:0 0 4px">'+esc(br)+' · '+esc(mo)+'</h2><div style="color:var(--ink3);font-size:13px;margin-bottom:16px">'+label+'</div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>金额</label><input id="bg-amt" type="number" min="0" step="100" value="'+(cur==null?'':cur)+'" placeholder="如 20000"></div>';
+  h+='<div class="fld" style="margin-bottom:12px"><label>理由 '+(side==='usc'?'<span style="color:var(--red)">(核批低于申请必填)</span>':'<span style="color:var(--ink3)">(建议填)</span>')+'</label><textarea id="bg-reason" style="width:100%;min-height:70px" placeholder="为什么是这个数">'+esc(reason)+'</textarea></div>';
+  if(side==='usc'&&req!=null)h+='<div style="color:var(--ink3);font-size:12px;margin-bottom:12px">参考:Marketing 申请 '+bgMoney(req)+'</div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn" onclick="bgSaveCell(\''+mo+'\',\''+br+'\',\''+side+'\')">保存</button><button class="btn ghost" onclick="closeDrawer()">取消</button></div>';
+  document.getElementById('d-title').textContent='填写预算';
+  document.getElementById('d-body').innerHTML=h;
+  document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
+}
+async function bgSaveCell(mo,br,side){
+  const field=side==='mkt'?'requested':'allocated';
+  if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');return;}
+  const raw=document.getElementById('bg-amt').value;
+  const v=bgNum(raw);if(raw!==''&&(v==null||isNaN(v)||v<0)){toast('请输入非负数字');return;}
+  const reason=(document.getElementById('bg-reason').value||'').trim()||null;
+  let e=bgEntry(mo,br)||{};
+  if(field==='allocated'&&v!=null){const req=bgNum(e.requested);if(req!=null&&v<req&&!reason){toast('核批低于申请,必须写原因');return;}}
+  const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();
+  const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
+  try{
+    if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
+    else{const {error}=await db.from('budgets').insert(patch);if(error)throw error;budgets.push(patch);}
+  }catch(err){toast('保存失败: '+rpcErr(err));return;}
+  logAction('budget',field==='requested'?'申请':'核批',br+' '+mo+' '+bgMoney(v));
+  closeDrawer();
+  if(after==='decide'&&prev!=='decide')bgSlack('decide',bgEntry(mo,br),br,mo);
+  else if(after==='settled'&&prev!=='settled')bgSlack('settled',bgEntry(mo,br),br,mo);
+  renderBudget();
+}
+async function bgReopen(mo,br){
+  const a=bgAssign(br);if(!(bgIsAdmin()||a.decider===bgMe())){toast('只有决策人('+bgUserName(a.decider)+')或 Admin 可重开');return;}
+  if(!confirm('重开会清除最终决定,回到可编辑状态。确认?'))return;
+  const patch={final_amount:null,final_by:null,final_reason:null,decided_at:null};
+  try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;const e=bgEntry(mo,br);if(e)Object.assign(e,patch);}
+  catch(err){toast('保存失败: '+rpcErr(err));return;}
+  logAction('budget','重开',br+' '+mo);toast('已重开,可重新编辑');renderBudget();
 }
 function renderBudget(){
   bgFillMonths();bgRenderDemoBar();
@@ -2425,7 +2487,8 @@ function renderBudget(){
         ?`<button class="btn sm" style="background:var(--amber);color:#fff;border:none" onclick="bgDecide('${bgMonth}','${br}')">⚖️ 决策</button>`
         :`<span class="bgro" style="color:var(--amber)">待 ${esc(bgUserName(a.decider))} 决策</span>`;
     }else if(fin!=null){
-      finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(bgNum(e.final_amount)!=null?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">💬 ${esc(e.final_reason.length>12?e.final_reason.slice(0,12)+'…':e.final_reason)}</span>`:''}</div>`:'<div class="bgsub" style="color:var(--green)">自动(核批≥申请)</div>');
+      const decided=bgNum(e.final_amount)!=null,canReopen=decided&&(bgIsAdmin()||a.decider===bgMe());
+      finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(canReopen?` <a class="bglink" onclick="bgReopen('${bgMonth}','${br}')" title="清除决定,回到可编辑">🔓 重开</a>`:'')+(decided?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">💬 ${esc(e.final_reason.length>12?e.final_reason.slice(0,12)+'…':e.final_reason)}</span>`:''}</div>`:'<div class="bgsub" style="color:var(--green)">自动(核批≥申请)</div>');
     }else finCell='<span class="bgro" style="color:var(--ink3)">—</span>';
     return `<tr>
       <td><b>${br}</b></td>
@@ -2509,6 +2572,33 @@ function bgRenderDemoBar(){
   el.innerHTML='<div class="bgdemo">🎭 演示 · 以此身份查看:<select onchange="bgSwitchUser(this.value)">'+list.map(u=>{const usr=users.find(x=>x.username===u);return `<option value="${u}"${bgMe()===u?' selected':''}>${usr?esc(usr.name):u} (${u})</option>`;}).join('')+'</select> <span style="color:var(--ink3)">← 切人看谁能改哪格(仅演示版)</span></div>';
 }
 function bgSwitchUser(un){const u=users.find(x=>x.username===un);if(!u)return;currentUser=u;try{applyChrome();}catch(e){}renderBudget();}
+// Budget 分工编辑(Administration → Budget 分工,仅 Admin)
+function renderBgAssign(){
+  const el=document.getElementById('bgAssignBody');if(!el)return;
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
+  const opt=(sel)=>'<option value="">— 空 —</option>'+users.map(u=>`<option value="${u.username}"${u.username===sel?' selected':''}>${esc(u.name)} (${esc(u.username)})</option>`).join('');
+  const dis=bgIsAdmin()?'':' disabled';
+  el.innerHTML=allBrands.map(br=>{const a=bgAssign(br);return `<tr>
+    <td><b>${br}</b></td>
+    <td><select${dis} onchange="saveBgAssign('${br}','mkt_user',this.value)">${opt(a.mkt)}</select></td>
+    <td><select${dis} onchange="saveBgAssign('${br}','usc_user',this.value)">${opt(a.usc)}</select></td>
+    <td><select${dis} onchange="saveBgAssign('${br}','decider_user',this.value)">${opt(a.decider)}</select></td>
+  </tr>`;}).join('');
+}
+async function saveBgAssign(br,field,val){
+  if(!bgIsAdmin()){toast('仅 Admin 可改分工');renderBgAssign();return;}
+  const v=val||null;let exists=false;
+  try{const {data}=await db.from('budget_assignments').select('brand').eq('brand',br);exists=!!(data&&data.length);}catch(e){}
+  const patch={brand:br};patch[field]=v;
+  try{
+    if(exists){const {error}=await db.from('budget_assignments').update(patch).eq('brand',br);if(error)throw error;}
+    else{const {error}=await db.from('budget_assignments').insert(patch);if(error)throw error;}
+  }catch(err){toast('保存失败: '+rpcErr(err));return;}
+  const key=field==='mkt_user'?'mkt':field==='usc_user'?'usc':'decider';
+  budgetAssign[br]=budgetAssign[br]||{mkt:'',usc:'',decider:''};budgetAssign[br][key]=v||'';
+  logAction('budget','分工',br+' '+key+'→'+(v||'空'));
+  toast('已更新分工');renderBudget();
+}
 async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
@@ -2540,7 +2630,7 @@ function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][a
 function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
 function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});if(document.getElementById('auditBody'))renderAudit();if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
 function applyChrome(){const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();applyPerms();}
-async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
+async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderBgAssign();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
 /* 岗位管理 */
 function renderRoles(){const el=document.getElementById('rolesBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openRoleEditor(null)">＋ New Role</button></div>';h+='<table class="dt"><thead><tr><th>Role</th><th>Admin Access</th><th>Permissions</th><th></th></tr></thead><tbody>';const tot=PERM_SECTIONS.reduce((n,s)=>n+s.acts.length,0);roles.forEach(r=>{const cnt=PERM_SECTIONS.reduce((n,s)=>n+s.acts.filter(a=>r.perms[s.k]&&r.perms[s.k][a]).length,0);h+='<tr><td><b>'+esc(r.name)+'</b></td><td>'+(r.admin?'<span class="life la">Yes</span>':'<span class="life lx">No</span>')+'</td><td class="sm">'+cnt+' / '+tot+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openRoleEditor(\''+r.id+'\')">Edit</button> <button class="cbtn" onclick="dupRole(\''+r.id+'\')">Duplicate</button> <button class="cbtn danger" onclick="delRole(\''+r.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
 function openRoleEditor(id){const r=id?roles.find(x=>x.id===id):{id:'role_'+Date.now(),name:'',admin:false,perms:allPerms(false),_new:true};window._editRole=JSON.parse(JSON.stringify(r));document.getElementById('d-title').textContent='岗位权限';renderRoleEditor();document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');}

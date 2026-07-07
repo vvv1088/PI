@@ -14,6 +14,20 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v40] — 2026-07-07 · Budget:填写入口改抽屉表单 + 决策后可重开 + 分工 Admin 面板 + 建库
+
+按团队反馈补齐:
+
+- **填写入口显性化**:原先金额是内联输入、理由藏在失焦弹窗(不好找)。改成每格一个 **✏️ 填写/编辑** 按钮 → 打开抽屉,**金额 + 理由一起填**(`bgEditCell`/`bgSaveCell`)。核批 < 申请仍强制理由。
+- **决策后可「🔓 重开」**(修团队反馈的"SBKH 谁都不能编辑"):已定=锁定是**有意**的(防事后乱改),但之前没给解锁口 → 现在决策人/Admin 在「最终」格有 **🔓 重开** 按钮,清除决定回到可编辑并留痕(`bgReopen`)。
+- **分工 Admin 面板**(Administration → **Budget 分工**):每品牌三个下拉配 Marketing 负责人 / USC 负责人 / 决策人,仅 Admin 可改(`renderBgAssign`/`saveBgAssign`)。
+- **建库(生产已就绪)**:
+  - `budget_assignments`(brand PK + mkt_user/usc_user/decider_user)+ RLS(读 authenticated;写 is_admin);**已按分工种子写入**(决策人全 ZQ)。
+  - `budgets`(全字段 + unique(month,brand))+ RLS **完全对齐现有 PI 表**:SELECT authenticated=true,写走 `can_write('budget', …)`。
+  - `role_permissions` 新增 `budget` 段:admin(增改删)、po/pe/USC Team(增改)。DB 层按角色放行,前端再按「分工到人」细粒度 gate(与全系统一致的信任模型)。
+- 验证:`node --check` 通过;headless 实测——✏️ 表单入口、🔓 重开、Budget 分工 12 个下拉、四态渲染全部正常,无 pageerror。
+- **仅剩 Slack(Phase B)**:同频道 + @相关人,等你给各人 Slack member id 即接 n8n 真发。
+
 ## [v39] — 2026-07-07 · Budget 升级为完整流程:分工到人 + 决策仲裁 + 自动投放 + 留痕【预览版】
 
 按团队确认的规则,把 Budget 从「一张表」升级成完整流程:
