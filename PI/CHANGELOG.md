@@ -14,6 +14,11 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v59] — 2026-07-07 · Monthly Plan 改名 Monthly Overview + 品牌筛选
+
+- 页面/导航改名 **Monthly Overview**。
+- 顶部加 **Brand 筛选**(All Brands / 四品牌,与其它页筛选下拉同风格),卡片与就绪度统计随筛选联动。
+
 ## [v58] — 2026-07-07 · Monthly Plan:按品牌各自确认发送 + 布局微调
 
 - **确认改为按品牌、由该品牌 Marketing 负责人自己发**(线下和 V 审批后):每张品牌卡自带「✔ 确认发送」按钮,只有该品牌的 mkt 负责人(bgAssign)或 Admin 可见可按;确认后卡头显示绿色「✔ 已确认 · 谁」;重发有提示。Joey 只能发 OK188/INZ9,Bryan 只能发 17WIN/SBKH(实测互相拦截)。

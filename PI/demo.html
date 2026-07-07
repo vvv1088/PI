@@ -468,7 +468,7 @@ window.supabase={createClient:function(){return __mockClient;}};
       <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
       <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
-      <div class="nitem" data-v="mplan" onclick="go('mplan',this)">Monthly Plan</div>
+      <div class="nitem" data-v="mplan" onclick="go('mplan',this)">Monthly Overview</div>
       <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
     </div>
@@ -757,10 +757,13 @@ window.supabase={createClient:function(){return __mockClient;}};
 <section class="view" id="v-mplan">
   <div class="head">
     <div>
-      <h1>Monthly Plan</h1>
+      <h1>Monthly Overview</h1>
       <div class="sub">当月安排一页总览:预算 + 排期假设 + 素材就绪度。各品牌 Marketing 负责人安排就绪、线下审批通过后,自行「确认发送」自己品牌的计划(Slack 接入后自动通知)。</div>
     </div>
     <div class="filters">
+      <select id="mp-brand" onchange="renderMonthlyPlan()">
+        <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+      </select>
       <select id="mp-month" onchange="mpMonth=this.value;renderMonthlyPlan()"></select>
     </div>
   </div>
@@ -2610,7 +2613,8 @@ function renderMonthlyPlan(){
   const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
   if(!mpMonth||arr.indexOf(mpMonth)<0)mpMonth=arr[0]||bgCurMonth();
   sel.innerHTML=arr.map(m=>`<option${m===mpMonth?' selected':''}>${m}</option>`).join('');
-  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
+  const fb=(document.getElementById('mp-brand')||{value:''}).value;
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY].filter(x=>!fb||x===fb);
   document.getElementById('mpBanner').innerHTML='';
   let okBudget=0,nHypo=0,nReady=0,issues=[];window._mpBrandIssues={};
   document.getElementById('mpBody').innerHTML=allBrands.map(br=>{
