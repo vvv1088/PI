@@ -107,6 +107,9 @@
   .schedpill .cd{display:block;font-family:inherit;font-size:10.5px;font-weight:600;margin-top:2px;color:var(--ink3)}
   .schedpill .cd.soon{color:var(--amber)}.schedpill .cd.over{color:var(--red)}.schedpill .cd.ok{color:var(--green)}
   .hx{font-weight:600}
+  .hcell-main{line-height:1.5}
+  .hcell-sub{margin-top:4px}
+  .ideam{background:var(--bg2);color:var(--ink3);font-size:10px;font-weight:600;vertical-align:1px}
   .hmeta{font-size:11.5px;color:var(--ink3);margin-top:2px;font-family:var(--mono);white-space:nowrap}
   .mode{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:1px 8px;white-space:nowrap}
   .mode-新测试{background:var(--accent-soft);color:var(--accent)}
@@ -530,6 +533,12 @@
           <div class="fld"><label>顾客阶段 <span style="color:var(--ink3);font-weight:400;font-size:11px">← 打给漏斗哪一环</span></label>
             <select id="hf-stage"></select>
           </div>
+          <div class="fld"><label>预计上线日 <span style="color:var(--ink3);font-weight:400;font-size:11px">M/D</span></label>
+            <input type="text" id="hf-plan-launch" placeholder="如 7/12">
+          </div>
+          <div class="fld"><label>测试 period(天)</label>
+            <input type="number" id="hf-plan-days" placeholder="如 7" min="1">
+          </div>
         </div>
       </div>
 
@@ -635,7 +644,7 @@
 
   <table>
     <thead><tr>
-      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:150px;color:var(--violet)">预计排期</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
+      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:190px;color:var(--violet);padding-right:24px">预计排期</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
     </tr></thead>
     <tbody id="creativeBody"></tbody>
   </table>
@@ -803,7 +812,9 @@ let data={
  '17WINKH':null,'SBKH':null
 };
 const sibling={'17WINKH':'OK188KH','SBKH':'OK188KH'};
-let overdueOnly=false,dictTab='Metrics';
+let overdueOnly=false,dictTab='Format';
+// Dictionary 里不在标签栏显示的类别(数据保留,只是不给点)——Metrics 表单不再从字典读,隐去以免占行
+const HIDDEN_DICT_TABS=['Metrics'];
 
 function go(v,el){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
@@ -1142,7 +1153,7 @@ function resetHypoForm(){
   const ae=document.getElementById('hf-age');if(ae)ae.innerHTML=dimTabOpts('age','');
   const se=document.getElementById('hf-stage');if(se)se.innerHTML=stageOpts('');
   ['hf-brand','hf-persona','hf-age','hf-stage','hf-type','hf-trigger','hf-evi','hf-metric','hf-guard-m'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  ['hf-x','hf-target','hf-pct','hf-guard-v','cc-budget','cc-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['hf-x','hf-target','hf-pct','hf-guard-v','cc-budget','cc-days','hf-plan-launch','hf-plan-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const w=document.getElementById('hf-why');if(w){w.value='';w.readOnly=false;w.style.background='';w.title='';}
   syncMetricByBrand();
   document.querySelectorAll('#v-form .reqstar').forEach(s=>s.remove());
@@ -1172,7 +1183,11 @@ async function saveHypothesis(status){
   const why=g('hf-why').trim();const evidence=eviType+(why?(' — '+why):'');
   let cap=null;try{const le=document.querySelector('#cc-out .light');if(le)cap=le.classList.contains('red')?'red':le.classList.contains('amber')?'amber':le.classList.contains('green')?'green':'gray';}catch(e){}
   const pi=window._promoteIdea||null;
-  const row={statement:x,metric:g('hf-metric'),val_from:from,val_to:g('hf-target'),mode:'新测试',market:market,month:month,brand:brand,test_type:g('hf-type'),owner:(currentUser&&currentUser.name)||'',capacity:cap,status:status,idea_code:pi?pi.code:null,idea_label:pi?(pi.code+' · '+pi.src):null,evidence:evidence,guard:guard,trigger_type:g('hf-trigger'),persona:g('hf-persona'),age_range:g('hf-age'),customer_stage:g('hf-stage')||null,created_by:(currentUser&&currentUser.name)||''};
+  const planLaunch=g('hf-plan-launch').trim();
+  if(planLaunch&&!parseMD(planLaunch)){toast('预计上线日格式应为 M/D,如 7/12');return;}
+  const planDaysRaw=g('hf-plan-days').trim();const planDays=planDaysRaw===''?null:parseInt(planDaysRaw,10);
+  if(planDaysRaw!==''&&(isNaN(planDays)||planDays<=0)){toast('测试天数应为正整数');return;}
+  const row={statement:x,metric:g('hf-metric'),val_from:from,val_to:g('hf-target'),mode:'新测试',market:market,month:month,brand:brand,test_type:g('hf-type'),owner:(currentUser&&currentUser.name)||'',capacity:cap,status:status,idea_code:pi?pi.code:null,idea_label:pi?(pi.code+' · '+pi.src):null,evidence:evidence,guard:guard,trigger_type:g('hf-trigger'),persona:g('hf-persona'),age_range:g('hf-age'),customer_stage:g('hf-stage')||null,plan_launch:planLaunch||null,plan_test_days:planDays,created_by:(currentUser&&currentUser.name)||''};
   let code;
   const editCode=window._editHypoCode||null;
   try{
@@ -1208,7 +1223,11 @@ function renderHypo(){
   const fm=document.getElementById('f-market').value,fb=document.getElementById('f-hbrand').value,fmo=document.getElementById('f-month').value,fmd=document.getElementById('f-mode').value,f=document.getElementById('f-hst').value,fi=document.getElementById('f-idea').value,fs=document.getElementById('f-stage').value;
   document.getElementById('hypoBody').innerHTML=hypos.filter(h=>(!fm||h.market===fm)&&(!fb||h.brand===fb)&&(!fmo||h.month===fmo)&&(!fmd||h.mode===fmd)&&(!f||h.st===f)&&(!fi||(h.idea||'').split(' ')[0]===fi)&&(!fs||h.stage===fs)).map(h=>`
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
-    <td><span class="code">${h.id}</span> &nbsp;<span class="hx">${h.x}</span>${(h.testDims&&h.testDims.length)?` <span class="pill" style="background:var(--bg2);color:var(--ink2);font-size:10px">测·${h.testDims.map(dimLabel).join('×')}</span>`:''}${h.stage?` <span class="pill" style="background:var(--violet-bg);color:var(--violet);font-size:10px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span>`:''}${h.idea?` <span class="pill" style="background:var(--bg2);color:var(--ink3);font-size:10px" title="来自想法: ${esc(h.idea)}">💡 ${esc((h.idea+'').split(' ')[0])}</span>`:''}</td>
+    <td>
+     <div class="hcell-main">${h.idea?`<span class="pill ideam" title="来自想法: ${esc(h.idea)}">💡${esc((h.idea+'').split(' ')[0])}</span> `:''}<span class="code">${h.id}</span> <span class="hx">${h.x}</span></div>
+     ${(h.testDims&&h.testDims.length)?`<div class="hcell-sub"><span class="pill" style="background:var(--bg2);color:var(--ink2);font-size:10px">测·${h.testDims.map(dimLabel).join('×')}</span></div>`:''}
+     ${h.stage?`<div class="hcell-sub"><span class="pill" style="background:var(--violet-bg);color:var(--violet);font-size:10px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span></div>`:''}
+    </td>
     <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?new Date(h.created).toLocaleString('zh-CN'):'—'}</td>
     <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
@@ -1240,6 +1259,7 @@ function editHypothesis(i){
   setV('hf-brand',h.brand);syncMetricByBrand();const bcfg=BRAND_METRIC[h.brand];
   setV('hf-type',h.type);setV('hf-trigger',h.trigger);setV('hf-persona',h.persona);setV('hf-age',h.age);
   {const se=document.getElementById('hf-stage');if(se){se.innerHTML=stageOpts(h.stage||'');}}
+  setV('hf-plan-launch',h.planLaunch);setV('hf-plan-days',h.planDays!=null?String(h.planDays):'');
   if(!(bcfg&&bcfg.lockMetric))setV('hf-metric',h.metric);   // 锁定主指标的品牌已固定,不回填旧指标
   setV('hf-x',h.x);
   if(!(bcfg&&bcfg.lockMetric))setV('hf-target',h.to);        // 主指标被替换 → 目标值不平移(留空 TBD)
@@ -1724,36 +1744,21 @@ function schedCell(c){
   }
   return `<span class="schedpill">${fmtMD(L)}${endStr}<span class="cd ${cdCls}">${cd}</span></span>`;
 }
-async function setCreativeSchedule(i){
-  const c=creatives[i];if(!c)return;
-  if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
-  const l=prompt('预计上线日(格式 M/D,如 7/12;留空清除):', c.planLaunch||'');
-  if(l===null)return;
-  const lv=(l||'').trim();
-  if(lv&&!parseMD(lv)){toast('日期格式应为 M/D,如 7/12');return;}
-  let dv=c.planDays;
-  if(lv){const d=prompt('测试 period(天数,如 7):', c.planDays!=null?String(c.planDays):'');if(d===null)return;const dn=(d||'').trim();dv=dn===''?null:parseInt(dn,10);if(dn!==''&&(isNaN(dv)||dv<=0)){toast('测试天数应为正整数');return;}}
-  else{dv=null;}
-  try{const {error}=await db.from('creatives').update({plan_launch:lv||null,plan_test_days:dv,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
-  catch(e){toast('保存排期失败: '+rpcErr(e));return;}
-  c.planLaunch=lv;c.planDays=dv;
-  logAction('creative','edit',(c.gen||c.ads||'')+' 排期');
-  toast('排期已更新');renderCreatives();
-}
+// 素材的预计排期 = 继承其所属假设(填写入口在 New Hypothesis,一个测试一个窗口,组内素材共用)
+function hypSchedOf(c){const lab=c&&(c.hyp||'');const h=hypos.find(x=>lab&&(''+lab).startsWith(x.id));return h||{};}
 function renderCreatives(){
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
   document.getElementById('creativeBody').innerHTML=creatives.filter(c=>(!fb||((c.code||'')+(c.ads||'')+(c.hyp||'')).includes(fb))&&(!fh||(c.hyp||'').startsWith(fh))).map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
     <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
-    <td>${schedCell(c)}</td>
+    <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
     <td><span class="qt"><b>${c.fmt}</b></span></td>
     <td><span class="qt" title="${ZH[c.hook]||c.hook}">${c.hook}</span></td>
     <td><span class="qt" title="${ZH[c.vs]||c.vs}">${c.vs}</span></td>
     <td class="code">${c.spend}</td><td class="code"><b>${c.fdc}</b></td><td class="code">${c.cpa}</td>
     <td><span class="cst cst-${c.stc}">${c.st}</span></td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
-      <button class="btn ghost sm" data-perm="creative:edit" onclick="setCreativeSchedule(${creatives.indexOf(c)})">排期</button>
       ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
       ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
       ${c.act==='confirm'?`<button class="btn danger sm" onclick="confirmPaused('${c.code}')">确认已暂停</button>`:''}
@@ -1780,7 +1785,8 @@ async function toggleDict(tab,idx){
   r.on=nv;logAction('dict','edit',r.c+(nv?' 启用':' 停用'));toast(r.c+(nv?' 已启用':' 已停用'));renderDict();
 }
 function renderDict(){
-  document.getElementById('dictTabs').innerHTML=Object.keys(DICT).map(k=>`<div class="tabbtn ${k===dictTab?'on':''}" onclick="dictTab='${k}';renderDict()">${k}</div>`).join('');
+  if(HIDDEN_DICT_TABS.includes(dictTab))dictTab=Object.keys(DICT).find(k=>!HIDDEN_DICT_TABS.includes(k))||dictTab;
+  document.getElementById('dictTabs').innerHTML=Object.keys(DICT).filter(k=>!HIDDEN_DICT_TABS.includes(k)).map(k=>`<div class="tabbtn ${k===dictTab?'on':''}" onclick="dictTab='${k}';renderDict()">${k}</div>`).join('');
   const noToggle=dictTab==='Capacity';
   document.getElementById('dictBody').innerHTML=(DICT[dictTab]||[]).map((r,i)=>`
    <tr class="${r.on?'':'inactive'}">
@@ -2290,7 +2296,7 @@ function showLogin(){document.getElementById('loginGate').style.display='flex';}
 async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives()]);}
 async function loadDict(){const {data}=await db.from('dict_entries').select('*').order('sort',{ascending:true});const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data}=await db.from('ideas').select('*').order('created_at',{ascending:false});ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
-async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
+async function loadHypos(){const {data}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
 async function editAdsCode(i){
   if(!can('creative','edit')){toast('当前岗位没有「编辑 creative」权限');return;}
   const c=creatives[i];if(!c)return;

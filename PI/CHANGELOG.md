@@ -14,7 +14,31 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v33] — 2026-07-07 · 顾客阶段(漏斗环节)+ 素材预计排期(当前基线)
+## [v34] — 2026-07-07 · 团队反馈微调:Hypothesis 排版重构 + 排期入口归位 hypothesis(当前基线)
+
+按团队看 demo 后的反馈调整。**纯前端 + 附加式 DB 列,不动现有数据。**
+
+### Hypothesis 页
+- **首列排版重构**:改成 `💡IDE-001`(小 idea 标记打头)→ `HYP-001`(编号)→ 陈述;**测试维度**(测·Hook)与**顾客阶段**(◑ 拉新)各自换到下一行显示(`.hcell-main` / `.hcell-sub`),不再全挤在一行。
+- **顾客阶段单独成行**、紫色 pill 保持。
+
+### Dictionary
+- **隐去 `Metrics` 标签**(数据保留,只是不在标签栏显示——主指标下拉从 `BRAND_METRIC` 读、不依赖该字典);默认标签由 `Metrics` 改为 `Format`。少一个标签后 **Customer Stage 回到同一排**,不再单独换行。
+
+### 素材预计排期:填写入口归位到 hypothesis
+- 团队反馈「排期的填写入口应挂在 hypothesis」。**一个测试 = 一个上线/测试窗口,该假设下所有素材共用**,所以把入口从 Creatives 页(原每行「排期」按钮)移到 **New Hypothesis 表单**(基础卡新增「预计上线日 M/D」+「测试 period(天)」)。
+- Creatives 页「预计排期」列改为**继承自所属假设**(`hypSchedOf()` 按 hyp code 匹配),仅展示、不再逐条编辑;移除每行「排期」按钮与 `setCreativeSchedule`。
+- 列宽加宽 + 右留白,Format 起整体右移(解决排期列过挤)。
+- DB:`hypotheses.plan_launch text` + `hypotheses.plan_test_days int`(nullable)。creatives 上的旧同名列保留但不再使用。
+
+### demo 修正(都是演示种子问题,正式库无此问题)
+- `mode:"op"` → 真实值 `新测试` / `主力运行`(原 `op` 无对应样式,显示成裸文字)。
+- 假设状态 `已验证` → `已沉淀`(`已验证` 非正式状态、无 `st-*` 样式,显示成无圆点黑字;`已沉淀` 与其它状态同 UI)。
+- 排期种子从素材移到假设(HYP-001 测试中·剩1天 / HYP-002 待判定 / HYP-003 还有5天开测 / HYP-006 测试中·剩10天 / 其余未排期)。
+- 验证:index.html + demo `node --check` 通过;headless 实测——首列排版、mode/status 样式、Metrics 隐藏、Customer Stage 同排、素材排期继承假设,四态倒数全部正确渲染,无 pageerror。
+- ⚠️ **需重新上传 `index.html` 到 cPanel 才在线上生效。**
+
+## [v33] — 2026-07-07 · 顾客阶段(漏斗环节)+ 素材预计排期
 
 两个团队讨论后确认的新功能。**纯前端 + 附加式 DB 列(nullable),不动现有数据。**
 

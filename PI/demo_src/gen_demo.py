@@ -57,12 +57,13 @@ IDEAS = [
  {"code":"IDE-008","txt":"多图轮播 vs 单一视频,哪种 format 跑量更稳","src":"原创直觉","tags":["CAROUSEL","VIDEO"],"pri":"中","status":"已归档","created_by":"WJ","created_at":ts("2026-05-20")},
 ]
 
-def hyp(code, brand, statement, test_type, metric, vf, vt, test_dim, locked, persona=None, age=None, status="草稿", idea_code=None, idea_label=None, evidence=None, guard=None, trigger=None, stage=None):
+def hyp(code, brand, statement, test_type, metric, vf, vt, test_dim, locked, persona=None, age=None, status="草稿", idea_code=None, idea_label=None, evidence=None, guard=None, trigger=None, stage=None, mode="新测试", pl=None, pd=None):
     return {"code":code,"brand":brand,"statement":statement,"test_type":test_type,"metric":metric,
-            "val_from":vf,"val_to":vt,"mode":"op","market":"KH" if brand!="INZ9" else "MY","month":"Jun 2026",
+            "val_from":vf,"val_to":vt,"mode":mode,"market":"KH" if brand!="INZ9" else "MY","month":"Jun 2026",
             "test_dim":test_dim,"locked_tags":locked,"persona":persona,"age_range":age,"status":status,
             "idea_code":idea_code,"idea_label":idea_label,"evidence":evidence,"guard":guard,
-            "trigger_type":trigger,"customer_stage":stage,"owner":"Eling","capacity":"GREEN","tests":[],"verdict":None,
+            "trigger_type":trigger,"customer_stage":stage,"plan_launch":pl,"plan_test_days":pd,
+            "owner":"Eling","capacity":"GREEN","tests":[],"verdict":None,
             "created_at":ts("2026-06-15"),"matrix":{}}
 
 HYPS = [
@@ -70,17 +71,17 @@ HYPS = [
  hyp("HYP-001","OK188KH","用「提款到账实拍」做主钩,能提升 7 天高价值率","素材","7-Day High-Value Rate","8","12","hook",
      {"hook":None,"format":"VIDEO","visual_style":"ugc","offer":"tier_bonus","game_type":"slots","_locked":True},
      persona="P1",age="A2534",status="测试中",idea_code="IDE-001",idea_label="IDE-001 · 提款到账系统测一轮",
-     evidence="历史数据 + 竞品信号",guard="Day-1 Quality Floor",trigger="DATA",stage="Acquisition"),
+     evidence="历史数据 + 竞品信号",guard="Day-1 Quality Floor",trigger="DATA",stage="Acquisition",pl="7/01",pd=7),
  # H2: OK188KH 2维交叉 Format×Hook, 干净 2x2, 草稿
  hyp("HYP-002","OK188KH","Format 与 Hook 交叉,找出拉新最优组合","素材","7-Day High-Value Rate","8","11","format,hook",
      {"format":None,"hook":None,"visual_style":"game_screenshot","offer":"fd_bonus","game_type":"slots","_locked":False},
      persona="P0",age="ALL",status="草稿",idea_code="IDE-002",idea_label="IDE-002 · 真人vs截图",
-     evidence="历史数据",guard="Day-1 Quality Floor",trigger="INTUITION",stage="Acquisition"),
+     evidence="历史数据",guard="Day-1 Quality Floor",trigger="INTUITION",stage="Acquisition",pl="6/28",pd=7),
  # H3: 17WINKH 2维交叉但 Format 三值 -> crossbad (演示新校验), 草稿
  hyp("HYP-003","17WINKH","体育钩子 × Format 找量","素材","FDC","12","18","format,hook",
      {"format":None,"hook":None,"visual_style":"real_person","offer":"tier_bonus","game_type":"sports","_locked":False},
      persona="P5",age="A2534",status="草稿",idea_code="IDE-003",idea_label="IDE-003 · 体育季",
-     evidence="市场研究",guard="Day-1 Quality Floor",trigger="EVENT",stage="Acquisition"),
+     evidence="市场研究",guard="Day-1 Quality Floor",trigger="EVENT",stage="Acquisition",pl="7/12",pd=7),
  # H4: SBKH 单变量 Visual Style 但素材没差异 -> nodiff, 草稿
  hyp("HYP-004","SBKH","换视觉风格能否提升 CTR","素材","FDC","10","15","visual_style",
      {"visual_style":None,"format":"VIDEO","hook":"big_win","offer":"fd_bonus","game_type":"live_casino","_locked":False},
@@ -89,13 +90,13 @@ HYPS = [
  # H5: INZ9 受众测试
  hyp("HYP-005","INZ9","回流唤醒人群对复存激活更敏感","受众","FDC","14","20","",
      {"format":"VIDEO","hook":"promo_direct","visual_style":"official_design","offer":"redeposit","game_type":"slots"},
-     persona="P7",age="A3544",status="已验证",idea_code="IDE-007",idea_label="IDE-007 · 复存激活",
-     evidence="内部数据",guard="AFDA",trigger="DATA",stage="Reactivation"),
+     persona="P7",age="A3544",status="已沉淀",idea_code="IDE-007",idea_label="IDE-007 · 复存激活",
+     evidence="内部数据",guard="AFDA",trigger="DATA",stage="Reactivation",mode="主力运行"),
  # H6: OK188KH Promotion
  hyp("HYP-006","OK188KH","分层红利比首存红利带来更高 AFDA","Promotion","AFDA","6.87","8.5","",
      {"format":"IMAGE","hook":"promo_value","visual_style":"official_design","offer":"tier_bonus","game_type":"slots"},
      persona="P6",age="A45P",status="草稿",idea_code="IDE-005",idea_label="IDE-005 · 红利结构",
-     evidence="内部数据",guard="AFDA",trigger="STRATEGY",stage="Repeat Conversion"),
+     evidence="内部数据",guard="AFDA",trigger="STRATEGY",stage="Repeat Conversion",pl="7/03",pd=14),
 ]
 
 def cr(gen, hyp_code, hyp_label, label, fmt, hook, vs, offer, gt, aud, age, status, versions=None, runs=None, pl=None, pd=None):
@@ -109,15 +110,15 @@ V_FIRST=[{"v":1,"date":"2026-06-17","ev":"first","status":"saved","copy":{"headl
 
 CREATIVES = [
  # H1 (hook varies) -> clean
- cr("HYP-001-V1","HYP-001","HYP-001 · 提款到账","素材 1","VIDEO","withdrawal_proof","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"320","fdc":"9","cpa":"35.6"}],pl="7/12",pd=7),
- cr("HYP-001-V2","HYP-001","HYP-001 · 提款到账","素材 2","VIDEO","fast_payout","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"300","fdc":"7","cpa":"42.9"}],pl="7/01",pd=7),
+ cr("HYP-001-V1","HYP-001","HYP-001 · 提款到账","素材 1","VIDEO","withdrawal_proof","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"320","fdc":"9","cpa":"35.6"}]),
+ cr("HYP-001-V2","HYP-001","HYP-001 · 提款到账","素材 2","VIDEO","fast_payout","ugc","tier_bonus","slots","P1","A2534","上线中",V_FIRST,[{"week":"2026-W25","spend":"300","fdc":"7","cpa":"42.9"}]),
  # H2 (format x hook) -> clean 2x2 (VIDEO/IMAGE  x  withdrawal_proof/big_win)
- cr("HYP-002-V1","HYP-002","HYP-002 · Format×Hook","素材 1","VIDEO","withdrawal_proof","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST,pl="6/28",pd=7),
+ cr("HYP-002-V1","HYP-002","HYP-002 · Format×Hook","素材 1","VIDEO","withdrawal_proof","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V2","HYP-002","HYP-002 · Format×Hook","素材 2","VIDEO","big_win","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V3","HYP-002","HYP-002 · Format×Hook","素材 3","IMAGE","withdrawal_proof","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  cr("HYP-002-V4","HYP-002","HYP-002 · Format×Hook","素材 4","IMAGE","big_win","game_screenshot","fd_bonus","slots","P0","ALL","待上线",V_FIRST),
  # H3 (format x hook) -> Format has 3 values -> crossbad
- cr("HYP-003-V1","HYP-003","HYP-003 · 体育季","素材 1","VIDEO","big_win","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST,pl="7/03",pd=14),
+ cr("HYP-003-V1","HYP-003","HYP-003 · 体育季","素材 1","VIDEO","big_win","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  cr("HYP-003-V2","HYP-003","HYP-003 · 体育季","素材 2","IMAGE","big_win","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  cr("HYP-003-V3","HYP-003","HYP-003 · 体育季","素材 3","CAROUSEL","high_odds","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
  cr("HYP-003-V4","HYP-003","HYP-003 · 体育季","素材 4","VIDEO","high_odds","real_person","tier_bonus","sports","P5","A2534","待上线",V_FIRST),
