@@ -71,17 +71,17 @@ HYPS = [
  hyp("HYP-001","OK188KH","用「提款到账实拍」做主钩,能提升 7 天高价值率","素材","7-Day High-Value Rate","8","12","hook",
      {"hook":None,"format":"VIDEO","visual_style":"ugc","offer":"tier_bonus","game_type":"slots","_locked":True},
      persona="P1",age="A2534",status="测试中",idea_code="IDE-001",idea_label="IDE-001 · 提款到账系统测一轮",
-     evidence="历史数据 + 竞品信号",guard="Day-1 Quality Floor",trigger="DATA",stage="Acquisition",pl="7/01",pd=7),
+     evidence="历史数据 + 竞品信号",guard="Day-1 Quality Floor",trigger="DATA",stage="Acquisition",pl="2026-07-01",pd=7),
  # H2: OK188KH 2维交叉 Format×Hook, 干净 2x2, 草稿
  hyp("HYP-002","OK188KH","Format 与 Hook 交叉,找出拉新最优组合","素材","7-Day High-Value Rate","8","11","format,hook",
      {"format":None,"hook":None,"visual_style":"game_screenshot","offer":"fd_bonus","game_type":"slots","_locked":False},
      persona="P0",age="ALL",status="草稿",idea_code="IDE-002",idea_label="IDE-002 · 真人vs截图",
-     evidence="历史数据",guard="Day-1 Quality Floor",trigger="INTUITION",stage="Acquisition",pl="6/28",pd=7),
+     evidence="历史数据",guard="Day-1 Quality Floor",trigger="INTUITION",stage="Acquisition",pl="2026-06-28",pd=7),
  # H3: 17WINKH 2维交叉但 Format 三值 -> crossbad (演示新校验), 草稿
  hyp("HYP-003","17WINKH","体育钩子 × Format 找量","素材","FDC","12","18","format,hook",
      {"format":None,"hook":None,"visual_style":"real_person","offer":"tier_bonus","game_type":"sports","_locked":False},
      persona="P5",age="A2534",status="草稿",idea_code="IDE-003",idea_label="IDE-003 · 体育季",
-     evidence="市场研究",guard="Day-1 Quality Floor",trigger="EVENT",stage="Acquisition",pl="7/12",pd=7),
+     evidence="市场研究",guard="Day-1 Quality Floor",trigger="EVENT",stage="Acquisition",pl="2026-07-12",pd=7),
  # H4: SBKH 单变量 Visual Style 但素材没差异 -> nodiff, 草稿
  hyp("HYP-004","SBKH","换视觉风格能否提升 CTR","素材","FDC","10","15","visual_style",
      {"visual_style":None,"format":"VIDEO","hook":"big_win","offer":"fd_bonus","game_type":"live_casino","_locked":False},
@@ -96,7 +96,7 @@ HYPS = [
  hyp("HYP-006","OK188KH","分层红利比首存红利带来更高 AFDA","Promotion","AFDA","6.87","8.5","",
      {"format":"IMAGE","hook":"promo_value","visual_style":"official_design","offer":"tier_bonus","game_type":"slots"},
      persona="P6",age="A45P",status="草稿",idea_code="IDE-005",idea_label="IDE-005 · 红利结构",
-     evidence="内部数据",guard="AFDA",trigger="STRATEGY",stage="Repeat Conversion",pl="7/03",pd=14),
+     evidence="内部数据",guard="AFDA",trigger="STRATEGY",stage="Repeat Conversion",pl="2026-07-03",pd=14),
 ]
 
 def cr(gen, hyp_code, hyp_label, label, fmt, hook, vs, offer, gt, aud, age, status, versions=None, runs=None, pl=None, pd=None):

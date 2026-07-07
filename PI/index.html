@@ -479,7 +479,7 @@
 
   <table>
     <thead><tr>
-      <th style="width:32%">Hypothesis(改变 X)</th><th>Create Date</th><th>Metric · 基准 → 目标</th><th>Mode</th><th>Market</th><th>Brand</th><th>Type</th><th>Owner</th><th>Capacity</th><th>Status</th>
+      <th style="width:32%">Hypothesis(改变 X)</th><th style="width:92px">Create Date</th><th style="width:96px">Stage</th><th>Metric · 基准 → 目标</th><th>Mode</th><th>Market</th><th>Brand</th><th>Type</th><th>Owner</th><th>Capacity</th><th>Status</th>
     </tr></thead>
     <tbody id="hypoBody"></tbody>
   </table>
@@ -533,8 +533,8 @@
           <div class="fld"><label>顾客阶段 <span style="color:var(--ink3);font-weight:400;font-size:11px">← 打给漏斗哪一环</span></label>
             <select id="hf-stage"></select>
           </div>
-          <div class="fld"><label>预计上线日 <span style="color:var(--ink3);font-weight:400;font-size:11px">M/D</span></label>
-            <input type="text" id="hf-plan-launch" placeholder="如 7/12">
+          <div class="fld"><label>预计上线日 <span style="color:var(--ink3);font-weight:400;font-size:11px">← 点选日历</span></label>
+            <input type="date" id="hf-plan-launch">
           </div>
           <div class="fld"><label>测试 period(天)</label>
             <input type="number" id="hf-plan-days" placeholder="如 7" min="1">
@@ -1225,17 +1225,16 @@ function renderHypo(){
    <tr class="click" onclick="openDrawer(${hypos.indexOf(h)})">
     <td>
      <div class="hcell-main">${h.idea?`<span class="pill ideam" title="来自想法: ${esc(h.idea)}">💡${esc((h.idea+'').split(' ')[0])}</span> `:''}<span class="code">${h.id}</span> <span class="hx">${h.x}</span></div>
-     ${(h.testDims&&h.testDims.length)?`<div class="hcell-sub"><span class="pill" style="background:var(--bg2);color:var(--ink2);font-size:10px">测·${h.testDims.map(dimLabel).join('×')}</span></div>`:''}
-     ${h.stage?`<div class="hcell-sub"><span class="pill" style="background:var(--violet-bg);color:var(--violet);font-size:10px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span></div>`:''}
     </td>
-    <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?new Date(h.created).toLocaleString('zh-CN'):'—'}</td>
+    <td class="sm" style="color:var(--ink3);white-space:nowrap">${h.created?`<div>${new Date(h.created).toLocaleDateString('zh-CN')}</div><div style="color:var(--ink3);font-size:11px">${new Date(h.created).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</div>`:'—'}</td>
+    <td>${h.stage?`<span class="pill" style="background:var(--violet-bg);color:var(--violet);font-size:11px" title="顾客阶段: ${esc(h.stage)}">◑ ${esc(stageZh(h.stage))}</span>`:'<span style="color:var(--ink3)">—</span>'}</td>
     <td><div class="qt"><b>${h.metric}</b></div><div class="hmeta">${h.from} → ${h.to}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
     <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>
     <td>${h.brand}</td><td>${h.type}</td><td>${h.owner}</td>
     <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':'var(--green)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':'绿'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
-   </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
+   </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
 }
 function fillIdeaFilter(){
   const sel=document.getElementById('f-idea');if(!sel)return;
@@ -1725,8 +1724,15 @@ function confirmPaused(code){
 function linkHyp(c){const gen=c.gen||c.code||'';const par=(gen.match(/^(HYP-\d+)/)||[])[1]||((c.hyp||'').split(/[ ·]/)[0]||'');const has=par&&hypos.some(h=>h.id===par);if(has)return '<span class="code" style="color:var(--accent);cursor:pointer" title="跟回上层假设 '+esc(par)+'" onclick="event.stopPropagation();gotoHypo(\''+esc(par)+'\')">'+esc(gen||'—')+'</span>';return '<span class="code">'+esc(gen||'—')+'</span>';}
 function gotoHypo(code){const idx=hypos.findIndex(h=>h.id===code);if(idx<0){toast('找不到假设 '+code);return;}go('hypo',document.querySelector('[data-v="hypo"]'));openDrawer(idx);}
 /* ===== 素材「预计排期」= 预计上线日 + 测试 period(天) → 自动算结束日 + 倒数 ===== */
-// 解析 "M/D" → Date(默认今年;跨年这种边界先不处理,够用)
-function parseMD(s){s=(s||'').trim();const m=s.match(/^(\d{1,2})\/(\d{1,2})$/);if(!m)return null;const d=new Date();d.setMonth(+m[1]-1,+m[2]);d.setHours(0,0,0,0);return d;}
+// 解析日期 → Date。支持日历选择器的 "YYYY-MM-DD",也兼容旧的手打 "M/D"(默认今年)
+function parseMD(s){
+  s=(s||'').trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m){const d=new Date(+m[1],+m[2]-1,+m[3]);d.setHours(0,0,0,0);return d;}
+  m=s.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(m){const d=new Date();d.setMonth(+m[1]-1,+m[2]);d.setHours(0,0,0,0);return d;}
+  return null;
+}
 function fmtMD(d){return (d.getMonth()+1)+'/'+d.getDate();}
 function schedCell(c){
   const L=parseMD(c.planLaunch),days=(c.planDays==null||c.planDays==='')?null:+c.planDays;

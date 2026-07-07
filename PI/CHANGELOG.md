@@ -14,7 +14,17 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v34] — 2026-07-07 · 团队反馈微调:Hypothesis 排版重构 + 排期入口归位 hypothesis(当前基线)
+## [v35] — 2026-07-07 · Hypothesis 表格:Stage 独立成列 + Create Date 双行 + 排期改日历选择(当前基线)
+
+- **顾客阶段独立成列**:从假设首列的 pill 移出,新增独立 **Stage** 列(在 Create Date 之后),◑ 紫色 pill 居中显示,无则「—」。
+- **移除首列的「测·维度」标签**:首列现在只保留 `💡IDE-xxx → HYP-xxx → 陈述` 一行,更干净。
+- **Create Date 拆两行**:第一行日期、第二行时间(`toLocaleDateString` + `toLocaleTimeString`),列宽收窄,给 Stage 列腾位。
+- **预计上线日改日历选择器**:`hf-plan-launch` 由文本输入改为 `<input type="date">`,点选日历;存 ISO(`YYYY-MM-DD`)。`parseMD()` 升级为同时解析 ISO 与旧「M/D」;`schedCell` 仍以 M/D 紧凑显示。demo 种子日期改 ISO。
+- 表格列 10 → 11(空态 colspan 同步)。
+- 验证:`node --check` 通过;headless 实测——首列无残留标签、Stage 列 6 条阶段 pill 正常、Create Date 双行、日历 input 就位、素材排期倒数四态仍正确,无 pageerror。
+- ⚠️ **需重新上传 `index.html` 到 cPanel 才在线上生效。**
+
+## [v34] — 2026-07-07 · 团队反馈微调:Hypothesis 排版重构 + 排期入口归位 hypothesis
 
 按团队看 demo 后的反馈调整。**纯前端 + 附加式 DB 列,不动现有数据。**
 
