@@ -389,6 +389,7 @@
   <div class="grp">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Planning Intelligence <span class="car">▾</span></div>
     <div class="grp-items">
+      <div class="nitem" data-v="mplan" onclick="go('mplan',this)">Monthly Plan</div>
       <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget Allocation</div>
       <div class="nitem" data-v="pool" onclick="go('pool',this)">Idea Pool</div>
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
@@ -675,6 +676,23 @@
   <p class="note" style="margin-top:10px">规则触发 ≠ 已暂停:系统推 Slack 通知 → 人在 Ads Manager 手动暂停 → 回来点「确认已暂停」。</p>
   </div>
   <div id="cv-detail" class="hidden"></div>
+</section>
+
+<!-- ============ MONTHLY PLAN(当月安排总览 + 确认)============ -->
+<section class="view" id="v-mplan">
+  <div class="head">
+    <div>
+      <h1>Monthly Plan</h1>
+      <div class="sub">当月安排一页总览:预算 + 排期假设 + 素材就绪度。就绪后由决策人「确认本月计划」,确认即通知各负责人(Slack 接入后自动发)。</div>
+    </div>
+    <div class="filters">
+      <select id="mp-month" onchange="mpMonth=this.value;renderMonthlyPlan()"></select>
+      <button class="btn" id="mp-confirm" onclick="guard(()=>confirmMonthlyPlan())">✔ 确认本月计划</button>
+    </div>
+  </div>
+  <div id="mpBanner"></div>
+  <div class="strip" id="mpStrip"></div>
+  <div id="mpBody"></div>
 </section>
 
 <!-- ============ BUDGET(每月各品牌:Marketing 申请 → USC 核批)============ -->
@@ -2506,8 +2524,75 @@ async function saveIdea(){
 }
 function rpcErr(e){const m=(e&&e.message)||String(e);const map={NOT_ASSIGNED:'这格没有分工给你',NOT_DECIDER:'只有决策人可操作',REASON_REQUIRED:'必须填写理由',LOCKED:'已定并锁定,需决策人重开',BAD_AMOUNT:'金额无效',NOT_AUTHORIZED:'You are not an admin',USERNAME_REQUIRED:'Username required',PASSWORD_TOO_SHORT:'Password too short (min 4)',ROLE_NOT_FOUND:'Role not found',USERNAME_EXISTS:'Username already exists',CANNOT_DELETE_SELF:'Cannot delete yourself',USER_NOT_FOUND:'User not found'};for(const k in map){if(m.indexOf(k)>=0)return map[k];}return m;}
 function showLogin(){document.getElementById('loginGate').style.display='flex';}
-async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives(),loadBudgets()]);}
+async function loadPIData(){await Promise.all([loadDict(),loadIdeas(),loadHypos(),loadCreatives(),loadBudgets(),loadMonthlyPlans()]);}
 
+/* ===== Monthly Plan:当月总览 + 确认 ===== */
+let monthlyPlans=[],mpMonth='';
+async function loadMonthlyPlans(){try{const {data,error}=await db.from('monthly_plans').select('*');if(error)throw error;monthlyPlans=data||[];}catch(e){monthlyPlans=[];}}
+function mpMonthOfLaunch(h){const d=parseMD(h.planLaunch||'');return d?d.toLocaleString('en-US',{month:'short'})+' '+d.getFullYear():(h.month||'');}
+function renderMonthlyPlan(){
+  const sel=document.getElementById('mp-month');if(!sel)return;
+  const set={};set[bgCurMonth()]=1;budgets.forEach(b=>{if(b.month)set[b.month]=1;});hypos.forEach(h=>{const m=mpMonthOfLaunch(h);if(m)set[m]=1;});
+  const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
+  if(!mpMonth||arr.indexOf(mpMonth)<0)mpMonth=arr[0]||bgCurMonth();
+  sel.innerHTML=arr.map(m=>`<option${m===mpMonth?' selected':''}>${m}</option>`).join('');
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
+  const confirmed=monthlyPlans.find(x=>x.month===mpMonth);
+  document.getElementById('mpBanner').innerHTML=confirmed
+    ?`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:var(--green);font-weight:600">✔ 本月计划已确认 · ${esc(bgUserName(confirmed.confirmed_by))} · ${new Date(confirmed.confirmed_at).toLocaleString('zh-CN')}</div>`:'';
+  let okBudget=0,nHypo=0,nReady=0,issues=[];
+  document.getElementById('mpBody').innerHTML=allBrands.map(br=>{
+    const e=bgEntry(mpMonth,br)||{},a=bgAssign(br);
+    const stt=bgStatus(e),st=BG_ST[stt],fin=bgFinalAmt(e);
+    if(fin!=null)okBudget++;else issues.push(br+' 预算未定('+st[0]+')');
+    const hs=hypos.filter(h=>h.brand===br&&mpMonthOfLaunch(h)===mpMonth);
+    nHypo+=hs.length;
+    const rows=hs.map(h=>{
+      const cr=creatives.filter(c=>(c.hyp||'').startsWith(h.id));
+      const ready=(h.lockedTags&&h.lockedTags._locked)||['已锁定','测试中','已沉淀'].includes(h.st);
+      if(ready)nReady++;else issues.push(h.id+' 未锁定('+h.st+')');
+      return `<tr class="click" onclick="gotoHypo('${h.id}')">
+        <td><span class="code">${h.id}</span> ${esc(h.x)}</td>
+        <td>${h.stage?`<span class="pill" style="background:${stageColor(h.stage)[0]};color:${stageColor(h.stage)[1]};font-size:11px">◑ ${esc(stageZh(h.stage))}</span>`:'—'}</td>
+        <td class="bgro">${h.planLaunch?fmtMD(parseMD(h.planLaunch)):'—'}${h.planDays?' · '+h.planDays+'天':''}</td>
+        <td>${cr.length} 条素材</td><td>${esc(h.owner||'—')}</td>
+        <td><span class="st st-${h.st}"><i></i>${h.st}</span></td></tr>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">${br}</h3>
+        <div style="display:flex;gap:10px;align-items:center;font-size:12.5px">
+          <span class="bgro">${fin!=null?'预算 <b>'+bgMoney(fin)+'</b>':'预算 —'}</span>
+          <span class="bgst" style="background:${st[1]};color:${st[2]}">${st[0]}</span>
+          <span style="color:var(--ink3)">mkt ${esc(bgUserName(a.mkt))} · usc ${esc(bgUserName(a.usc))} · 决策 ${esc(bgUserName(a.decider))}</span>
+        </div>
+      </div>
+      ${hs.length?`<table style="margin-top:10px"><thead><tr><th>Hypothesis</th><th style="width:96px">Stage</th><th style="width:120px">Schedule</th><th style="width:90px">Creatives</th><th style="width:80px">Owner</th><th style="width:90px">Status</th></tr></thead><tbody>${rows}</tbody></table>`
+        :'<div style="color:var(--ink3);padding:10px 0 2px">该月暂无排期假设</div>'}
+    </div>`;
+  }).join('');
+  const stat=(v,l)=>`<div class="stat"><b>${v}</b><label>${l}</label></div>`;
+  document.getElementById('mpStrip').innerHTML=
+    stat(okBudget+'/'+allBrands.length,'预算已定 Budgets Final')+stat(nHypo,'排期假设 Planned Tests')+
+    stat(nReady+'/'+nHypo,'已锁定 Locked')+stat(issues.length,'待处理 Issues');
+  window._mpIssues=issues;
+  const btn=document.getElementById('mp-confirm');if(btn)btn.style.display=(bgIsAdmin()||Object.values(budgetAssign).some(x=>x.decider===bgMe()))?'':'none';
+}
+async function confirmMonthlyPlan(){
+  const issues=window._mpIssues||[];
+  if(issues.length&&!confirm('还有 '+issues.length+' 项未就绪:\n· '+issues.slice(0,8).join('\n· ')+(issues.length>8?'\n…':'')+'\n\n仍要确认本月计划?'))return;
+  if(monthlyPlans.find(x=>x.month===mpMonth)&&!confirm('本月已确认过,再次确认会重发通知。继续?'))return;
+  const summary={month:mpMonth,brands:[...MKT_BRANDS.KH,...MKT_BRANDS.MY].map(br=>{const e=bgEntry(mpMonth,br)||{},a=bgAssign(br);return {brand:br,final:bgFinalAmt(e),owners:a,tests:hypos.filter(h=>h.brand===br&&mpMonthOfLaunch(h)===mpMonth).map(h=>({code:h.id,x:h.x,stage:h.stage,launch:h.planLaunch,days:h.planDays,owner:h.owner,st:h.st}))};})};
+  try{const {error}=await db.from('monthly_plans').upsert({month:mpMonth,confirmed_by:bgMe(),confirmed_at:new Date().toISOString(),summary:summary},{onConflict:'month'});if(error)throw error;}
+  catch(e){toast('确认失败: '+rpcErr(e));return;}
+  const idx=monthlyPlans.findIndex(x=>x.month===mpMonth);
+  const rec={month:mpMonth,confirmed_by:bgMe(),confirmed_at:new Date().toISOString(),summary:summary};
+  if(idx>=0)monthlyPlans[idx]=rec;else monthlyPlans.push(rec);
+  logAction('budget','确认计划',mpMonth);
+  // TODO(Slack Phase B):POST summary 到 n8n webhook → 格式化 point-form → 发频道 + @各负责人
+  if(window.__DEMO__)toast('📨(演示)确认成功 — Slack 接入后会通知各负责人');else toast('✔ '+mpMonth+' 计划已确认(Slack 通知待接入)');
+  renderMonthlyPlan();
+}
 /* ===== Budget:分工到人 + 申请/核批/决策 + 自动投放 + 留痕 ===== */
 let budgets=[],bgMonth='',budgetAssign={};
 // 分工兜底默认(生产从 budget_assignments 表读;读不到用这套)。决策人全为 zq。
@@ -2766,7 +2851,7 @@ function can(sec,act){const r=curRole();return r?!!(r.perms[sec]&&r.perms[sec][a
 function applyPerms(){document.querySelectorAll('[data-perm]').forEach(el=>{const p=el.getAttribute('data-perm').split(':');el.style.display=can(p[0],p[1])?'':'none';});}
 function logAction(sec,act,target){auditLog.unshift({ts:new Date().toISOString(),user:currentUser?currentUser.name:'?',sec:sec,act:act,target:target||''});{const av=document.getElementById('v-audit');if(av&&av.classList.contains('on'))renderAudit();}if(currentUser){try{db.from('audit_log').insert({user_id:currentUser.id,username:currentUser.username,name:currentUser.name,section:sec,action:act,target:target||''}).then(function(){},function(){});}catch(e){}}}
 function applyChrome(){if(!currentUser){showLogin();return;}const r=curRole();const av=document.getElementById('uc-avatar');if(av)av.textContent=(currentUser.name||'?').slice(0,1).toUpperCase();const nm=document.getElementById('uc-name');if(nm)nm.textContent=currentUser.name;const ro=document.getElementById('uc-role');if(ro)ro.textContent=r?r.name:'—';const ag=document.getElementById('adminGrp');if(ag)ag.style.display=(r&&r.admin)?'':'none';renderRoles();renderUsers();renderAudit();renderBgAssign();applyPerms();}
-async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderBgAssign();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
+async function initApp(){try{await loadPIData();}catch(e){console.error('loadPIData error:',e);}renderPool();renderHypo();renderCreatives();renderBudget();renderBgAssign();renderMonthlyPlan();renderResults();renderDict();refreshOverdue();updateAll();applyChrome();loadBaselines();loadAll();resetIdleTimer();}
 /* 岗位管理 */
 function renderRoles(){const el=document.getElementById('rolesBody');if(!el)return;let h='<div class="tablebar"><button class="btn" onclick="openRoleEditor(null)">＋ New Role</button></div>';h+='<table class="dt"><thead><tr><th>Role</th><th>Admin Access</th><th>Permissions</th><th></th></tr></thead><tbody>';const tot=PERM_SECTIONS.reduce((n,s)=>n+s.acts.length,0);roles.forEach(r=>{const cnt=PERM_SECTIONS.reduce((n,s)=>n+s.acts.filter(a=>r.perms[s.k]&&r.perms[s.k][a]).length,0);h+='<tr><td><b>'+esc(r.name)+'</b></td><td>'+(r.admin?'<span class="life la">Yes</span>':'<span class="life lx">No</span>')+'</td><td class="sm">'+cnt+' / '+tot+'</td><td style="text-align:right;white-space:nowrap"><button class="cbtn" onclick="openRoleEditor(\''+r.id+'\')">Edit</button> <button class="cbtn" onclick="dupRole(\''+r.id+'\')">Duplicate</button> <button class="cbtn danger" onclick="delRole(\''+r.id+'\')">Delete</button></td></tr>';});el.innerHTML=h+'</tbody></table>';}
 function openRoleEditor(id){const r=id?roles.find(x=>x.id===id):{id:'role_'+Date.now(),name:'',admin:false,perms:allPerms(false),_new:true};window._editRole=JSON.parse(JSON.stringify(r));document.getElementById('d-title').textContent='岗位权限';renderRoleEditor();document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');}
