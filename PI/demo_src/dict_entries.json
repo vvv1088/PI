@@ -1,1 +1,938 @@
-[{"tab":"Age Range","code":"A1824","name":"18-24","descr":"年轻段","usage":"—","active":true,"sort":0},{"tab":"Age Range","code":"A2534","name":"25-34","descr":"主力段","usage":"—","active":true,"sort":1},{"tab":"Age Range","code":"A3544","name":"35-44","descr":"成熟段","usage":"—","active":true,"sort":2},{"tab":"Age Range","code":"A45P","name":"45+","descr":"高龄段","usage":"—","active":true,"sort":3},{"tab":"Age Range","code":"ALL","name":"全年龄","descr":"不限年龄(Broad 默认)","usage":"—","active":true,"sort":4},{"tab":"Capacity","code":"GREEN","name":"🟢 预算充足","descr":"持有预算 ≥ 所需的 150%,结论有容错空间","usage":"阈值可调","active":true,"sort":0},{"tab":"Capacity","code":"YELLOW","name":"🟡 刚好够","descr":"持有预算为所需的 100%–150%,无容错,表现略低于基准即出不了结论","usage":"阈值可调","active":true,"sort":1},{"tab":"Capacity","code":"RED","name":"🔴 不够出结论","descr":"持有预算 < 所需的 100%;坚持上线须写一句理由","usage":"阈值可调","active":true,"sort":2},{"tab":"Capacity","code":"NOT_REACHABLE","name":"物理上够不到成功线","descr":"按市场单位成本换算,就算把全部预算花完、每一分都花得有效,最多也只能买到 N 个结果,而成功线需要更多 — 是钱的总量不够买到目标数字,跟素材好不好无关。解法只有三个:加预算 / 降目标 / 拉长周期","usage":"—","active":true,"sort":3},{"tab":"Capacity","code":"FORMULA","name":"计算公式","descr":"所需预算 = 目标值 × 周数 × 单位成本;持有预算 = 日预算 × 天数;单位成本取近 30 天管道数据,缺口按 兄弟品牌 / 手填参考值 估算","usage":"—","active":true,"sort":4},{"tab":"CI Fields","code":"NEW","name":"新广告","descr":"最近 7 天才开始投放——是时间状态,不是画面内容","usage":"—","active":true,"sort":0},{"tab":"CI Fields","code":"Active Days","name":"活跃天数","descr":"广告从开始到最近活跃跑了多少天;≥180 天标 🏆(竞品验证过的赢家)","usage":"—","active":true,"sort":1},{"tab":"CI Fields","code":"Last Seen","name":"最后见到","descr":"我们最后一次在抓取中见到这条广告的日期","usage":"—","active":true,"sort":2},{"tab":"CI Fields","code":"Running Period","name":"投放周期","descr":"Meta 记录的广告开始 → 结束(或最后活跃)日期","usage":"—","active":true,"sort":3},{"tab":"CI Fields","code":"Destination","name":"落地去向","descr":"广告把流量导去的地方:Telegram / 域名 / referral code","usage":"—","active":true,"sort":4},{"tab":"CI Fields","code":"CTA","name":"行动按钮","descr":"Facebook 行动按钮类型(MESSAGE_PAGE / SIGN_UP / PLAY_GAME…)","usage":"—","active":true,"sort":5},{"tab":"CI Fields","code":"Selling Point","name":"卖点","descr":"这条竞品广告主打的一句话价值主张","usage":"—","active":true,"sort":6},{"tab":"CI Fields","code":"Description","name":"画面描述","descr":"素材画面 / 视频内容的概括","usage":"—","active":true,"sort":7},{"tab":"Evidence","code":"HIST","name":"历史数据","descr":"自家过往测试或投放数据","usage":"—","active":true,"sort":0},{"tab":"Evidence","code":"COMP","name":"竞品信号","descr":"竞品在持续做某件事(从 CI 打勾流入时自动带入)","usage":"—","active":true,"sort":1},{"tab":"Evidence","code":"PLATFORM","name":"平台与行业信号","descr":"Meta 官方动作 / 行业报告 / 算法变化","usage":"—","active":true,"sort":2},{"tab":"Evidence","code":"FRONTLINE","name":"一线反馈","descr":"CRM / 客服一线的观察(Anna / JK)","usage":"—","active":true,"sort":3},{"tab":"Evidence","code":"GUT","name":"纯直觉","descr":"没有证据 — 合法,但必须标记;胜率统计单独一档","usage":"—","active":true,"sort":4},{"tab":"Format","code":"VIDEO","name":"单一视频","descr":"单支视频素材","usage":"Apify 口径","active":true,"sort":0},{"tab":"Format","code":"IMAGE","name":"单一静态图","descr":"单张静态图","usage":"Apify 口径","active":true,"sort":1},{"tab":"Format","code":"CAROUSEL","name":"多图轮播","descr":"用户手动左右滑","usage":"Apify 口径","active":true,"sort":2},{"tab":"Format","code":"DCO","name":"动态创意优化","descr":"上传多素材/文案,Meta 算法自动组合;大量使用通常代表投放成熟、撒网型","usage":"Apify 口径","active":true,"sort":3},{"tab":"Game Type","code":"slots","name":"老虎机","descr":"slot / 电子游戏机台","usage":"—","active":true,"sort":0},{"tab":"Game Type","code":"live_casino","name":"真人娱乐","descr":"真人荷官 / 真人桌台(百家乐、轮盘…)","usage":"—","active":true,"sort":1},{"tab":"Game Type","code":"sports","name":"体育","descr":"体育博彩 / 赛事投注","usage":"—","active":true,"sort":2},{"tab":"Game Type","code":"lottery","name":"彩票 / 4D","descr":"彩票、4D、数字类","usage":"—","active":true,"sort":3},{"tab":"Game Type","code":"fishing","name":"捕鱼","descr":"捕鱼类街机","usage":"—","active":true,"sort":4},{"tab":"Game Type","code":"cockfight","name":"斗鸡","descr":"斗鸡 / 斗兽类(部分东南亚市场)","usage":"—","active":true,"sort":5},{"tab":"Hook","code":"withdrawal_proof","name":"提款到账","descr":"提款成功截图 / 实拍到账","usage":"假设 12 · 竞品 84","active":true,"sort":0},{"tab":"Hook","code":"fast_payout","name":"提款速度","descr":"X 分钟到账","usage":"假设 2 · 竞品 45","active":true,"sort":1},{"tab":"Hook","code":"trust_safety","name":"信任安全","descr":"不跑路 / 提款保证","usage":"假设 6 · 竞品 73","active":true,"sort":2},{"tab":"Hook","code":"license","name":"合法执照","descr":"持牌合规","usage":"假设 2 · 竞品 19","active":true,"sort":3},{"tab":"Hook","code":"big_win","name":"大赢展示","descr":"大额中奖 / 爆分画面","usage":"假设 8 · 竞品 122","active":true,"sort":4},{"tab":"Hook","code":"testimonial","name":"玩家见证","descr":"玩家好评 / 评论","usage":"假设 1 · 竞品 41","active":true,"sort":5},{"tab":"Hook","code":"celebrity","name":"名人背书","descr":"名人形象 / 代言","usage":"假设 1 · 竞品 31","active":true,"sort":6},{"tab":"Hook","code":"promo_direct","name":"优惠直给","descr":"直接展示 bonus 数字","usage":"假设 5 · 竞品 156","active":true,"sort":7},{"tab":"Hook","code":"promo_value","name":"优惠力度","descr":"红利高","usage":"假设 3 · 竞品 88","active":true,"sort":8},{"tab":"Hook","code":"game_variety","name":"游戏种类","descr":"游戏多 / 平台全","usage":"假设 0 · 竞品 28","active":true,"sort":9},{"tab":"Hook","code":"high_odds","name":"高赔率","descr":"赔率优势","usage":"假设 0 · 竞品 15","active":true,"sort":10},{"tab":"Hook","code":"prediction","name":"必中贴士","descr":"AI 预测 / 贴士 / 必中(多见于体育)","usage":"假设 0 · 竞品 0","active":true,"sort":11},{"tab":"Hook","code":"cs_convo","name":"客服对话","descr":"客服聊天记录截图","usage":"假设 4 · 竞品 22","active":true,"sort":12},{"tab":"Hook","code":"service","name":"服务质量","descr":"24h 客服","usage":"假设 1 · 竞品 12","active":true,"sort":13},{"tab":"Hook","code":"pain_reversal","name":"痛点反转","descr":"先讲怕被骗,再给安全感","usage":"假设 3 · 竞品 18","active":true,"sort":14},{"tab":"Hook","code":"edu_compare","name":"科普对比","descr":"黑平台 vs 正规平台教育","usage":"假设 2 · 竞品 9","active":true,"sort":15},{"tab":"Hook","code":"urgency","name":"限时紧迫","descr":"限时 / 手慢无 / 倒计时","usage":"假设 0 · 竞品 0","active":true,"sort":16},{"tab":"Hook","code":"luck","name":"招财好运","descr":"招财 / 好运 / 转运 / 旺","usage":"假设 0 · 竞品 0","active":true,"sort":17},{"tab":"Idea Source","code":"CI","name":"竞品情报","descr":"从 Competitor Intelligence 打勾流入","usage":"—","active":true,"sort":0},{"tab":"Idea Source","code":"MARKET","name":"市场研究","descr":"行业报告 / 市场观察","usage":"—","active":true,"sort":1},{"tab":"Idea Source","code":"INTERNAL","name":"内部数据","descr":"自家后台 / CRM 数据洞察","usage":"—","active":true,"sort":2},{"tab":"Idea Source","code":"FRONTLINE","name":"一线反馈","descr":"客服 / CRM 一线观察","usage":"—","active":true,"sort":3},{"tab":"Idea Source","code":"ORIGINAL","name":"原创直觉","descr":"团队自发想法,无外部触发","usage":"—","active":true,"sort":4},{"tab":"Metrics","code":"FDC","name":"首存人数","descr":"首次成功存款的玩家数","usage":"管道自动","active":true,"sort":0},{"tab":"Metrics","code":"REG","name":"注册数","descr":"完成注册的用户数","usage":"管道自动","active":true,"sort":1},{"tab":"Metrics","code":"CPA","name":"单次获客成本","descr":"广告花费 ÷ FDC","usage":"管道自动","active":true,"sort":2},{"tab":"Metrics","code":"AFDA","name":"平均首存金额","descr":"首存总金额 ÷ FDC","usage":"管道自动","active":true,"sort":3},{"tab":"Metrics","code":"FDAMT","name":"首存总金额","descr":"合成 = FDC × AFDA","usage":"系统计算","active":true,"sort":4},{"tab":"Metrics","code":"ROAS","name":"广告回报率","descr":"GGR ÷ 广告花费","usage":"管道自动","active":true,"sort":5},{"tab":"Metrics","code":"D7CR","name":"7 日复存率","descr":"首存后 7 天内再次存款比例(T+37)","usage":"管道自动","active":true,"sort":6},{"tab":"Metrics","code":"Chat→REG","name":"聊转注册率","descr":"进入对话后完成注册比例","usage":"Respond.io","active":true,"sort":7},{"tab":"Offer","code":"fd_bonus","name":"首存红利","descr":"首存赠送","usage":"—","active":true,"sort":0},{"tab":"Offer","code":"tier_bonus","name":"分层红利","descr":"按存款档位给","usage":"—","active":true,"sort":1},{"tab":"Offer","code":"insurance","name":"保险机制","descr":"亏损返还 / 保障","usage":"—","active":true,"sort":2},{"tab":"Offer","code":"free_reg","name":"免费注册","descr":"注册即送","usage":"—","active":true,"sort":3},{"tab":"Offer","code":"redeposit","name":"复存激活","descr":"复存赠送","usage":"—","active":true,"sort":4},{"tab":"Offer","code":"vip","name":"VIP 权益","descr":"等级特权","usage":"—","active":true,"sort":5},{"tab":"Offer","code":"rebate","name":"返水 / 返现","descr":"按流水返现(cashback)","usage":"—","active":true,"sort":6},{"tab":"Persona","code":"P1","name":"信任敏感型","descr":"被卡过款 / 怕被骗,先求证再首充","usage":"—","active":true,"sort":0},{"tab":"Persona","code":"P2","name":"理性长期型","descr":"看执照与合规,决策慢但留存稳","usage":"—","active":true,"sort":1},{"tab":"Persona","code":"P3","name":"娱乐冲动型","descr":"视觉驱动,快决策,爱新鲜感","usage":"—","active":true,"sort":2},{"tab":"Persona","code":"P4","name":"奖金猎人型","descr":"逐优惠而来,对 bonus 高度敏感,忠诚度低","usage":"—","active":true,"sort":3},{"tab":"Persona","code":"P5","name":"体育竞猜型","descr":"跟赛事节奏走,看赔率与盘口(体育品牌主力)","usage":"—","active":true,"sort":4},{"tab":"Persona","code":"P6","name":"高价值型","descr":"大额存款,重提款额度与专属服务","usage":"—","active":true,"sort":5},{"tab":"Persona","code":"P7","name":"回流唤醒型","descr":"玩过且流失,需要新理由回来(retargeting 主力)","usage":"—","active":true,"sort":6},{"tab":"Persona","code":"P0","name":"Broad 算法定向","descr":"素材测试默认,不预设人群","usage":"—","active":true,"sort":7},{"tab":"Test Type","code":"CREATIVE","name":"素材","descr":"测试素材方向与内容 — 改变的是 Hook、Visual Style、Format","usage":"—","active":true,"sort":0},{"tab":"Test Type","code":"AUDIENCE","name":"受众","descr":"测试人群定向 — 改变的是原型、年龄段、LAL、兴趣词","usage":"—","active":true,"sort":1},{"tab":"Test Type","code":"STRUCTURE","name":"结构","descr":"测试投放结构与技术 — campaign 架构、Pixel/CAPI 回传、出价方式","usage":"—","active":true,"sort":2},{"tab":"Test Type","code":"PROMOTION","name":"Promotion","descr":"测试优惠玩法 — 红利结构、门槛、面向人群","usage":"—","active":true,"sort":3},{"tab":"Trigger","code":"INTUITION","name":"直觉驱动","descr":"没有明确数据,凭经验或观察想试","usage":"—","active":true,"sort":0},{"tab":"Trigger","code":"EVENT","name":"节点驱动","descr":"因日历节点 / 赛事 / 节日而起","usage":"—","active":true,"sort":1},{"tab":"Trigger","code":"DATA","name":"数据驱动","descr":"自家数据出现信号(下滑、异常、机会点)","usage":"—","active":true,"sort":2},{"tab":"Trigger","code":"STRATEGY","name":"战略驱动","descr":"上层方向要求(品牌定位、季度目标)","usage":"—","active":true,"sort":3},{"tab":"Trigger","code":"ENV","name":"环境驱动","descr":"平台政策 / 市场环境变化(封号潮、新功能、竞争格局)","usage":"—","active":true,"sort":4},{"tab":"Visual Style","code":"real_person","name":"真人出镜","descr":"主播 / 代言 / 路人口播","usage":"竞品 96","active":true,"sort":0},{"tab":"Visual Style","code":"ugc","name":"用户自拍感","descr":"非官方质感","usage":"竞品 64","active":true,"sort":1},{"tab":"Visual Style","code":"game_screenshot","name":"游戏画面截图","descr":"老虎机 / 牌桌","usage":"竞品 110","active":true,"sort":2},{"tab":"Visual Style","code":"winner_showcase","name":"中奖/赢钱展示","descr":"中奖 / 高分展示","usage":"竞品 87","active":true,"sort":3},{"tab":"Visual Style","code":"animation","name":"动画/动效","descr":"动画 / 动效","usage":"竞品 33","active":true,"sort":4},{"tab":"Visual Style","code":"official_design","name":"官方平面设计","descr":"海报式规整","usage":"竞品 71","active":true,"sort":5},{"tab":"Visual Style","code":"ai_avatar","name":"数字人","descr":"AI 生成人物(KH 竞品重度使用)","usage":"竞品 67","active":true,"sort":6},{"tab":"Watchlist Source","code":"seed","name":"初始名单","descr":"系统上线时人工放进监测列表的竞品","usage":"—","active":true,"sort":0},{"tab":"Watchlist Source","code":"keyword_discovery","name":"关键词搜出","descr":"发现扫描用种子关键词在 FB Ad Library 搜出来的新竞品","usage":"—","active":true,"sort":1},{"tab":"Watchlist Source","code":"signal_trace","name":"漏斗特征追出","descr":"顺着已知竞品的漏斗特征(域名 / Telegram / WhatsApp / referral code)追出来的新竞品","usage":"—","active":true,"sort":2},{"tab":"Watchlist Source","code":"manual","name":"手动加入","descr":"后期由团队手动加进监测的竞品","usage":"—","active":true,"sort":3}]
+[
+{
+"tab": "Age Range",
+"code": "A1824",
+"name": "18-24",
+"descr": "年轻段",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Age Range",
+"code": "A2534",
+"name": "25-34",
+"descr": "主力段",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Age Range",
+"code": "A3544",
+"name": "35-44",
+"descr": "成熟段",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Age Range",
+"code": "A45P",
+"name": "45+",
+"descr": "高龄段",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Age Range",
+"code": "ALL",
+"name": "全年龄",
+"descr": "不限年龄(Broad 默认)",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Capacity",
+"code": "GREEN",
+"name": "🟢 预算充足",
+"descr": "持有预算 ≥ 所需的 150%,结论有容错空间",
+"usage": "阈值可调",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Capacity",
+"code": "YELLOW",
+"name": "🟡 刚好够",
+"descr": "持有预算为所需的 100%–150%,无容错,表现略低于基准即出不了结论",
+"usage": "阈值可调",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Capacity",
+"code": "RED",
+"name": "🔴 不够出结论",
+"descr": "持有预算 < 所需的 100%;坚持上线须写一句理由",
+"usage": "阈值可调",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Capacity",
+"code": "NOT_REACHABLE",
+"name": "物理上够不到成功线",
+"descr": "按市场单位成本换算,就算把全部预算花完、每一分都花得有效,最多也只能买到 N 个结果,而成功线需要更多 — 是钱的总量不够买到目标数字,跟素材好不好无关。解法只有三个:加预算 / 降目标 / 拉长周期",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Capacity",
+"code": "FORMULA",
+"name": "计算公式",
+"descr": "所需预算 = 目标值 × 周数 × 单位成本;持有预算 = 日预算 × 天数;单位成本取近 30 天管道数据,缺口按 兄弟品牌 / 手填参考值 估算",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "CI Fields",
+"code": "NEW",
+"name": "新广告",
+"descr": "最近 7 天才开始投放——是时间状态,不是画面内容",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "CI Fields",
+"code": "Active Days",
+"name": "活跃天数",
+"descr": "广告从开始到最近活跃跑了多少天;≥180 天标 🏆(竞品验证过的赢家)",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "CI Fields",
+"code": "Last Seen",
+"name": "最后见到",
+"descr": "我们最后一次在抓取中见到这条广告的日期",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "CI Fields",
+"code": "Running Period",
+"name": "投放周期",
+"descr": "Meta 记录的广告开始 → 结束(或最后活跃)日期",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "CI Fields",
+"code": "Destination",
+"name": "落地去向",
+"descr": "广告把流量导去的地方:Telegram / 域名 / referral code",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "CI Fields",
+"code": "CTA",
+"name": "行动按钮",
+"descr": "Facebook 行动按钮类型(MESSAGE_PAGE / SIGN_UP / PLAY_GAME…)",
+"usage": "—",
+"active": true,
+"sort": 5
+},
+{
+"tab": "CI Fields",
+"code": "Selling Point",
+"name": "卖点",
+"descr": "这条竞品广告主打的一句话价值主张",
+"usage": "—",
+"active": true,
+"sort": 6
+},
+{
+"tab": "CI Fields",
+"code": "Description",
+"name": "画面描述",
+"descr": "素材画面 / 视频内容的概括",
+"usage": "—",
+"active": true,
+"sort": 7
+},
+{
+"tab": "Evidence",
+"code": "HIST",
+"name": "历史数据",
+"descr": "自家过往测试或投放数据",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Evidence",
+"code": "COMP",
+"name": "竞品信号",
+"descr": "竞品在持续做某件事(从 CI 打勾流入时自动带入)",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Evidence",
+"code": "PLATFORM",
+"name": "平台与行业信号",
+"descr": "Meta 官方动作 / 行业报告 / 算法变化",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Evidence",
+"code": "FRONTLINE",
+"name": "一线反馈",
+"descr": "CRM / 客服一线的观察(Anna / JK)",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Evidence",
+"code": "GUT",
+"name": "纯直觉",
+"descr": "没有证据 — 合法,但必须标记;胜率统计单独一档",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Format",
+"code": "VIDEO",
+"name": "单一视频",
+"descr": "单支视频素材",
+"usage": "Apify 口径",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Format",
+"code": "IMAGE",
+"name": "单一静态图",
+"descr": "单张静态图",
+"usage": "Apify 口径",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Format",
+"code": "CAROUSEL",
+"name": "多图轮播",
+"descr": "用户手动左右滑",
+"usage": "Apify 口径",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Format",
+"code": "DCO",
+"name": "动态创意优化",
+"descr": "上传多素材/文案,Meta 算法自动组合;大量使用通常代表投放成熟、撒网型",
+"usage": "Apify 口径",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Game Type",
+"code": "slots",
+"name": "老虎机",
+"descr": "slot / 电子游戏机台",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Game Type",
+"code": "live_casino",
+"name": "真人娱乐",
+"descr": "真人荷官 / 真人桌台(百家乐、轮盘…)",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Game Type",
+"code": "sports",
+"name": "体育",
+"descr": "体育博彩 / 赛事投注",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Game Type",
+"code": "lottery",
+"name": "彩票 / 4D",
+"descr": "彩票、4D、数字类",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Game Type",
+"code": "fishing",
+"name": "捕鱼",
+"descr": "捕鱼类街机",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Game Type",
+"code": "cockfight",
+"name": "斗鸡",
+"descr": "斗鸡 / 斗兽类(部分东南亚市场)",
+"usage": "—",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Hook",
+"code": "withdrawal_proof",
+"name": "提款到账",
+"descr": "提款成功截图 / 实拍到账",
+"usage": "假设 12 · 竞品 84",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Hook",
+"code": "fast_payout",
+"name": "提款速度",
+"descr": "X 分钟到账",
+"usage": "假设 2 · 竞品 45",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Hook",
+"code": "trust_safety",
+"name": "信任安全",
+"descr": "不跑路 / 提款保证",
+"usage": "假设 6 · 竞品 73",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Hook",
+"code": "license",
+"name": "合法执照",
+"descr": "持牌合规",
+"usage": "假设 2 · 竞品 19",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Hook",
+"code": "big_win",
+"name": "大赢展示",
+"descr": "大额中奖 / 爆分画面",
+"usage": "假设 8 · 竞品 122",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Hook",
+"code": "testimonial",
+"name": "玩家见证",
+"descr": "玩家好评 / 评论",
+"usage": "假设 1 · 竞品 41",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Hook",
+"code": "celebrity",
+"name": "名人背书",
+"descr": "名人形象 / 代言",
+"usage": "假设 1 · 竞品 31",
+"active": true,
+"sort": 6
+},
+{
+"tab": "Hook",
+"code": "promo_direct",
+"name": "优惠直给",
+"descr": "直接展示 bonus 数字",
+"usage": "假设 5 · 竞品 156",
+"active": true,
+"sort": 7
+},
+{
+"tab": "Hook",
+"code": "promo_value",
+"name": "优惠力度",
+"descr": "红利高",
+"usage": "假设 3 · 竞品 88",
+"active": true,
+"sort": 8
+},
+{
+"tab": "Hook",
+"code": "game_variety",
+"name": "游戏种类",
+"descr": "游戏多 / 平台全",
+"usage": "假设 0 · 竞品 28",
+"active": true,
+"sort": 9
+},
+{
+"tab": "Hook",
+"code": "high_odds",
+"name": "高赔率",
+"descr": "赔率优势",
+"usage": "假设 0 · 竞品 15",
+"active": true,
+"sort": 10
+},
+{
+"tab": "Hook",
+"code": "prediction",
+"name": "必中贴士",
+"descr": "AI 预测 / 贴士 / 必中(多见于体育)",
+"usage": "假设 0 · 竞品 0",
+"active": true,
+"sort": 11
+},
+{
+"tab": "Hook",
+"code": "cs_convo",
+"name": "客服对话",
+"descr": "客服聊天记录截图",
+"usage": "假设 4 · 竞品 22",
+"active": true,
+"sort": 12
+},
+{
+"tab": "Hook",
+"code": "service",
+"name": "服务质量",
+"descr": "24h 客服",
+"usage": "假设 1 · 竞品 12",
+"active": true,
+"sort": 13
+},
+{
+"tab": "Hook",
+"code": "pain_reversal",
+"name": "痛点反转",
+"descr": "先讲怕被骗,再给安全感",
+"usage": "假设 3 · 竞品 18",
+"active": true,
+"sort": 14
+},
+{
+"tab": "Hook",
+"code": "edu_compare",
+"name": "科普对比",
+"descr": "黑平台 vs 正规平台教育",
+"usage": "假设 2 · 竞品 9",
+"active": true,
+"sort": 15
+},
+{
+"tab": "Hook",
+"code": "urgency",
+"name": "限时紧迫",
+"descr": "限时 / 手慢无 / 倒计时",
+"usage": "假设 0 · 竞品 0",
+"active": true,
+"sort": 16
+},
+{
+"tab": "Hook",
+"code": "luck",
+"name": "招财好运",
+"descr": "招财 / 好运 / 转运 / 旺",
+"usage": "假设 0 · 竞品 0",
+"active": true,
+"sort": 17
+},
+{
+"tab": "Idea Source",
+"code": "CI",
+"name": "竞品情报",
+"descr": "从 Competitor Intelligence 打勾流入",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Idea Source",
+"code": "MARKET",
+"name": "市场研究",
+"descr": "行业报告 / 市场观察",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Idea Source",
+"code": "INTERNAL",
+"name": "内部数据",
+"descr": "自家后台 / CRM 数据洞察",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Idea Source",
+"code": "FRONTLINE",
+"name": "一线反馈",
+"descr": "客服 / CRM 一线观察",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Idea Source",
+"code": "ORIGINAL",
+"name": "原创直觉",
+"descr": "团队自发想法,无外部触发",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Metrics",
+"code": "FDC",
+"name": "首存人数",
+"descr": "首次成功存款的玩家数",
+"usage": "管道自动",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Metrics",
+"code": "REG",
+"name": "注册数",
+"descr": "完成注册的用户数",
+"usage": "管道自动",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Metrics",
+"code": "CPA",
+"name": "单次获客成本",
+"descr": "广告花费 ÷ FDC",
+"usage": "管道自动",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Metrics",
+"code": "AFDA",
+"name": "平均首存金额",
+"descr": "首存总金额 ÷ FDC",
+"usage": "管道自动",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Metrics",
+"code": "FDAMT",
+"name": "首存总金额",
+"descr": "合成 = FDC × AFDA",
+"usage": "系统计算",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Metrics",
+"code": "ROAS",
+"name": "广告回报率",
+"descr": "GGR ÷ 广告花费",
+"usage": "管道自动",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Metrics",
+"code": "D7CR",
+"name": "7 日复存率",
+"descr": "首存后 7 天内再次存款比例(T+37)",
+"usage": "管道自动",
+"active": true,
+"sort": 6
+},
+{
+"tab": "Metrics",
+"code": "Chat→REG",
+"name": "聊转注册率",
+"descr": "进入对话后完成注册比例",
+"usage": "Respond.io",
+"active": true,
+"sort": 7
+},
+{
+"tab": "Offer",
+"code": "fd_bonus",
+"name": "首存红利",
+"descr": "首存赠送",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Offer",
+"code": "tier_bonus",
+"name": "分层红利",
+"descr": "按存款档位给",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Offer",
+"code": "insurance",
+"name": "保险机制",
+"descr": "亏损返还 / 保障",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Offer",
+"code": "free_reg",
+"name": "免费注册",
+"descr": "注册即送",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Offer",
+"code": "redeposit",
+"name": "复存激活",
+"descr": "复存赠送",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Offer",
+"code": "vip",
+"name": "VIP 权益",
+"descr": "等级特权",
+"usage": "—",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Offer",
+"code": "rebate",
+"name": "返水 / 返现",
+"descr": "按流水返现(cashback)",
+"usage": "—",
+"active": true,
+"sort": 6
+},
+{
+"tab": "Persona",
+"code": "P1",
+"name": "信任敏感型",
+"descr": "被卡过款 / 怕被骗,先求证再首充",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Persona",
+"code": "P2",
+"name": "理性长期型",
+"descr": "看执照与合规,决策慢但留存稳",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Persona",
+"code": "P3",
+"name": "娱乐冲动型",
+"descr": "视觉驱动,快决策,爱新鲜感",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Persona",
+"code": "P4",
+"name": "奖金猎人型",
+"descr": "逐优惠而来,对 bonus 高度敏感,忠诚度低",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Persona",
+"code": "P5",
+"name": "体育竞猜型",
+"descr": "跟赛事节奏走,看赔率与盘口(体育品牌主力)",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Persona",
+"code": "P6",
+"name": "高价值型",
+"descr": "大额存款,重提款额度与专属服务",
+"usage": "—",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Persona",
+"code": "P7",
+"name": "回流唤醒型",
+"descr": "玩过且流失,需要新理由回来(retargeting 主力)",
+"usage": "—",
+"active": true,
+"sort": 6
+},
+{
+"tab": "Persona",
+"code": "P0",
+"name": "Broad 算法定向",
+"descr": "素材测试默认,不预设人群",
+"usage": "—",
+"active": true,
+"sort": 7
+},
+{
+"tab": "Test Type",
+"code": "CREATIVE",
+"name": "素材",
+"descr": "测试素材方向与内容 — 改变的是 Hook、Visual Style、Format",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Test Type",
+"code": "AUDIENCE",
+"name": "受众",
+"descr": "测试人群定向 — 改变的是原型、年龄段、LAL、兴趣词",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Test Type",
+"code": "STRUCTURE",
+"name": "结构",
+"descr": "测试投放结构与技术 — campaign 架构、Pixel/CAPI 回传、出价方式",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Test Type",
+"code": "PROMOTION",
+"name": "Promotion",
+"descr": "测试优惠玩法 — 红利结构、门槛、面向人群",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Trigger",
+"code": "INTUITION",
+"name": "直觉驱动",
+"descr": "没有明确数据,凭经验或观察想试",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Trigger",
+"code": "EVENT",
+"name": "节点驱动",
+"descr": "因日历节点 / 赛事 / 节日而起",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Trigger",
+"code": "DATA",
+"name": "数据驱动",
+"descr": "自家数据出现信号(下滑、异常、机会点)",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Trigger",
+"code": "STRATEGY",
+"name": "战略驱动",
+"descr": "上层方向要求(品牌定位、季度目标)",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Trigger",
+"code": "ENV",
+"name": "环境驱动",
+"descr": "平台政策 / 市场环境变化(封号潮、新功能、竞争格局)",
+"usage": "—",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Visual Style",
+"code": "real_person",
+"name": "真人出镜",
+"descr": "主播 / 代言 / 路人口播",
+"usage": "竞品 96",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Visual Style",
+"code": "ugc",
+"name": "用户自拍感",
+"descr": "非官方质感",
+"usage": "竞品 64",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Visual Style",
+"code": "game_screenshot",
+"name": "游戏画面截图",
+"descr": "老虎机 / 牌桌",
+"usage": "竞品 110",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Visual Style",
+"code": "winner_showcase",
+"name": "中奖/赢钱展示",
+"descr": "中奖 / 高分展示",
+"usage": "竞品 87",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Visual Style",
+"code": "animation",
+"name": "动画/动效",
+"descr": "动画 / 动效",
+"usage": "竞品 33",
+"active": true,
+"sort": 4
+},
+{
+"tab": "Visual Style",
+"code": "official_design",
+"name": "官方平面设计",
+"descr": "海报式规整",
+"usage": "竞品 71",
+"active": true,
+"sort": 5
+},
+{
+"tab": "Visual Style",
+"code": "ai_avatar",
+"name": "数字人",
+"descr": "AI 生成人物(KH 竞品重度使用)",
+"usage": "竞品 67",
+"active": true,
+"sort": 6
+},
+{
+"tab": "Watchlist Source",
+"code": "seed",
+"name": "初始名单",
+"descr": "系统上线时人工放进监测列表的竞品",
+"usage": "—",
+"active": true,
+"sort": 0
+},
+{
+"tab": "Watchlist Source",
+"code": "keyword_discovery",
+"name": "关键词搜出",
+"descr": "发现扫描用种子关键词在 FB Ad Library 搜出来的新竞品",
+"usage": "—",
+"active": true,
+"sort": 1
+},
+{
+"tab": "Watchlist Source",
+"code": "signal_trace",
+"name": "漏斗特征追出",
+"descr": "顺着已知竞品的漏斗特征(域名 / Telegram / WhatsApp / referral code)追出来的新竞品",
+"usage": "—",
+"active": true,
+"sort": 2
+},
+{
+"tab": "Watchlist Source",
+"code": "manual",
+"name": "手动加入",
+"descr": "后期由团队手动加进监测的竞品",
+"usage": "—",
+"active": true,
+"sort": 3
+},
+{
+"tab": "Customer Stage",
+"code": "Acquisition",
+"name": "拉新",
+"descr": "实际 target:完全新客 / 还没接触过我们的人 · 广告目的:拉新,让他第一次进来询问 / 注册 · 例子:冷流量广告、兴趣受众、lookalike、从没注册过的新用户",
+"usage": "—",
+"active": true,
+"sort": 10
+},
+{
+"tab": "Customer Stage",
+"code": "Activation",
+"name": "激活",
+"descr": "实际 target:已经进来过,但还没完成第一个关键动作的人 · 广告目的:推他完成第一次有效转化 · 例子:已询问未注册、已注册未首存、已留资料但还没开始使用",
+"usage": "—",
+"active": true,
+"sort": 11
+},
+{
+"tab": "Customer Stage",
+"code": "Retention",
+"name": "留存",
+"descr": "实际 target:已经是活跃用户的人 · 广告目的:让他继续保持活跃,不要掉走 · 例子:最近有活动、最近有消费、最近还在互动的顾客",
+"usage": "—",
+"active": true,
+"sort": 12
+},
+{
+"tab": "Customer Stage",
+"code": "Repeat Conversion",
+"name": "复购转化",
+"descr": "实际 target:已经转化过,但目标是让他再次转化的人 · 广告目的:推动第二次 / 多次消费或行为 · 例子:已首存后引导复充、已购买后推再次购买、已下单后推下一次下单",
+"usage": "—",
+"active": true,
+"sort": 13
+},
+{
+"tab": "Customer Stage",
+"code": "Reactivation",
+"name": "唤回",
+"descr": "实际 target:曾经活跃,但已经沉默 / 流失的人 · 广告目的:重新激活,让他回来 · 例子:7/14/30 天没回来、以前有消费但最近没动作、旧顾客回流",
+"usage": "—",
+"active": true,
+"sort": 14
+}
+]

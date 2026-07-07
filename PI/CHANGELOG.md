@@ -14,7 +14,28 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v32] — 2026-07-07 · Hypothesis 页筛选优化(默认全月 + Idea 关联/筛选)+ Ads 默认最新(当前基线)
+## [v33] — 2026-07-07 · 顾客阶段(漏斗环节)+ 素材预计排期(当前基线)
+
+两个团队讨论后确认的新功能。**纯前端 + 附加式 DB 列(nullable),不动现有数据。**
+
+### 1. 顾客阶段 Customer Stage(挂在 hypothesis 层)
+- 新 Dictionary 类别 **`Customer Stage`**,5 档漏斗(固定顺序):`Acquisition 拉新 / Activation 激活 / Retention 留存 / Repeat Conversion 复购转化 / Reactivation 唤回`。每条词条的「定义」写清了「实际 target 的顾客 · 广告目的 · 例子」(照团队截图的三栏,合进 descr 一格)。
+- New Hypothesis 表单「基础」卡新增 **顾客阶段** 下拉(`hf-stage`,从 Dictionary 动态读、`stageOpts()`)。
+- Hypothesis 列表:每条假设首列加紫色 pill `◑ <中文阶段>`(`stageZh()`);筛选栏加 **Stage 筛选**(`f-stage`,按漏斗顺序不按字母、`fillStageFilter()`);编辑时回填。
+- 为什么挂 hypothesis 不挂 idea:一个 idea 会分叉出方向不同的多条 hypo(同一想法可拉新也可留存),阶段是「这次测试解决漏斗哪一环」的战略声明,属假设层。
+- DB:`hypotheses.customer_stage text`(nullable);`dict_entries` 加 5 行 Customer Stage。
+
+### 2. 素材预计排期(挂在 creative 层)
+- 每条素材可填 **预计上线日**(M/D)+ **测试 period(天)**,系统自动算 **预计结束日** 与倒数(`schedCell()`)。
+- Creatives 列表新增「预计排期」列:`7/12 → 7/19 · 7天` + 倒数徽章,颜色语义 <span>绿=测试中正常 / 黄=快开测·测试期到 / 红=该判定了</span>;未填显示「未排期」。
+- 编辑:操作列加「排期」按钮,`setCreativeSchedule()` 两个 prompt(与现有 editAdsCode 同风格)写库。
+- DB:`creatives.plan_launch text` + `creatives.plan_test_days int`(均 nullable)。
+
+- 同步:`demo.html`(6 条假设各带阶段、4 条素材带排期演示 upcoming/testing/overdue/未排期);`dict_entries.json`(+5 → 104);`gen_demo.py` 生成器。
+- 验证:index.html + demo 双双 `node --check` 通过;倒数逻辑单测 PASS;headless chromium 实测——假设页 4 种阶段 pill、素材页 4 种排期状态全部正确渲染,无 pageerror。
+- ⚠️ **需重新上传 `index.html` 到 cPanel 才在线上生效**(DB 列已提前建好,上传后即可用)。
+
+## [v32] — 2026-07-07 · Hypothesis 页筛选优化(默认全月 + Idea 关联/筛选)+ Ads 默认最新
 
 团队反馈的 4 处 UI 优化,纯前端,不动后端/数据:
 
