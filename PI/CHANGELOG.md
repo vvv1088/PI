@@ -14,6 +14,13 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v50] — 2026-07-07 · 两道保险:上传图压缩 + Budget 写入冲突检测
+
+- **上传图统一压缩**(`shrinkImage`):最长边 800px + JPEG 0.82,替换原来把原图 base64(可达数 MB)直接灌进 versions JSONB 的做法;<300KB 小图不动。ecImgPick/fvImgPick 两个入口都走压缩。图片迁 Supabase Storage 为后续正式方案,此为止血。
+- **Budget 写入冲突检测**(`bgStale`):保存/决策前比对 DB 的 updated_at,发现别人刚改过 → 拦下、自动刷新、提示基于新值再改;写入同时更新 updated_at。Budget 改 RPC 为后续正式方案。
+- 决定记录:Budget RPC / 图片迁 Storage / 全站并发锁 —— 内部 9 人工具风险可控,大手术单独排期,先上便宜保险(V 授权自行决定)。
+- 验证:node --check + headless 17 页零报错。
+
 ## [v49] — 2026-07-07 · 大修:两轮 QA 后的三批修复(安全/数据正确性/功能)
 
 双轮 QA(6 个审查代理逐页走查 + headless 全页扫描)共查出 60+ 问题,本版修掉 P0/P1 主体:

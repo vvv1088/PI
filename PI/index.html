@@ -1484,7 +1484,19 @@ async function saveCreativeRun(i){
   toast('运行记录已保存');
   openCreative(i);
 }
-function ecImgPick(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{window._ecImgSrc=e.target.result;const p=document.getElementById('ec-imgprev');if(p)p.innerHTML='<img src="'+e.target.result+'" style="width:64px;height:64px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';};r.readAsDataURL(f);}
+// 上传图统一压缩:最长边 800px + JPEG 0.82,避免原图 base64(MB 级)灌进 versions JSONB
+function shrinkImage(file,cb){
+  const r=new FileReader();
+  r.onload=e=>{const img=new Image();img.onload=()=>{
+    const MAX=800,sc=Math.min(1,MAX/Math.max(img.width,img.height));
+    if(sc>=1&&file.size<300*1024)return cb(e.target.result);   // 小图直接用
+    const cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    cb(cv.toDataURL('image/jpeg',0.82));
+  };img.src=e.target.result;};
+  r.readAsDataURL(file);
+}
+function ecImgPick(input){const f=input.files&&input.files[0];if(!f)return;shrinkImage(f,src=>{window._ecImgSrc=src;const p=document.getElementById('ec-imgprev');if(p)p.innerHTML='<img src="'+src+'" style="width:64px;height:64px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';});}
 function openCreative(i){
   const c=creatives[i],vs=c.versions||[],cur=vs[vs.length-1]||{copy:{}},cc=cur.copy||{},noVer=vs.length===0;
   const rej=vs.filter(v=>v.status==='rejected'),Mc=rej.filter(v=>v.cause==='copy').length,Mi=rej.filter(v=>v.cause==='image').length;
@@ -1707,7 +1719,7 @@ function firstVersion(i){
   document.getElementById('drawer').classList.add('open');
   document.getElementById('ov').classList.add('show');
 }
-function fvImgPick(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{window._fvImgSrc=e.target.result;document.getElementById('fv-imgprev').innerHTML=thumbBox('',e.target.result,'',64);};r.readAsDataURL(f);}
+function fvImgPick(input){const f=input.files&&input.files[0];if(!f)return;shrinkImage(f,src=>{window._fvImgSrc=src;document.getElementById('fv-imgprev').innerHTML=thumbBox('',src,'',64);});}
 // 内容必填(保存时):图 + 4 个文案;Ads Code 可留空
 function creativeContentMissing(prefix,hasImg){
   const m=[];if(!hasImg)m.push('图 / 视频');
@@ -2479,6 +2491,14 @@ function bgEditCell(mo,br,side){
   document.getElementById('d-body').innerHTML=h;
   document.getElementById('drawer').classList.add('open');document.getElementById('ov').classList.add('show');
 }
+// 并发保护:保存前比对 DB 的 updated_at,别人刚改过就拦下并刷新
+async function bgStale(mo,br,cached){
+  try{const {data}=await db.from('budgets').select('updated_at').eq('month',mo).eq('brand',br);
+    const dbAt=data&&data[0]&&data[0].updated_at;
+    if(dbAt&&cached&&cached.updated_at&&dbAt!==cached.updated_at){await loadBudgets();renderBudget();toast('这格刚被别人更新过,已刷新为最新值,请基于新值再改');return true;}
+  }catch(e){}
+  return false;
+}
 async function bgSaveCell(mo,br,side){
   const field=side==='mkt'?'requested':'allocated';
   if(!bgCanEdit(br,side)){toast('你没有被分工到这个格子');return;}
@@ -2488,7 +2508,8 @@ async function bgSaveCell(mo,br,side){
   const reason=(document.getElementById('bg-reason').value||'').trim();
   if(!reason){toast('理由必填');return;}
   let e=bgEntry(mo,br)||{};
-  const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();
+  if(bgEntry(mo,br)&&await bgStale(mo,br,bgEntry(mo,br))){closeDrawer();return;}
+  const patch={month:mo,brand:br};patch[field]=v;patch[field+'_by']=bgMe();patch[field+'_reason']=reason;patch[field+'_at']=new Date().toISOString();patch.updated_at=new Date().toISOString();
   const prev=bgStatus(e),after=bgStatus(Object.assign({},e,patch));
   try{
     if(bgEntry(mo,br)){const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
@@ -2568,7 +2589,8 @@ async function bgSaveDecision(mo,br){
   const rr=(document.getElementById('bg-finreason').value||'').trim();
   if(!rr){toast('决策必须写原因');return;}
   const e=bgEntry(mo,br)||{};
-  const patch={final_amount:v,final_by:bgMe(),final_reason:rr,decided_at:new Date().toISOString()};
+  if(bgEntry(mo,br)&&await bgStale(mo,br,bgEntry(mo,br))){closeDrawer();return;}
+  const patch={final_amount:v,final_by:bgMe(),final_reason:rr,decided_at:new Date().toISOString(),updated_at:new Date().toISOString()};
   try{const {error}=await db.from('budgets').update(patch).eq('month',mo).eq('brand',br);if(error)throw error;Object.assign(e,patch);}
   catch(err){toast('保存失败: '+rpcErr(err));return;}
   logAction('budget','决策',br+' '+mo+' → '+bgMoney(v));
