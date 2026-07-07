@@ -14,6 +14,12 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v48] — 2026-07-07 · Ads Library:Game Type 下拉选项改英文
+
+- 「All Game Types」下拉的选项从中文名(老虎机/真人/体育…)改为英文 code(slots / live_casino / sports / lottery / fishing / cockfight / unknown),与 Hooks / Styles 下拉风格一致。
+- 表格里的 Game Type **pill 仍显示中文**(只改筛选下拉);筛选逻辑不变(值本来就是 code)。
+- 验证:`node --check` 通过;headless 实测下拉选项全英文。
+
 ## [v47] — 2026-07-07 · 文案:Creatives「预计排期」→ Schedule + 去掉「(取自基础卡)」灰字
 
 - Creatives 表头「预计排期」→ **Schedule**(与其它英文表头统一)。

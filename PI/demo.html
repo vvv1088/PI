@@ -2097,9 +2097,10 @@ function buildFilters(){
   setOpts('fHook','All Hooks',[...new Set(base.flatMap(hooksOf))].sort());
   setOpts('fStyle','All Styles',[...new Set(base.map(x=>x.visual_style).filter(Boolean))].sort());
   const gtSel=document.getElementById('fGameType').value;
-  const gtOpts=(DICT['Game Type']||[]).filter(g=>g.on!==false).map(g=>[g.c,g.n]);
-  if(!gtOpts.some(o=>o[0]==='unknown'))gtOpts.push(['unknown','未知']);   // 扫描兜底值,也可筛
-  document.getElementById('fGameType').innerHTML='<option value="">All Game Types</option>'+gtOpts.map(o=>'<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>').join('');
+  // 选项显示英文 code(slots/live_casino/…),与 Hooks/Styles 下拉一致;表格里的 pill 仍显示中文
+  const gtOpts=(DICT['Game Type']||[]).filter(g=>g.on!==false).map(g=>g.c);
+  if(!gtOpts.includes('unknown'))gtOpts.push('unknown');   // 扫描兜底值,也可筛
+  document.getElementById('fGameType').innerHTML='<option value="">All Game Types</option>'+gtOpts.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
   document.getElementById('fGameType').value=gtSel;
 }
 function media(a){
