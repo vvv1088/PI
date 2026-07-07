@@ -1266,7 +1266,7 @@ async function tmSaveLock(){
   if(cr.some(c=>!c.format||!c.hook)){toast('每条素材的 Format 和 Hook 必填后才能锁定');return;}
   if(checkHypoConsistency(hyp).state!=='clean'){toast('内容不一致,不能锁定 —— 见上方红色提醒');return;}
   hyp.lockedTags=Object.assign({},hyp.lockedTags||{},{_locked:true});
-  await tmSaveHyp(hyp,{locked_tags:hyp.lockedTags});
+  await tmSaveHyp(hyp,{locked_tags:hyp.lockedTags,status:'已锁定'});hyp.st='已锁定';
   logAction('hypo','edit',hyp.id+' 锁定素材标签');
   toast('已锁定 — 后续只有 Admin 可改');renderTagMatrix();renderHypo();
 }
@@ -1274,7 +1274,7 @@ async function tmUnlock(){
   if(!(typeof curRole==='function'&&curRole()&&curRole().admin)){toast('仅 Admin 可解锁');return;}
   const hyp=hypos.find(h=>h.id===window._tmHyp);if(!hyp)return;
   hyp.lockedTags=Object.assign({},hyp.lockedTags||{});delete hyp.lockedTags._locked;
-  await tmSaveHyp(hyp,{locked_tags:hyp.lockedTags});
+  await tmSaveHyp(hyp,{locked_tags:hyp.lockedTags,status:'待锁定'});hyp.st='待锁定';
   logAction('hypo','edit',hyp.id+' 解锁素材标签');
   toast('已解锁(Admin)');renderTagMatrix();renderHypo();
 }
@@ -1357,6 +1357,7 @@ async function saveHypothesis(status){
       if(error)throw error;code=data.code;
     }
   }catch(e){alert('Save failed: '+rpcErr(e));return;}
+  if(pi&&!editCode){try{await db.from('ideas').update({status:'已立项'}).eq('code',pi.code);const ii=ideas.find(x=>x.id===pi.code);if(ii)ii.st='已立项';}catch(e){}}
   logAction('hypo',editCode?'edit':'add',code+(pi?(' ← '+pi.code):''));
   window._promoteIdea=null;window._editHypoCode=null;
   try{await loadHypos();}catch(e){}
@@ -1919,6 +1920,8 @@ async function saveCreativeCopy(i,mode){
   const latest=vs[vs.length-1]||{};const rs=stMap[latest.status]||['待上线','wait'];
   try{const {error}=await db.from('creatives').update({versions:vs,ads_code:adsv,status:rs[0],stc:rs[1],updated_at:new Date().toISOString()}).eq('gen_code',creatives[i].gen);if(error)throw error;}catch(e){alert('保存失败: '+rpcErr(e));return;}
   creatives[i].ads=adsv;creatives[i].st=rs[0];creatives[i].stc=rs[1];
+  if(latest.status==='live'){const hh=hypos.find(x=>(creatives[i].hyp||'').startsWith(x.id));
+    if(hh&&(hh.st==='已锁定'||hh.st==='待锁定')){try{await db.from('hypotheses').update({status:'测试中'}).eq('code',hh.id);hh.st='测试中';renderHypo();}catch(e){}}}
   logAction('creative','edit',(creatives[i].gen||'')+(mode==='save'?' 换版':' 草稿'));
   renderCreatives();openCreative(i);toast(mode==='save'?'已保存':'草稿已存');
 }
