@@ -131,3 +131,16 @@ AUTH_DOMAIN                    → 登录邮箱后缀(默认 @nexmax.local)
 
 ## 6. 演示版（可选）
 - 跑 `python3 PI/demo_src/gen_demo.py` 生成 `demo.html`（自带数据、不连后端），放 rawgithack 或本地，给演示用。改 `index.html` 后重跑保持同步。
+
+
+---
+
+## 2026-07-08 更新:新环境需多建的东西(v32–v61)
+
+1. **表/列**:`hypotheses` 加 `customer_stage/plan_launch/plan_test_days`;建 `budgets`(unique(month,brand))、`budget_assignments`、`monthly_plans`((month,brand) PK)、`app_config`(写入 mis_notify_secret 随机值)。
+2. **RPC**:`budget_save_cell / budget_decide / budget_reopen / mis_reminders`(从现库 `pg_get_functiondef` 导出最准);RLS 照 07_security 的表。
+3. **词条**:Dictionary 加 `Customer Stage` 5 档(dict_entries.json 已含)。
+4. **Storage**:bucket `creatives` 加 authenticated 上传策略(路径 `pi/%`)。
+5. **Slack app**:建「MIS Bot」(Bot Token Scopes: `chat:write`;App Home 设 Display Name 否则加不进频道),xoxb token 存 n8n 凭据;bot 加进目标频道。
+6. **n8n workflow×2**:`MIS Slack Notify`(webhook mis-notify → Format Code → Slack 节点)、`MIS Daily Reminders`(每天 09:00 → HTTP rpc/mis_reminders → 拆条 → 转发 mis-notify);频道 ID/人员映射在 Format 节点改。
+7. **前端常量**:`MIS_NOTIFY_URL` 指向新 n8n 的 webhook。

@@ -184,3 +184,32 @@ CI 负责"把情报收进来"，PI 负责"把情报变成下月 campaign"，二�
 - **生产**：`PI/index.html` 上传 cPanel；连真实 Supabase。上线前已清空测试 ideas/hypotheses/creatives/audit_log，仅留 AI scan 竞品数据 + 字典 + 用户。
 - **演示**：`PI/demo.html` 走 rawgithack（`https://raw.githack.com/vvv1088/PI/<branch>/PI/demo.html`），自带数据、不连后端。
 - **版本纪律**：当前版本永远 = `PI/index.html`；改前快照旧版到 `PI/versions/index_vN.html`，改完写 `PI/CHANGELOG.md`（见 docs/05_CHANGELOG.md）。
+
+
+---
+
+## 2026-07-08 更新(v32–v61)
+
+### 新页面(全部仍在单文件 index.html 内)
+- **Budget Allocation**(PI 组):品牌×月预算表。分工到人(`budget_assignments`:每品牌 mkt/usc/决策人),Marketing 填「申请」→ USC 填「核批」(金额+理由必填)→ 核批<申请自动「待决策」→ 决策人拍板(锁定,可「重开」);USC 先填为「待申请」。已投放按素材周花费自动汇总。
+- **Budget Permission**(Administration):Admin 配每品牌三方负责人。
+- **Monthly Overview**(PI 组):当月总览(预算+排期假设+素材就绪度+体检条),各品牌 Marketing 负责人线下审批后「确认发送」→ 落 `monthly_plans` 留痕 + Slack 通知。
+- **判定闭环**:假设抽屉「判定」表单(结论/置信度/学到什么/下月约束)→ 状态「已沉淀」→ Results 汇总;判定成立可一键转「主力运行」。
+
+### 数据层新增(主库)
+- `hypotheses` 加列:`customer_stage`(顾客阶段,Dictionary 新类 Customer Stage 5 档)、`plan_launch`(预计上线日 ISO)、`plan_test_days`(测试周期,同时驱动 Capacity Check)。
+- 新表:`budgets`(unique(month,brand),申请/核批/最终三段各带 by/reason/at)、`budget_assignments`(brand PK)、`monthly_plans`((month,brand) PK,确认留痕+summary 快照)、`app_config`(通知密钥)。
+- **budgets 写入走 SECURITY DEFINER RPC**(`budget_save_cell / budget_decide / budget_reopen`,服务端强制分工校验),表直写收紧为 admin;素材图片改传 Storage `creatives/pi/` 存公链。
+
+### 通知链路(新,跑在 adam mkt n8n,与 ohmeidaa 的 CI 六条互不干扰)
+```
+dashboard 事件(确认发送/预算待决/已定)
+   → n8n「MIS Slack Notify」(webhook mis-notify:格式化+@人+按品牌分频道)
+   → Slack 原生节点(MIS Bot 应用直发)
+n8n「MIS Daily Reminders」每天 09:00 → Supabase RPC mis_reminders(密钥校验)
+   → 逐条转发 mis-notify(到期未判定/该上线/20-25-30 月度节奏/效果告警/周一汇总)
+```
+频道:USC → #ops-marketing-usc-mis;INZ9 → #ops-marketing-inz9-mis。
+
+### 生命周期自动接线(此前是断头路)
+锁定标签矩阵→「已锁定」;素材版本上线→「测试中」;判定→「已沉淀」;从想法立假设→想法「已立项」。

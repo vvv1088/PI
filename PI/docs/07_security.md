@@ -96,3 +96,26 @@ anon key 只是"我是匿名访客"的身份令牌，本身不含权限——所
 - 登录门为前端门：极端情况下绕过前端直接打 anon REST 仍受 RLS 限制——确保所有敏感表的 RLS 策略到位（写入只允许经 RPC）。
 - `ai_add_idea` 对 anon 开放：能力已收窄（只造待评估 AI 想法 + 去重），风险面小；如担心被滥用刷想法，可加频率限制或要求一个共享 secret 头。
 - service_role key 若曾用于任何前端/公开场景，应轮换并改走 RPC。
+
+
+---
+
+## 2026-07-08 更新(v32–v61)
+
+### 新增写入安全
+| 对象 | 策略 |
+|---|---|
+| `budgets` | 直写(insert/update)**仅 admin**;业务写入一律走 SECURITY DEFINER RPC:`budget_save_cell`(校验分工+金额+理由+锁)/`budget_decide`(仅决策人)/`budget_reopen`(仅决策人) |
+| `budget_assignments` | 读 authenticated;写 is_admin() |
+| `monthly_plans` | 读 authenticated;写 can_write('budget','edit') |
+| `mis_reminders(p_secret)` | anon 可执行但需密钥(存 `app_config`,RLS 无策略=仅 definer 可读);泄露面=计划摘要,换密钥即失效 |
+| Storage `creatives` | 新增 insert policy:authenticated 仅 `pi/` 前缀 |
+
+### XSS 大修(v49)
+`esc()` 补单引号转义(关闭竞品抓取数据经内联 onclick 注入);想法/假设陈述/证据/判定/素材文案/字典/周报 markdown 全部补转义。**新代码写 innerHTML 时一律 esc(),内联事件参数勿拼用户输入。**
+
+### 密钥清单增补
+| key | 位置 | 敏感度 |
+|---|---|---|
+| MIS Bot xoxb token | n8n 凭据「MIS Bot」 | 🔴 高(可向 workspace 发消息) |
+| mis_notify_secret | 主库 app_config + n8n HTTP 节点 | 中(只解锁提醒摘要) |

@@ -154,3 +154,27 @@ python3 PI/demo_src/gen_demo.py
 - CI 任一 workflow 出错 → Error Handler `mhSOQyDTirrSWjZU` 报警到 Slack（它 active=false 正常，被其它 workflow 的 `errorWorkflow` 引用）。
 - PI AI Ideas 工作流目前无独立报警；激活后留意 n8n 执行记录（失败的话最常见是 Anthropic 凭据没选 / 模型 id）。
 - 数据健康：Ads Library KPI（Total Ads / New This Week）+ Storage `creatives` 桶文件数（= 视觉补全进度）。
+
+
+---
+
+## 2026-07-08 更新:Slack 通知运维(v61 上线)
+
+### 改消息文案 / 频道
+- 全部在 n8n(adam mkt)「**MIS Slack Notify**」的 **Format Slack Message** Code 节点里:消息模板、Slack ID 映射(IDS)、品牌→频道路由(channel 常量)。改完 **Save + Publish**。
+- 每日提醒的文案在主库 RPC `mis_reminders` 里(Supabase SQL 编辑器改函数体)。
+
+### 测试怎么发(不打扰正式频道)
+给 webhook payload 加 `"channel_override":"C0B99UBP34H"`(#test-test)即可;n8n 页面 Execute 或对 `https://adammkt.app.n8n.cloud/webhook/mis-notify` POST。
+
+### Bot token 失效 / 换 bot
+api.slack.com/apps → **MIS Bot** → OAuth & Permissions → 复制 **Bot User OAuth Token(xoxb-)** → n8n Credentials「MIS Bot」替换保存。注意 scope 要在 **Bot Token Scopes**(不是 User)且含 `chat:write`;bot 加新频道用频道 → Integrations → Add apps。
+
+### 提醒时间 / 月度节奏
+「MIS Daily Reminders」触发器 = 每天 09:00(要改在 Schedule 节点);月度 20/25/30 号三段写在 `mis_reminders` RPC 的 `d=20/25/25` 分支。
+
+### n8n 配额
+2026-07-08 已升级付费档;若再见「Execution limit reached」→ app.n8n.cloud → Usage and plan 检查/升档(通知、每日提醒、AI 想法全在此账号)。
+
+### 新表清数据注意
+`budgets / budget_assignments / monthly_plans` 均带留痕语义,勿随意 delete;budgets 直写仅 admin(业务改数走界面/RPC)。

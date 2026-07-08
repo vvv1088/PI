@@ -269,3 +269,38 @@
 | **登录后看不到 Admin 组/某按钮** | `applyChrome`(Admin 组按 `is_admin`) + `applyPerms`(按 `role_permissions`) |
 | **AI 想法不进 Idea Pool** | PI AI Ideas 工作流是否激活 + Anthropic 凭据是否选；`ai_add_idea` 去重窗口；`by==='AI'` 显示逻辑 |
 | Game Type 列显示 `-` | `v_ads_gallery` 含 `game_type` 列 + 该广告 `game_type` 是否已被 Gemini 填（旧数据 null） |
+
+
+---
+
+## 2026-07-08 更新:新函数 / 新对象定位(v32–v61)
+
+### 前端(index.html)关键新增
+| 区域 | 函数/常量 | 作用 |
+|---|---|---|
+| 顾客阶段 | `stageOpts / stageZh / stageColor / fillStageFilter` | 下拉/中文名/分色/筛选 |
+| 排期 | `parseMD / fmtMD / schedCell / hypSchedOf / isoWeekOf` | 日期解析、素材 Schedule 列(继承假设)、ISO 周 |
+| 运行&花费 | `saveCreativeRun(落库)/ endCreativeRun / addWeekSpend / saveWeekSpend` | runs 持久化 + week/spend 字段 |
+| 图片 | `shrinkImage / uploadImage` | canvas 压缩 → Storage `creatives/pi/` 公链,失败回退 base64 |
+| 判定 | `openVerdictForm / saveVerdict` | verdict JSONB + 状态已沉淀 + 成立转主力 |
+| Budget | `bgCanEdit / bgStatus / bgFinalAmt / bgEditCell / bgSaveCell / bgDecide / bgSaveDecision / bgReopen / bgHistory / bgSpent / bgStale / renderBudget` | 全流程;写库经 db.rpc(budget_*) |
+| 分工 | `bgAssign / renderBgAssign / saveBgAssign / BG_DEFAULT_ASSIGN` | budget_assignments |
+| 月度总览 | `renderMonthlyPlan / confirmMonthlyPlan / mpMonthOfLaunch / loadMonthlyPlans` | 总览+按品牌确认 |
+| 通知 | `MIS_NOTIFY_URL / misNotify()` | POST 到 n8n webhook(demo 不发) |
+| 通用 | `guard()`(防连点)、`esc()`(已含单引号转义) | |
+
+### 数据库新对象
+- 列:`hypotheses.customer_stage / plan_launch / plan_test_days`
+- 表:`budgets`、`budget_assignments`、`monthly_plans`、`app_config`(key=mis_notify_secret)
+- RPC:`budget_save_cell(p_month,p_brand,p_side,p_amount,p_reason)`、`budget_decide`、`budget_reopen`(SECURITY DEFINER,分工/理由/锁校验)、`mis_reminders(p_secret)`(每日提醒计算,返回 jsonb 数组)
+- 词条:Dictionary 新类 `Customer Stage`(Acquisition/Activation/Retention/Repeat Conversion/Reactivation)
+- Storage:policy `pi_creatives_upload`(authenticated,路径 pi/%)
+
+### n8n(adam mkt,项目 KZAvyn8WX7aa0Tde)
+| Workflow | ID | 结构 |
+|---|---|---|
+| MIS Slack Notify | `vpzFyQfcjWNEWoUd` | webhook `POST /webhook/mis-notify` → Code「Format Slack Message」(消息模板+Slack ID 映射+品牌→频道路由,**改文案/频道都在这里**)→ Slack 节点(凭据「MIS Bot」slackApi) |
+| MIS Daily Reminders | `nQCHydUUeAJ84Zso` | Schedule 每天 09:00 → HTTP 调 `rpc/mis_reminders`(anon key+secret)→ Code 拆条 → HTTP 转发 mis-notify |
+
+频道 ID:USC `C0BE00U7PTQ`(#ops-marketing-usc-mis)/ INZ9 `C0BFJUM3343`(#ops-marketing-inz9-mis)/ 测试 `C0B99UBP34H`(#test-test,payload 加 `channel_override` 即发这里)。
+Slack app:**MIS Bot**(bot scope `chat:write`;xoxb token 存 n8n 凭据「MIS Bot」)。

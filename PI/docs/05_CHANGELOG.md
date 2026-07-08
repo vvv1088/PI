@@ -97,3 +97,13 @@
 - **品牌指标锁定**（`BRAND_METRIC`）：OK188KH 主指标 = 7-Day High-Value Rate、防守底线 = Day-1 Quality Floor；17WINKH = FDC/CPA + DQF。
 - **数据源**：业务数据全在 `bfukphakofrjalsqteda`（前端 `db`）；KPI 基线在 `kkypkudherpaxyoocyfa`（`adsDb`，仅 `get_brand_baselines`）。
 - **n8n 实例**：CI 在 n8n.ohmediaa.com，PI 自动化在 adammkt.app.n8n.cloud。
+
+
+---
+
+## PI track 增量:v32–v61(2026-07-07 ~ 07-08)
+
+一天内 30 个版本,大项(逐版细节见根目录 `PI/CHANGELOG.md`):
+- **功能**:顾客阶段(hypothesis 层+Dictionary)、预计排期(日历+测试周期,与容量体检合一)、素材 Schedule/结束运行/周花费、判定 UI(闭环打通)、Budget Allocation(分工/审批/决策/留痕/自动汇总)、Budget Permission、Monthly Overview(按品牌确认发送)、Slack 通知全链路(事件+每日提醒,MIS Bot 直发,分 USC/INZ9 频道)。
+- **QA 大修(两轮,60+ 项)**:XSS 全站转义+esc 修复、权限门补齐(标签矩阵/素材/字典/Budget 矩阵行接线)、编辑假设不再改写 mode/月份/owner、Run 落库、Results 胜率修正、月份/素材筛选动态化、周报去重、假统计条改真数、gallery 防抖+分页、死代码清理、状态机断头路接通(锁定→已锁定/上线→测试中/立假设→已立项)。
+- **安全/性能**:Budget 写入升级 SECURITY DEFINER RPC + RLS 收紧;图片压缩+迁 Storage;登录态过期处理;防连点;Budget 并发冲突检测。
