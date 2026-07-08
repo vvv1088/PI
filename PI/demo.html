@@ -1135,7 +1135,9 @@ function checkHypoConsistency(hyp,overrideCr){
   const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=eff(c,d);if(v)s.add(v);});return s;};
   const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变(取值或变体)
   const untagged=dims.filter(d=>cr.some(c=>!c[d]));   // 勾了的维度有素材没打标
-  const varMissing=dims.filter(d=>cr.some(c=>!vnt(c,d)));   // Variant 必填(写清这条素材具体是什么)
+  // Variant 必填 —— Format 例外(4 种机械格式,取值即全部信息):只在 Format 在测且取值全同时才要求(当区分器)
+  const needVariant=(d)=>d!=='format'||baseDistinct(d).size<=1;
+  const varMissing=dims.filter(d=>needVariant(d)&&cr.some(c=>!vnt(c,d)));
   const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim)||varMissing.includes(t.dim));
   const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>{const vals=[...baseDistinct(d)];const partial=vals.length===1&&cr.some(c=>!c[d]);return {dim:d,vals:partial?vals.concat('(未设)'):vals};}).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
   if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length,varMissing,untagged};
@@ -1181,7 +1183,10 @@ function renderTagMatrix(){
           if(editable){
             const empty=d[2]&&!(c[k]||'');
             // Variant(v65):在测维度恒显示、必填 —— 取值相同=区分器(互不相同);取值不同=内容备注;交叉测同取值填一样
+            // Format 例外(v66):只在取值全同时才出现(4 种机械格式无内容变体,平时不打扰)
             const base=c[k]||'';
+            const fmtUniform=cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
+            if(k==='format'&&!fmtUniform)return `<td style="background:rgba(127,119,221,.05)"><select data-gen="${esc(c.gen)}" data-dim="${k}" onchange="tmCellChange(this)" style="width:100%${empty?';border-color:var(--red)':''}">${dimTabOpts(k,c[k]||'')}</select></td>`;
             const need=!vv;
             const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
             const vpart=`<div style="border:1px dashed ${need?'var(--red)':'var(--violet)'};border-radius:8px;padding:6px 8px 8px;margin-top:7px;background:rgba(127,119,221,.08)">
