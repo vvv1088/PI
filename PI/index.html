@@ -1053,22 +1053,22 @@ function checkHypoConsistency(hyp,overrideCr){
   if(!dims.length)return {state:'undeclared'};
   const cr=overrideCr||creatives.filter(c=>(c.hyp||'').startsWith(hyp.id));
   if(cr.length<2)return {state:'insufficient',n:cr.length,dims};
-  // 变体:只在「单维度测试」时生效 —— 有效值 = 取值+变体,同取值靠变体名区分(v62)
-  const single=dims.length===1;
-  const vnt=(c,d)=>(single&&d===dims[0]&&c.variants&&c.variants[d])?String(c.variants[d]).trim():'';
+  // Variant(v65):在测维度每条素材必填;有效值 = 取值+变体 —— 取值相同靠变体区分,取值不同时是内容备注
+  const vnt=(c,d)=>(dims.includes(d)&&c.variants&&c.variants[d])?String(c.variants[d]).trim():'';
+  const eff=(c,d)=>{const v=c[d];return v?(v+(vnt(c,d)?'‖'+vnt(c,d):'')):'';};
   const baseDistinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v);});return s;};
-  const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v+(vnt(c,d)?'‖'+vnt(c,d):''));});return s;};
+  const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=eff(c,d);if(v)s.add(v);});return s;};
   const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变(取值或变体)
   const untagged=dims.filter(d=>cr.some(c=>!c[d]));   // 勾了的维度有素材没打标
-  const variantGap=single&&baseDistinct(dims[0]).size===1&&!untagged.length&&cr.some(c=>!vnt(c,dims[0]));   // 取值全同=变体测试,每条必须有变体名
-  const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim)||(variantGap&&t.dim===dims[0]));
+  const varMissing=dims.filter(d=>cr.some(c=>!vnt(c,d)));   // Variant 必填(写清这条素材具体是什么)
+  const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim)||varMissing.includes(t.dim));
   const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>{const vals=[...baseDistinct(d)];const partial=vals.length===1&&cr.some(c=>!c[d]);return {dim:d,vals:partial?vals.concat('(未设)'):vals};}).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
-  if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length,variantGap,single};
-  // 2 维 = 交叉测:必须凑成干净的 2×2(每维恰 2 个值、4 种组合各出现一次、无空格)
+  if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length,varMissing,untagged};
+  // 2 维 = 交叉测:必须凑成干净的 2×2(每维恰 2 个有效值、4 种组合各出现一次、无空格);同一取值的 Variant 必须一致,否则有效值>2 在这里被拦
   if(dims.length===2){
     const [A,B]=dims,va=distinct(A),vb=distinct(B);
-    const over=(va.size>2?[A]:[]).concat(vb.size>2?[B]:[]);   // 值超过 2 个的维度
-    const combos=new Set(cr.map(c=>(c[A]||'∅')+'∥'+(c[B]||'∅')));
+    const over=(va.size>2?[A]:[]).concat(vb.size>2?[B]:[]);   // 有效值超过 2 个的维度
+    const combos=new Set(cr.map(c=>(eff(c,A)||'∅')+'∥'+(eff(c,B)||'∅')));
     const cleanGrid=va.size===2&&vb.size===2&&combos.size===4&&cr.length===4&&![...combos].some(k=>k.includes('∅'));
     if(!cleanGrid)return {state:'crossbad',over,combos:combos.size,dims,tested,conflicts,n:cr.length};
   }
@@ -1105,19 +1105,15 @@ function renderTagMatrix(){
           const vv=(c.variants&&c.variants[k])||'';
           if(editable){
             const empty=d[2]&&!(c[k]||'');
-            let vpart='';
-            // Variant:仅单维度测试 + 各行取值相同(变体测试场景)时出现;取值一旦不同即隐藏(v64)
-            const baseUniform=tested.length===1&&cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
-            if(baseUniform){
-              const base=c[k]||'';
-              const need=!vv;
-              const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
-              vpart=`<div style="border:1px dashed ${need?'var(--red)':'var(--violet)'};border-radius:8px;padding:6px 8px 8px;margin-top:7px;background:rgba(127,119,221,.08)">
-                <span style="display:block;font-size:10.5px;color:${need?'var(--red)':'var(--violet)'};font-weight:700;margin:0 0 4px">Variant <span style="color:var(--red)">*</span></span>
-                <input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'e.g. Boxing King (JILI) / 甄子丹':''}" onchange="tmVariantChange(this)" style="width:100%;font-size:12.5px;padding:5px 9px;border:1px solid ${need?'var(--red)':'var(--violet)'};border-radius:6px;background:var(--bg,#fff);color:var(--ink,#161b22)">
-                <datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>
-              </div>`;
-            }
+            // Variant(v65):在测维度恒显示、必填 —— 取值相同=区分器(互不相同);取值不同=内容备注;交叉测同取值填一样
+            const base=c[k]||'';
+            const need=!vv;
+            const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
+            const vpart=`<div style="border:1px dashed ${need?'var(--red)':'var(--violet)'};border-radius:8px;padding:6px 8px 8px;margin-top:7px;background:rgba(127,119,221,.08)">
+              <span style="display:block;font-size:10.5px;color:${need?'var(--red)':'var(--violet)'};font-weight:700;margin:0 0 4px">Variant <span style="color:var(--red)">*</span></span>
+              <input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'e.g. Boxing King (JILI) / 甄子丹':''}" onchange="tmVariantChange(this)" style="width:100%;font-size:12.5px;padding:5px 9px;border:1px solid ${need?'var(--red)':'var(--violet)'};border-radius:6px;background:var(--bg,#fff);color:var(--ink,#161b22)">
+              <datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>
+            </div>`;
             return `<td style="background:rgba(127,119,221,.05)"><select data-gen="${esc(c.gen)}" data-dim="${k}" onchange="tmCellChange(this)" style="width:100%${empty?';border-color:var(--red)':''}">${dimTabOpts(k,c[k]||'')}</select>${vpart}</td>`;
           }
           const tv=c[k]?dictName(k,c[k]):'<span style="color:var(--red)">未设</span>';return `<td style="background:rgba(127,119,221,.05)">${tv}${vv?` <span style="color:var(--violet);font-size:12px;white-space:nowrap">· ${esc(vv)}</span>`:''}</td>`;
@@ -1129,10 +1125,12 @@ function renderTagMatrix(){
   // 一致性提醒(只在未锁定 + 有问题时)
   let banner='';
   if(!setupLocked&&jc.state!=='clean'&&jc.state!=='undeclared'){
-    const crossMsg=(jc.over&&jc.over.length)?`交叉测要凑成干净的 2×2:测试维度「${jc.over.map(dimLabel).join('、')}」的值超过 2 个 —— 每维只能 2 个值,把多出来的那条改成另一个值补齐缺的格子。`:`4 条素材没凑成完整的 2×2(有重复、缺格或留空)—— 让「${(jc.dims||[]).map(dimLabel).join(' × ')}」的 4 种组合各出现一次。`;
-    const nodiffMsg=jc.variantGap
-      ?`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」各条素材取值相同 —— 如果你测的是<b>同一取值下的不同变体</b>(如同风格不同游戏/人物),在表格里给每条素材填一个互不相同的「变体名」即可;否则让取值产生差异。`
-      :`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。${jc.single?'(同一取值下测不同变体?给每条素材填互不相同的「变体名」也算差异)':''}`;
+    const crossMsg=(jc.over&&jc.over.length)?`交叉测要凑成干净的 2×2:测试维度「${jc.over.map(dimLabel).join('、')}」的有效值(取值+Variant)超过 2 个 —— 每维只能 2 个;注意<b>同一取值的素材 Variant 必须填一样</b>,不然会被当成第 3 个值。`:`4 条素材没凑成完整的 2×2(有重复、缺格或留空)—— 让「${(jc.dims||[]).map(dimLabel).join(' × ')}」的 4 种组合各出现一次。`;
+    const vm=(jc.varMissing||[]);
+    const realNoDiff=(jc.noDiff||[]).filter(t=>!t.vary||(jc.untagged||[]).includes(t.dim));
+    let nodiffMsg='';
+    if(realNoDiff.length)nodiffMsg+=`测试维度「${realNoDiff.map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 取值不同,或取值相同时用互不相同的「Variant」区分(如同风格不同游戏/人物)。`;
+    if(vm.length)nodiffMsg+=`${nodiffMsg?' 另外,':''}「${vm.map(dimLabel).join('、')}」列每条素材的 <b>Variant 必填</b> —— 写清这条素材具体是什么(游戏/人物/细节),列表一眼可读。`;
     const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:nodiffMsg,crossbad:crossMsg,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
     banner=`<div style="background:rgba(216,90,48,.08);border:1px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font-size:13px;margin-top:12px;margin-bottom:18px">⚠️ <b>内容不一致,还不能锁定</b> · ${msgs[jc.state]||''}</div>`;
   }
@@ -1195,8 +1193,8 @@ async function tmToggleDim(dimKey){
   s.has(dimKey)?s.delete(dimKey):s.add(dimKey);
   hyp.testDims=MATRIX_DIM_KEYS.filter(k=>s.has(k));   // 保持顺序
   await tmSaveHyp(hyp,{test_dim:hyp.testDims.join(',')});
-  // 变体只允许挂在「在测」的维度上:维度取消勾选/变交叉测时,清掉不再合法的变体(v62 规矩②)
-  const legal=hyp.testDims.length===1?hyp.testDims:[];
+  // 变体只允许挂在「在测」的维度上:维度取消勾选时,清掉不再合法的变体(v65:交叉测两个维度都合法)
+  const legal=hyp.testDims;
   for(const c of creatives.filter(x=>(x.hyp||'').startsWith(hyp.id))){
     if(c.variants&&Object.keys(c.variants).some(k=>!legal.includes(k))){
       const nv={};legal.forEach(k=>{if(c.variants[k])nv[k]=c.variants[k];});
@@ -1227,14 +1225,9 @@ async function tmCellChange(sel){
   const dimDef=MATRIX_DIMS.find(d=>d[0]===dim);sel.style.borderColor=(dimDef&&dimDef[2]&&!val)?'var(--red)':'';
   try{const upd={updated_at:new Date().toISOString()};upd[dim]=val;const {error}=await db.from('creatives').update(upd).eq('gen_code',gen);if(error)throw error;}
   catch(e){toast('保存失败: '+rpcErr(e));}
-  // 取值不再全同 → 变体测试场景消失,清掉本假设该维度的旧变体(界面上输入框也随之隐藏)(v64)
-  const hyp=hypos.find(h=>h.id===window._tmHyp);
-  if(hyp){
-    const cs=creatives.filter(x=>(x.hyp||'').startsWith(hyp.id));
-    const uniform=cs.length>=2&&cs.every(x=>x[dim])&&new Set(cs.map(x=>x[dim])).size===1;
-    if(!uniform){for(const x of cs){if(x.variants&&x.variants[dim]){x.variants=Object.assign({},x.variants);delete x.variants[dim];
-      try{await db.from('creatives').update({variants:x.variants,updated_at:new Date().toISOString()}).eq('gen_code',x.gen);}catch(e){}
-    }}}
+  // 取值变了 → 这条素材的旧 Variant 描述的是旧内容,清掉让用户重填(v65:只清本行本维度)
+  if(c.variants&&c.variants[dim]){c.variants=Object.assign({},c.variants);delete c.variants[dim];
+    try{await db.from('creatives').update({variants:c.variants,updated_at:new Date().toISOString()}).eq('gen_code',gen);}catch(e){}
   }
   renderTagMatrix();   // 改完素材值重算一致性红条(否则停在改之前的旧状态)
 }
@@ -2039,7 +2032,13 @@ function crVar(c,k){const v=c.variants&&c.variants[k];return v?`<div style="font
 function renderCreatives(){
   fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
-  document.getElementById('creativeBody').innerHTML=creatives.filter(c=>(!fb||crBrandOf(c)===fb)&&(!fh||(c.hyp||'').startsWith(fh))).map(c=>`
+  // 排序(v65):同一假设的素材永远连在一起 —— 组间按该假设最新素材倒序(活跃的在上),组内按 V 序号正序
+  const rows=creatives.filter(c=>(!fb||crBrandOf(c)===fb)&&(!fh||(c.hyp||'').startsWith(fh)));
+  const hypKey=c=>((c.hyp||'')+' ').split(' ')[0];
+  const grpRec={};creatives.forEach((c,i)=>{const h=hypKey(c);if(!(h in grpRec))grpRec[h]=i;});   // creatives 本身已按创建时间倒序
+  const vnum=c=>{const m=(c.gen||'').match(/-V(\d+)$/);return m?+m[1]:999;};
+  rows.sort((a,b)=>{const ha=hypKey(a),hb=hypKey(b);if(ha!==hb)return (grpRec[ha]||0)-(grpRec[hb]||0);return vnum(a)-vnum(b);});
+  document.getElementById('creativeBody').innerHTML=rows.map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
     <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
@@ -2601,7 +2600,7 @@ function renderMonthlyPlan(){
   const sel=document.getElementById('mp-month');if(!sel)return;
   const set={};set[bgCurMonth()]=1;budgets.forEach(b=>{if(b.month)set[b.month]=1;});hypos.forEach(h=>{const m=mpMonthOfLaunch(h);if(m)set[m]=1;});
   const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
-  if(!mpMonth||arr.indexOf(mpMonth)<0)mpMonth=arr[0]||bgCurMonth();
+  if(!mpMonth||arr.indexOf(mpMonth)<0)mpMonth=bgCurMonth();   // 默认永远=当前月(此前取 arr[0] 会跳到排期最远的月份,v65 修)
   sel.innerHTML=arr.map(m=>`<option${m===mpMonth?' selected':''}>${m}</option>`).join('');
   const fb=(document.getElementById('mp-brand')||{value:''}).value;
   const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY].filter(x=>!fb||x===fb);
