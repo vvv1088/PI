@@ -2,7 +2,7 @@
 
 > 范围：**整个项目**的代码约定（dashboard 前端 + n8n Code 节点 + Supabase/SQL + webhook + 文档纪律）。
 > 适用对象：在 MIS 上写 / 改代码的人。
-> 最后更新：2026-06-30
+> 最后更新：2026-07-08（v32–v61 QA 大修后新增约定已并入 §2.2/§2.4/§2.6/§5/§6/§7）
 
 ---
 
@@ -23,7 +23,7 @@
 - **紧凑写法**：相关短语句可写同一行（项目既有风格），但新增复杂逻辑适当换行保持可读。
 - **全局状态用顶层 `let`**：
   - CI：`ads`、`operators`、`reports`、`candidates`、`brands`、`galRows`。
-  - PI：`ideas`、`hypos`、`creatives`、`DICT`、`data`(品牌基线)、`roles`、`users`、`currentUser`、`auditLog`。
+  - PI：`ideas`、`hypos`、`creatives`、`DICT`、`data`(品牌基线)、`budgets`、`bgAssign`、`monthlyPlans`、`roles`、`users`、`currentUser`、`auditLog`。
 - **DOM 用原生 API**：`document.getElementById(...)`、`.innerHTML = ...`。不引入 jQuery。
 
 ### 2.2 命名约定
@@ -38,6 +38,9 @@
 | CI 写操作（webhook） | 动词 | `addCompetitor`、`toggleBrand`、`confirmCand`、`rejectCand`、`rescanBrand`、`hook` |
 | PI 写操作（直连 db） | 动词 | `quickAddIdea`、`saveHypothesis`、`tmSaveLock`、`saveFirstVersion`、`saveCreativeCopy` |
 | 素材对比页（tag matrix） | `tm*` | `tmToggleDim`、`tmEnsureRows`、`tmTrimRows`、`tmCellChange`、`tmSetLock`、`tmSaveLock`、`tmUnlock`、`tmCommonVal`、`tmSaveHyp` |
+| Budget 页 | `bg*` | `bgCanEdit`、`bgStatus`、`bgEditCell`、`bgSaveCell`、`bgDecide`、`bgReopen`、`bgHistory`、`bgSpent`、`renderBgAssign` |
+| Monthly Overview | `mp*` / `*MonthlyPlan*` | `renderMonthlyPlan`、`confirmMonthlyPlan`、`mpMonthOfLaunch`、`loadMonthlyPlans` |
+| 顾客阶段 / 排期 | `stage*` / `sched*` | `stageOpts`、`stageZh`、`stageColor`、`schedCell`、`hypSchedOf`、`parseMD`/`fmtMD` |
 | Admin 写操作（RPC） | 动词 | `saveRole`、`dupRole`、`delRole`、`saveUser`、`delUser`、`resetUserPw` |
 | filter DOM id | `f<维度>` | `fMarket`、`fOperator`、`fHook`、`fStyle`、`fFormat`、`fGameType`、`f-src` |
 
@@ -52,15 +55,26 @@ function gameTypesOf(a){ return (a.game_type||'').split(',').map(s=>s.trim()).fi
 - **新增任何多值字段照此模式做。**
 
 ### 2.4 安全 / 健壮
-- 所有插入 HTML 的数据文本必须过 `esc()` 转义。
+- 所有插入 HTML 的数据文本必须过 `esc()` 转义。**`esc()` 已含单引号转义（v49 XSS 大修）**——但仍然**禁止把用户/外部数据拼进内联事件参数**（`onclick="fn('${x}')"` 这种）；需要传参用索引/id 查全局数组，不传原文（竞品抓取文案经内联 onclick 注入就是这么发生的）。
 - 字段取值带兜底：`(a.field||'')`、`a.field==null?'-':...`，永远假设字段可能为 null。
 - **禁止用 localStorage / sessionStorage**（部分环境不可用）；状态留在 JS 变量。
 - **PI 一致性/渲染同步**：任何改素材维度值/锁定值/勾选维度的写操作之后，**必须重渲染对应页**（如 `tmCellChange`/`tmSetLock`/`tmToggleDim` 末尾调 `renderTagMatrix()`），否则一致性红条会停在旧状态（v27 修过这个 bug）。
+- **防连点**：所有会写库的按钮 handler 套 `guard()`（v53 加）——连点会造成重复插入/重复通知。
+- **权限门成对接线**：新增任何增删改入口，UI 侧加 `data-perm="sec:act"`（或渲染时 `can()` 判断），**数据库侧确认 RLS/RPC 有对应约束**。只藏按钮不算权限（QA 两轮里最多的一类漏洞）。
+- **编辑回填保留原值**：编辑表单保存时只写用户改过的字段，未在表单里出现的字段（如 hypothesis 的 mode/月份/owner）**不得被默认值覆盖**（v50 修过：编辑一次假设把 owner 洗掉）。
+- **登录态过期**：长时间挂页后的写操作要处理 auth 过期（提示重新登录，不静默失败）。
 
 ### 2.5 数据加载顺序
 - CI：`loadAll()` 用 `Promise.all([...])` 并发拉所有 CI 表/视图，任一 error → `showErr()`；加载后归一（`operator_name` 转大写）再渲染。
 - 登录后 `initApp()` 串起：`loadPIData()` → 各 render → `applyChrome()` → `loadBaselines()` → `loadAll()`。
 - 渲染顺序：先 KPI、再 filters、再各页渲染函数。
+
+### 2.6 v32–v61 新增模式（照此写）
+- **通知 fire-and-forget**：业务事件通知走 `misNotify(payload)` → `MIS_NOTIFY_URL`；`catch` 吞错**不阻塞业务写入**；demo 版不发；测试时 payload 加 `channel_override`（#test-test）。消息文案/频道路由不在前端改，在 n8n「MIS Slack Notify」的 Format 节点改。
+- **图片上传**：先 `shrinkImage()`（canvas 压缩）再 `uploadImage()` 传 Storage `creatives/pi/` 存公链，失败才回退 base64。**不要把大 base64 直接塞进业务表**（v54 之前的性能坑）。
+- **排期/日期**：月-日解析统一走 `parseMD`/`fmtMD`；周口径用 `isoWeekOf`。素材排期**继承假设**（`hypSchedOf`），不在素材上另存一份。
+- **单一数据源原则**：同一个数值出现在两处 UI（如 测试周期 同时驱动 Schedule 和 Capacity Check）时，存一个字段、两处读取，不建第二个字段。
+- **并发写冲突**：多人可能同时编辑的行（budgets），保存前比对服务端最新值/状态，不一致时提示刷新而非直接覆盖。
 
 ---
 
@@ -108,7 +122,8 @@ let v={}; try{ v=JSON.parse(t.replace(/```json/g,'').replace(/```/g,'').trim());
 - **去重键**：`competitor_ads` 以 `ad_archive_id`；`ideas`/`hypotheses`/`creatives` 用 `code`/`gen_code`（由触发器 `trg_idea_code` 等自动生成，**插入时不要手填 code**）。
 - **视图**：前端读视图而非原表（`v_ads_gallery`、`v_operator_intel`）。**新增列要前端能用，必须把列加进对应视图 SELECT**（否则原表有、前端拿不到——`game_type` 加列时就栽在这）。
 - **改视图加列**：`CREATE OR REPLACE VIEW` 不允许中间插列，新列加在 SELECT **末尾**，或 `DROP + CREATE`。
-- **权限写入走 SECURITY DEFINER RPC**：`admin_create_user/admin_set_password/admin_set_username/admin_delete_user`（带 `is_admin()` 守卫）、`ai_add_idea`（anon 可执行、近 10 天去重）。前端只用 anon key，写权限靠 RLS + 这些 RPC。
+- **权限写入走 SECURITY DEFINER RPC**：`admin_create_user/admin_set_password/admin_set_username/admin_delete_user`（带 `is_admin()` 守卫）、`ai_add_idea`（anon 可执行、近 10 天去重）；**v56 起预算类同理**：`budget_save_cell/budget_decide/budget_reopen`（服务端强制分工/理由/锁校验，`budgets` 表直写收紧为 admin）、`mis_reminders(p_secret)`（anon 可执行但需 `app_config` 密钥）。前端只用 anon key，写权限靠 RLS + 这些 RPC。
+- **约定：凡"谁能写哪格"有业务规则的表，规则必须写进 RPC，前端 `can()`/`bgCanEdit()` 只做体验层**——不要新增"前端判断 + 表直写"的组合。
 - 多语句 SQL 优先 `execute_sql`（`apply_migration` 曾超时）；DDL 用 `apply_migration`。
 
 ---
@@ -119,6 +134,7 @@ let v={}; try{ v=JSON.parse(t.replace(/```json/g,'').replace(/```/g,'').trim());
 - 单品牌重抓走 `RESCAN_URL` → `/webhook/rescan-brand`，payload `{brand}`。
 - 前端 `hook(payload)` 统一封装 POST + 错误处理；写完 `await loadAll()` 刷新。
 - **PI 写操作不走 webhook**，直接 `db.from(...).insert/update/delete` 或 `db.rpc(...)`（PI 数据在主库、有 RLS/RPC 把关）。
+- **例外：Slack 通知走 `MIS_NOTIFY_URL`**（→ adam mkt n8n `/webhook/mis-notify`），payload 带 `kind` 区分（`plan_confirmed`/`budget_decide`/`budget_settled`/`raw`），fire-and-forget（见 §2.6）。
 
 ---
 
@@ -129,6 +145,7 @@ SUPABASE_URL / SUPABASE_ANON   → 主库 bfukphakofrjalsqteda（db；CI + PI + 
 ADS_URL / ADS_ANON             → kkypkudherpaxyoocyfa（adsDb，仅 get_brand_baselines）
 WEBHOOK_URL                    → /webhook/manual-add
 RESCAN_URL                     → /webhook/rescan-brand
+MIS_NOTIFY_URL                 → adam mkt n8n /webhook/mis-notify（Slack 通知，v60 加）
 AUTH_DOMAIN                    → '@nexmax.local'（用户名拼成登录邮箱）
 ```
 **改库 / 换环境只动这几个常量，不要把地址散写进函数。**
