@@ -1128,12 +1128,17 @@ function checkHypoConsistency(hyp,overrideCr){
   if(!dims.length)return {state:'undeclared'};
   const cr=overrideCr||creatives.filter(c=>(c.hyp||'').startsWith(hyp.id));
   if(cr.length<2)return {state:'insufficient',n:cr.length,dims};
-  const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v);});return s;};
-  const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变
+  // 变体:只在「单维度测试」时生效 —— 有效值 = 取值+变体,同取值靠变体名区分(v62)
+  const single=dims.length===1;
+  const vnt=(c,d)=>(single&&d===dims[0]&&c.variants&&c.variants[d])?String(c.variants[d]).trim():'';
+  const baseDistinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v);});return s;};
+  const distinct=(d)=>{const s=new Set();cr.forEach(c=>{const v=c[d];if(v)s.add(v+(vnt(c,d)?'‖'+vnt(c,d):''));});return s;};
+  const tested=dims.map(d=>({dim:d,vary:distinct(d).size>=2}));   // 勾的维度应当变(取值或变体)
   const untagged=dims.filter(d=>cr.some(c=>!c[d]));   // 勾了的维度有素材没打标
-  const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim));
-  const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>{const vals=[...distinct(d)];const partial=vals.length===1&&cr.some(c=>!c[d]);return {dim:d,vals:partial?vals.concat('(未设)'):vals};}).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
-  if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length};
+  const variantGap=single&&baseDistinct(dims[0]).size===1&&!untagged.length&&cr.some(c=>!vnt(c,dims[0]));   // 取值全同=变体测试,每条必须有变体名
+  const noDiff=tested.filter(t=>!t.vary||untagged.includes(t.dim)||(variantGap&&t.dim===dims[0]));
+  const conflicts=MATRIX_DIM_KEYS.filter(d=>!dims.includes(d)).map(d=>{const vals=[...baseDistinct(d)];const partial=vals.length===1&&cr.some(c=>!c[d]);return {dim:d,vals:partial?vals.concat('(未设)'):vals};}).filter(x=>x.vals.length>1);  // 没勾的应当一致(全组锁定)
+  if(noDiff.length)return {state:'nodiff',tested,noDiff,conflicts,dims,n:cr.length,variantGap,single};
   // 2 维 = 交叉测:必须凑成干净的 2×2(每维恰 2 个值、4 种组合各出现一次、无空格)
   if(dims.length===2){
     const [A,B]=dims,va=distinct(A),vb=distinct(B);
@@ -1172,8 +1177,20 @@ function renderTagMatrix(){
       <td><span class="code">${c.code}</span><br><small style="color:var(--ink3)">${c.st}</small></td>
       ${MATRIX_DIMS.map(d=>{const k=d[0];
         if(isTested(k)){
-          if(editable){const empty=d[2]&&!(c[k]||'');return `<td style="background:rgba(127,119,221,.05)"><select data-gen="${c.gen}" data-dim="${k}" onchange="tmCellChange(this)" style="width:100%${empty?';border-color:var(--red)':''}">${dimTabOpts(k,c[k]||'')}</select></td>`;}
-          const tv=c[k]?dictName(k,c[k]):'<span style="color:var(--red)">未设</span>';return `<td style="background:rgba(127,119,221,.05)">${tv}</td>`;
+          const vv=(c.variants&&c.variants[k])||'';
+          if(editable){
+            const empty=d[2]&&!(c[k]||'');
+            let vpart='';
+            if(tested.length===1){   // 变体名:仅单维度测试时可用(v62)
+              const base=c[k]||'';
+              const baseUniform=cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
+              const need=baseUniform&&!vv;
+              const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
+              vpart=`<input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'变体名(取值相同时必填)':'变体名(可选)'}" onchange="tmVariantChange(this)" style="width:100%;margin-top:5px;font-size:12px;padding:4px 8px;border:1px solid ${need?'var(--red)':'var(--line)'};border-radius:6px;color:var(--violet)"><datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+            }
+            return `<td style="background:rgba(127,119,221,.05)"><select data-gen="${esc(c.gen)}" data-dim="${k}" onchange="tmCellChange(this)" style="width:100%${empty?';border-color:var(--red)':''}">${dimTabOpts(k,c[k]||'')}</select>${vpart}</td>`;
+          }
+          const tv=c[k]?dictName(k,c[k]):'<span style="color:var(--red)">未设</span>';return `<td style="background:rgba(127,119,221,.05)">${tv}${vv?` <span style="color:var(--violet);font-size:12px;white-space:nowrap">· ${esc(vv)}</span>`:''}</td>`;
         }
         const lv=locked[k]||c[k]||'';const lbl=lv?(dictName(k,lv)):'<span style="color:var(--red)">未设</span>';
         return `<td style="background:var(--bg2)">${lbl}</td>`;
@@ -1183,7 +1200,10 @@ function renderTagMatrix(){
   let banner='';
   if(!setupLocked&&jc.state!=='clean'&&jc.state!=='undeclared'){
     const crossMsg=(jc.over&&jc.over.length)?`交叉测要凑成干净的 2×2:测试维度「${jc.over.map(dimLabel).join('、')}」的值超过 2 个 —— 每维只能 2 个值,把多出来的那条改成另一个值补齐缺的格子。`:`4 条素材没凑成完整的 2×2(有重复、缺格或留空)—— 让「${(jc.dims||[]).map(dimLabel).join(' × ')}」的 4 种组合各出现一次。`;
-    const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。`,crossbad:crossMsg,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
+    const nodiffMsg=jc.variantGap
+      ?`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」各条素材取值相同 —— 如果你测的是<b>同一取值下的不同变体</b>(如同风格不同游戏/人物),在表格里给每条素材填一个互不相同的「变体名」即可;否则让取值产生差异。`
+      :`测试维度「${(jc.noDiff||[]).map(t=>dimLabel(t.dim)).join('、')}」在素材间还没差异 —— 勾了就要让它变,否则等于没测。${jc.single?'(同一取值下测不同变体?给每条素材填互不相同的「变体名」也算差异)':''}`;
+    const msgs={insufficient:`只有 ${jc.n||cr.length} 条素材,凑够 2 条才成立一个对比。`,nodiff:nodiffMsg,crossbad:crossMsg,polluted:`没在测的维度混了:${(jc.conflicts||[]).map(c=>dimLabel(c.dim)).join('、')} —— 到「全组锁定」设成统一值。`};
     banner=`<div style="background:rgba(216,90,48,.08);border:1px solid var(--red);border-radius:8px;padding:10px 12px;color:var(--red);font-size:13px;margin-top:12px;margin-bottom:18px">⚠️ <b>内容不一致,还不能锁定</b> · ${msgs[jc.state]||''}</div>`;
   }
   el.innerHTML=`
@@ -1245,6 +1265,15 @@ async function tmToggleDim(dimKey){
   s.has(dimKey)?s.delete(dimKey):s.add(dimKey);
   hyp.testDims=MATRIX_DIM_KEYS.filter(k=>s.has(k));   // 保持顺序
   await tmSaveHyp(hyp,{test_dim:hyp.testDims.join(',')});
+  // 变体只允许挂在「在测」的维度上:维度取消勾选/变交叉测时,清掉不再合法的变体(v62 规矩②)
+  const legal=hyp.testDims.length===1?hyp.testDims:[];
+  for(const c of creatives.filter(x=>(x.hyp||'').startsWith(hyp.id))){
+    if(c.variants&&Object.keys(c.variants).some(k=>!legal.includes(k))){
+      const nv={};legal.forEach(k=>{if(c.variants[k])nv[k]=c.variants[k];});
+      c.variants=nv;
+      try{await db.from('creatives').update({variants:nv,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);}catch(e){}
+    }
+  }
   // 自动生成行:1 维 → 1 条,2 维 → 4 条;维度减少时把多余的空行删掉(2→1 回到 1 条)
   if(can('creative','add')){const target=hyp.testDims.length===2?4:(hyp.testDims.length===1?1:0);if(target){const added=await tmEnsureRows(hyp,target);const trimmed=await tmTrimRows(hyp,target);if(added||trimmed){try{await loadCreatives();}catch(e){}renderCreatives();}}}
   renderTagMatrix();renderHypo();
@@ -1269,6 +1298,27 @@ async function tmCellChange(sel){
   try{const upd={updated_at:new Date().toISOString()};upd[dim]=val;const {error}=await db.from('creatives').update(upd).eq('gen_code',gen);if(error)throw error;}
   catch(e){toast('保存失败: '+rpcErr(e));}
   renderTagMatrix();   // 改完素材值重算一致性红条(否则停在改之前的旧状态)
+}
+/* 变体名规范化(v62):① 去首尾/多余空格 ② 忽略大小写与已有变体相同 → 采用已有写法 ③ 否则每个词首字母大写(其余不动,JILI 保持 JILI) */
+function tmTitleCase(s){return s.replace(/(^|[^\p{L}\p{N}])(\p{Ll})/gu,(m,a,b)=>a+b.toUpperCase());}
+function tmNormVariant(dim,base,raw){
+  const v=(raw||'').trim().replace(/\s+/g,' ');
+  if(!v)return '';
+  const pool=new Set();creatives.forEach(x=>{if(x.variants&&x.variants[dim]&&(x[dim]||'')===base)pool.add(x.variants[dim]);});
+  for(const p of pool){if(String(p).toLowerCase()===v.toLowerCase())return p;}
+  return tmTitleCase(v);
+}
+async function tmVariantChange(inp){
+  if(!tmEditable()){toast('已锁定,仅 Admin 可改');renderTagMatrix();return;}
+  const gen=inp.getAttribute('data-gen'),dim=inp.getAttribute('data-dim');
+  const c=creatives.find(x=>x.gen===gen);if(!c)return;
+  const raw=inp.value,v=tmNormVariant(dim,c[dim]||'',raw);
+  if(v&&raw.trim().replace(/\s+/g,' ')!==v)toast('变体名已统一为「'+v+'」');
+  c.variants=Object.assign({},c.variants||{});
+  if(v)c.variants[dim]=v;else delete c.variants[dim];
+  try{const {error}=await db.from('creatives').update({variants:c.variants,updated_at:new Date().toISOString()}).eq('gen_code',gen);if(error)throw error;}
+  catch(e){toast('保存失败: '+rpcErr(e));}
+  renderTagMatrix();   // 重算一致性红条
 }
 async function tmAddCreative(){
   if(!tmEditable()){toast('已锁定,仅 Admin 可改');return;}
@@ -2046,6 +2096,7 @@ function fillCHypFilter(){
   sel.innerHTML='<option value="">All Hypotheses</option>'+Object.keys(set).sort().map(k=>`<option${k===cur?' selected':''}>${esc(k)}</option>`).join('');
 }
 function crBrandOf(c){const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));return h?h.brand:'';}
+function crVar(c,k){const v=c.variants&&c.variants[k];return v?`<div style="font-size:11px;color:var(--violet);white-space:nowrap">· ${esc(v)}</div>`:'';}
 function renderCreatives(){
   fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
@@ -2054,9 +2105,9 @@ function renderCreatives(){
     <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
     <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
-    <td><span class="qt"><b>${esc(c.fmt||'—')}</b></span></td>
-    <td><span class="qt" title="${esc(ZH[c.hook]||c.hook||'')}">${esc(c.hook||'—')}</span></td>
-    <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${esc(c.vs||'—')}</span></td>
+    <td><span class="qt"><b>${esc(c.fmt||'—')}</b></span>${crVar(c,'format')}</td>
+    <td><span class="qt" title="${esc(ZH[c.hook]||c.hook||'')}">${esc(c.hook||'—')}</span>${crVar(c,'hook')}</td>
+    <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${esc(c.vs||'—')}</span>${crVar(c,'visual_style')||crVar(c,'offer')||crVar(c,'game_type')}</td>
     <td class="code">${esc(c.spend||'—')}</td><td class="code"><b>${esc(c.fdc||'—')}</b></td><td class="code">${esc(c.cpa||'—')}</td>
     <td><span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span></td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
@@ -2922,7 +2973,7 @@ async function saveBgAssign(br,field,val){
 async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data,error}=await db.from('ideas').select('*').order('created_at',{ascending:false});if(error){showErr('loadIdeas 加载失败: '+error.message);}ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
-async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
+async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,variants:r.variants||{},planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
 function daysSince(ts){try{return Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/86400000));}catch(e){return 0;}}
 function fmtMMDD(ts){try{const d=new Date(ts);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}catch(e){return '';}}
 async function doLogin(){const u=(document.getElementById('lg-user').value||'').trim().toLowerCase();const p=document.getElementById('lg-pwd').value||'';const msg=document.getElementById('lg-msg');if(!u||!p){msg.textContent='Enter username and password';return;}msg.textContent='Signing in…';try{const {error}=await db.auth.signInWithPassword({email:u+AUTH_DOMAIN,password:p});if(error){msg.textContent='Incorrect username or password';return;}await loadAuthData();if(!currentUser){msg.textContent='This account has no profile — contact admin';await db.auth.signOut();return;}document.getElementById('loginGate').style.display='none';try{logAction('auth','login','');}catch(e){}initApp();}catch(e){msg.textContent='Sign-in failed: '+((e&&e.message)||e);}}

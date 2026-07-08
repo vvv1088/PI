@@ -109,6 +109,7 @@
 - `tmSaveLock()` — Save 锁定（不一致拦下；锁后只读、仅 Admin 解锁，存 `locked_tags._locked`）。
 - `tmUnlock()` — 解锁回 Draft（仅 Admin）。
 - `tmEditable()` / `tmSaveHyp(hyp,patch)` — 可编辑判定 / 存假设字段。
+- **变体标注（v62）**：`tmVariantChange`（保存变体，重算红条）/ `tmNormVariant`（已有写法优先→Title Case）/ `tmTitleCase` / `crVar`（列表显示 `· 变体` 小字）。存 `creatives.variants jsonb`；仅单维度测试时生效（`checkHypoConsistency` 的 `single`/`variantGap`）；取消勾选维度时 `tmToggleDim` 自动清掉不合法变体。
 - 常量：`MATRIX_DIMS`（5 维 `[key,label,required]`）、`MATRIX_DIM_KEYS`、`DIM_DICT_TAB`（维度 key → 字典 tab）、`dimLabel`/`dimTabOpts`/`dictName`/`optsHtml`。
 
 ### Creatives
@@ -175,7 +176,7 @@
 ### 5.2 PI 表
 - **ideas**：`code`(触发器 `trg_idea_code` 生成)、`txt`、`src`(来源中文名)、`tags text[]`、`pri`(高/中/低)、`status`(待评估/已立项/搁置/已归档…)、`created_by`(人名 或 `AI`)、`created_at`。
 - **hypotheses**：`code`、`statement`、`brand`、`metric`/`val_from`/`val_to`/`mode`、`test_type`、`persona`、`age_range`、`evidence`、`guard`、`trigger_type`、`status`、`idea_code`/`idea_label`、`test_dim`(逗号分隔在测维度)、`locked_tags jsonb`(全组锁定值 + `_locked`)、`tests jsonb`、`verdict jsonb`、`format`/`hook`/`visual_style`/`offer`/`game_type`(假设级默认)。
-- **creatives**：`gen_code`(唯一)、`ads_code`、`hyp_code`/`hyp_label`、`label`、`status`、`format`/`hook`/`visual_style`/`offer`/`game_type`/`audience`/`age`(维度标签)、`versions jsonb`、`runs jsonb`、`spend`/`fdc`/`cpa`/`stc`、`thumb`。
+- **creatives**：`gen_code`(唯一)、`ads_code`、`hyp_code`/`hyp_label`、`label`、`status`、`format`/`hook`/`visual_style`/`offer`/`game_type`/`audience`/`age`(维度标签)、**`variants jsonb`（v62：`{维度:变体名}`，同取值下区分不同游戏/人物）**、`versions jsonb`、`runs jsonb`、`spend`/`fdc`/`cpa`/`stc`、`thumb`。
 - **dict_entries**：`tab`、`code`、`name`、`descr`、`usage`、`active`、`sort`。tab 含 Format/Hook/Visual Style/Offer/Persona/Age Range/Game Type/Metrics/Test Type/Trigger/Evidence/Idea Source/Capacity/CI Fields/Watchlist Source。
 
 ### 5.3 Admin 表

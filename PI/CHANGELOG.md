@@ -14,6 +14,17 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v62] — 2026-07-08 · 维度内「变体标注」+ 字典清理
+
+**根因**:团队想测「同一取值下的不同变体」(同风格不同游戏/不同名人),5 维模型表达不了,裁判判 nodiff 拦下 → 被迫往 Visual Style 字典塞游戏名/人名假词条(Joey 6 个 + Bryan 3 个)。
+
+- **变体标注**:单维度测试时,在测列每行多一个「变体名」输入框;裁判有效值 = 取值+变体,取值全同时变体必填且互不相同(`checkHypoConsistency` 加 `variantGap`)。红条 nodiff 文案加"修法 B"指引。四条规矩:①仅单维度可用 ②只挂在测维度(取消勾选自动清除) ③取值+变体合看不重复 ④字典不再收人名/游戏名。
+- **防写乱两道闸**:输入框 datalist 提示同维度+同取值下已用过的变体名;保存时 `tmNormVariant` —— 忽略大小写与已有变体相同则采用已有写法,否则 Title Case(词首字母大写,JILI 等全大写保留)+ 空格归一,改写时 toast 提示。
+- **数据**:`creatives` 加 `variants jsonb`;新函数 `tmVariantChange/tmNormVariant/tmTitleCase/crVar`;Creatives 列表和锁定视图显示 `取值 · 变体` 紫色小字。
+- **迁移**:17 条素材、7 个假设(全部草稿)——在测 visual_style 的(HYP-015/027/041/054/055)迁为 `Deepfake`/`game_screenshot` + 变体名;未勾维度的(HYP-028)人名进素材名称;HYP-037/056 本就用泛 Deepfake 不动;HYP-055-V1 留空变体由红条引导补填。
+- **字典**:删除 9 个人名/游戏名假词条(零引用后删,audit_log 留痕);保留 `Deepfake` 并把说明改为「AI 名人/换脸(具体人物写在素材的变体名)」。Visual Style 回到 8 个粗粒度值。
+- 验证:node --check ✓;无头 17 视图零 pageerror ✓;裁判 6 用例(gap/clean/重复变体/缺变体/取值差异/交叉测忽略变体)✓;归一 5 用例 ✓;demo 重生成。
+
 ## [v61] — 2026-07-08 · Slack 通知正式上线(格式定稿)
 
 - **链路**:dashboard → n8n「MIS Slack Notify」(webhook, 格式化+按品牌分频道)→ 原生 Slack 节点直发(OAuth,以 V 账号身份);「MIS Daily Reminders」每天 09:00 跑。Make 中转已删除。
