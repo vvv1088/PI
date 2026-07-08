@@ -14,6 +14,12 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v68] — 2026-07-08 · Creatives 列表:删 Spend/FDC/CPA,补 Offer/Game Type
+
+- **删 Spend / FDC / CPA 三列**(V 定):三列常年"—",孤立数字看不出效果画面;效果分析归之后的专业分析页。数据链路不受影响(周花费录入在素材抽屉、Budget 已投放/每日告警都读库)。
+- **补 Offer / Game Type 两列**:五个维度在列表全部有列;🧪 标记与变体名统一标在对应列内,v67 的"挂 hypothesis code 下面"特例逻辑(crHypExtra)删除。
+- 表格净减一列;空态 colspan 12→10。
+
 ## [v67] — 2026-07-08 · Creatives 列表 🧪 在测维度标记
 
 - 每条素材行上,**在测的维度前加 🧪**(Format/Hook/Visual Style 列内直接标);测 Offer / Game Type(列表无此列)时在假设编号下方显示「🧪 Offer · 变体名」。一眼看出每条素材这次测什么。

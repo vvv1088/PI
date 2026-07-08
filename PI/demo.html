@@ -744,7 +744,7 @@ window.supabase={createClient:function(){return __mockClient;}};
 
   <table>
     <thead><tr>
-      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:190px;color:var(--violet);padding-right:24px">Schedule</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Spend</th><th>FDC</th><th>CPA</th><th style="width:150px">Status</th><th></th>
+      <th style="width:200px">Asset · Ads Code</th><th>Hypothesis / Run</th><th style="width:190px;color:var(--violet);padding-right:24px">Schedule</th><th>Format</th><th>Hook</th><th>Visual Style</th><th>Offer</th><th>Game Type</th><th style="width:150px">Status</th><th></th>
     </tr></thead>
     <tbody id="creativeBody"></tbody>
   </table>
@@ -2107,7 +2107,6 @@ function crVar(c,k){const v=c.variants&&c.variants[k];return v?`<div style="font
 // 在测维度标记(v67):列表行内 🧪 = 这条素材这次测的维度,一眼看 overview
 function crTestDims(c){const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));return (h&&h.testDims)||[];}
 function crTM(c,k){return crTestDims(c).includes(k)?'<span title="本次测试维度">🧪</span> ':'';}
-function crHypExtra(c){return crTestDims(c).filter(k=>k==='offer'||k==='game_type').map(k=>`<div style="font-size:11px;color:var(--violet);white-space:nowrap"><span title="本次测试维度">🧪</span> ${k==='offer'?'Offer':'Game Type'}${(c.variants&&c.variants[k])?' · '+esc(c.variants[k]):''}</div>`).join('');}
 function renderCreatives(){
   fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
@@ -2120,19 +2119,20 @@ function renderCreatives(){
   document.getElementById('creativeBody').innerHTML=rows.map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
     <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
-    <td>${linkHyp(c)}${crHypExtra(c)}</td>
+    <td>${linkHyp(c)}</td>
     <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
     <td><span class="qt">${crTM(c,'format')}<b>${esc(c.fmt||'—')}</b></span>${crVar(c,'format')}</td>
     <td><span class="qt" title="${esc(ZH[c.hook]||c.hook||'')}">${crTM(c,'hook')}${esc(c.hook||'—')}</span>${crVar(c,'hook')}</td>
     <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${crTM(c,'visual_style')}${esc(c.vs||'—')}</span>${crVar(c,'visual_style')}</td>
-    <td class="code">${esc(c.spend||'—')}</td><td class="code"><b>${esc(c.fdc||'—')}</b></td><td class="code">${esc(c.cpa||'—')}</td>
+    <td><span class="qt" title="${esc(ZH[c.offer]||c.offer||'')}">${crTM(c,'offer')}${esc(c.offer||'—')}</span>${crVar(c,'offer')}</td>
+    <td><span class="qt" title="${esc(ZH[c.game_type]||c.game_type||'')}">${crTM(c,'game_type')}${esc(c.game_type||'—')}</span>${crVar(c,'game_type')}</td>
     <td><span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span></td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
       ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
       ${c.act==='confirm'?`<button class="btn danger sm" onclick="confirmPaused('${c.code}')">确认已暂停</button>`:''}
     </td>
-   </tr>`).join('')||'<tr><td colspan="12" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无素材</td></tr>';
+   </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无素材</td></tr>';
   const setN=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   setN('stat-c-total',creatives.length);setN('stat-c-live',creatives.filter(c=>c.st==='上线中').length);
   setN('stat-c-done',creatives.filter(c=>c.st==='已下线').length);setN('stat-c-wait',creatives.filter(c=>c.st==='待上线').length);
