@@ -14,6 +14,14 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v61] — 2026-07-08 · Slack 通知正式上线(格式定稿)
+
+- **链路**:dashboard → n8n「MIS Slack Notify」(webhook, 格式化+按品牌分频道)→ 原生 Slack 节点直发(OAuth,以 V 账号身份);「MIS Daily Reminders」每天 09:00 跑。Make 中转已删除。
+- **频道**:USC(OK188/17WIN/SBKH)→ #ops-marketing-usc-mis;INZ9 → #ops-marketing-inz9-mis。
+- **格式按 V 定稿**:计划确认 = 标题✅/预算/空行/按 Stage 分组(斜体标题,组间空行)/空行/CC 一排;预算待决/已定 = 标题+全角括号月份/分行明细/@人;提醒类 = 「标题 @人」换行内容;月度节奏叫 1st/2nd/3rd Reminder(20/25/30 号);金额千分位、逗号全角。
+- @人 用 <@ID>(经 bot API 是真 mention);Slack ID 已核实 6 人。
+- 全部经 #test-test 实测验收通过。发送人身份暂用 V 账号(要换 bot 时建 app 拿 xoxb token 即可切)。
+
 ## [v60] — 2026-07-07 · Slack 通知链路接通(Phase B)
 
 - **前端**:`misNotify()` → POST 到 adam mkt n8n `webhook/mis-notify`;三个触发点接上 —— Monthly Overview「确认发送」(整月计划 point-form)、Budget 升级「待决策」(@决策人)、「已定」(cc mkt+usc)。demo 模式不发。
