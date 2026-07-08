@@ -1044,7 +1044,7 @@ function stageColor(code){return ({
   'Reactivation':['var(--red-bg)','var(--red)']
 })[code]||['var(--bg2)','var(--ink2)'];}
 // 对比页 / 裁判用的 5 维(人群、年龄已上移到 New Hypothesis 假设级);[key,label,required]
-const MATRIX_DIMS=[['format','Format',1],['hook','Hook',1],['visual_style','视觉风格'],['offer','Offer'],['game_type','游戏类型']];
+const MATRIX_DIMS=[['format','Format',1],['hook','Hook',1],['visual_style','Visual Style'],['offer','Offer'],['game_type','Game Type']];
 const MATRIX_DIM_KEYS=MATRIX_DIMS.map(d=>d[0]);
 
 /* ===== P2 裁判:一致性检查(只警告不阻断)===== */
@@ -1096,7 +1096,7 @@ function renderTagMatrix(){
   const editable=!setupLocked||isAdmin;
   const dis=editable?'':'disabled';
   // 表头
-  const head=`<tr><th style="min-width:130px">素材</th>${MATRIX_DIMS.map(d=>{const t=isTested(d[0]);return `<th style="min-width:120px;${t?'background:rgba(127,119,221,.12)':''}">${t?'':'🔒 '}${d[1]}${d[2]?' <span style="color:var(--red)">*</span>':''}${t?' <span style="color:var(--violet);font-weight:400;font-size:11px">▲在测</span>':''}</th>`;}).join('')}</tr>`;
+  const head=`<tr><th style="min-width:130px">Asset</th>${MATRIX_DIMS.map(d=>{const t=isTested(d[0]);return `<th style="min-width:120px;${t?'background:rgba(127,119,221,.12)':''}">${t?'':'🔒 '}${d[1]}${d[2]?' <span style="color:var(--red)">*</span>':''}${t?' <span style="color:var(--violet);font-weight:400;font-size:11px">▲在测</span>':''}</th>`;}).join('')}</tr>`;
   // 表体:在测维度=可选(草稿)/ 文本(已锁);锁定维度=全组值文本
   const body=cr.length?cr.map(c=>`<tr>
       <td><span class="code">${c.code}</span><br><small style="color:var(--ink3)">${c.st}</small></td>
@@ -1106,14 +1106,15 @@ function renderTagMatrix(){
           if(editable){
             const empty=d[2]&&!(c[k]||'');
             let vpart='';
-            if(tested.length===1){   // 变体名:仅单维度测试时可用(v62)
+            // Variant:仅单维度测试 + 各行取值相同(变体测试场景)时出现;取值一旦不同即隐藏(v64)
+            const baseUniform=tested.length===1&&cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
+            if(baseUniform){
               const base=c[k]||'';
-              const baseUniform=cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
-              const need=baseUniform&&!vv;
+              const need=!vv;
               const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
               vpart=`<div style="border:1px dashed ${need?'var(--red)':'var(--violet)'};border-radius:8px;padding:6px 8px 8px;margin-top:7px;background:rgba(127,119,221,.08)">
-                <span style="display:block;font-size:10.5px;color:${need?'var(--red)':'var(--violet)'};font-weight:700;margin:0 0 4px">变体名${baseUniform?' <span style="color:var(--red)">*</span>':'(可选)'}</span>
-                <input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'如 Boxing King (JILI) / 甄子丹':''}" onchange="tmVariantChange(this)" style="width:100%;font-size:12.5px;padding:5px 9px;border:1px solid ${need?'var(--red)':'var(--violet)'};border-radius:6px;background:var(--bg,#fff);color:var(--ink,#161b22)">
+                <span style="display:block;font-size:10.5px;color:${need?'var(--red)':'var(--violet)'};font-weight:700;margin:0 0 4px">Variant <span style="color:var(--red)">*</span></span>
+                <input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'e.g. Boxing King (JILI) / 甄子丹':''}" onchange="tmVariantChange(this)" style="width:100%;font-size:12.5px;padding:5px 9px;border:1px solid ${need?'var(--red)':'var(--violet)'};border-radius:6px;background:var(--bg,#fff);color:var(--ink,#161b22)">
                 <datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>
               </div>`;
             }
@@ -1226,6 +1227,15 @@ async function tmCellChange(sel){
   const dimDef=MATRIX_DIMS.find(d=>d[0]===dim);sel.style.borderColor=(dimDef&&dimDef[2]&&!val)?'var(--red)':'';
   try{const upd={updated_at:new Date().toISOString()};upd[dim]=val;const {error}=await db.from('creatives').update(upd).eq('gen_code',gen);if(error)throw error;}
   catch(e){toast('保存失败: '+rpcErr(e));}
+  // 取值不再全同 → 变体测试场景消失,清掉本假设该维度的旧变体(界面上输入框也随之隐藏)(v64)
+  const hyp=hypos.find(h=>h.id===window._tmHyp);
+  if(hyp){
+    const cs=creatives.filter(x=>(x.hyp||'').startsWith(hyp.id));
+    const uniform=cs.length>=2&&cs.every(x=>x[dim])&&new Set(cs.map(x=>x[dim])).size===1;
+    if(!uniform){for(const x of cs){if(x.variants&&x.variants[dim]){x.variants=Object.assign({},x.variants);delete x.variants[dim];
+      try{await db.from('creatives').update({variants:x.variants,updated_at:new Date().toISOString()}).eq('gen_code',x.gen);}catch(e){}
+    }}}
+  }
   renderTagMatrix();   // 改完素材值重算一致性红条(否则停在改之前的旧状态)
 }
 /* 变体名规范化(v62):① 去首尾/多余空格 ② 忽略大小写与已有变体相同 → 采用已有写法 ③ 否则每个词首字母大写(其余不动,JILI 保持 JILI) */
