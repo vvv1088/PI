@@ -4,6 +4,7 @@
 
 | # | 文档 | 给谁 / 什么时候看 |
 |---|---|---|
+| 00 | [transparency](00_transparency.md) | 所有人（尤其 USC/决策人）：系统如何用透明代替汇报、想了解什么去哪看 |
 | 01 | [architecture](01_architecture.md) | 工程：整体架构、数据流、为什么这么建 |
 | 02 | [code_style_guide](02_code_style_guide.md) | 写/改代码前：约定、命名、模式 |
 | 03 | [code_map](03_code_map.md) | 找 bug / 做扩展：函数在哪、字段是什么、workflow 节点、RPC、排查入口 |
