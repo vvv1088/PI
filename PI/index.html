@@ -1111,7 +1111,11 @@ function renderTagMatrix(){
               const baseUniform=cr.length>=2&&cr.every(x=>x[k])&&new Set(cr.map(x=>x[k])).size===1;
               const need=baseUniform&&!vv;
               const opts=[...new Set(creatives.filter(x=>x.variants&&x.variants[k]&&(x[k]||'')===base).map(x=>x.variants[k]))];
-              vpart=`<input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'变体名(取值相同时必填)':'变体名(可选)'}" onchange="tmVariantChange(this)" style="width:100%;margin-top:5px;font-size:12px;padding:4px 8px;border:1px solid ${need?'var(--red)':'var(--line)'};border-radius:6px;color:var(--violet)"><datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+              vpart=`<div style="border:1px dashed ${need?'var(--red)':'var(--violet)'};border-radius:8px;padding:6px 8px 8px;margin-top:7px;background:rgba(127,119,221,.08)">
+                <span style="display:block;font-size:10.5px;color:${need?'var(--red)':'var(--violet)'};font-weight:700;margin:0 0 4px">变体名${baseUniform?' <span style="color:var(--red)">*</span>':'(可选)'}</span>
+                <input type="text" list="dlv-${esc(c.gen)}-${k}" data-gen="${esc(c.gen)}" data-dim="${k}" value="${esc(vv)}" placeholder="${need?'如 Boxing King (JILI) / 甄子丹':''}" onchange="tmVariantChange(this)" style="width:100%;font-size:12.5px;padding:5px 9px;border:1px solid ${need?'var(--red)':'var(--violet)'};border-radius:6px;background:var(--bg,#fff);color:var(--ink,#161b22)">
+                <datalist id="dlv-${esc(c.gen)}-${k}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>
+              </div>`;
             }
             return `<td style="background:rgba(127,119,221,.05)"><select data-gen="${esc(c.gen)}" data-dim="${k}" onchange="tmCellChange(this)" style="width:100%${empty?';border-color:var(--red)':''}">${dimTabOpts(k,c[k]||'')}</select>${vpart}</td>`;
           }
