@@ -14,6 +14,13 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
+## [v67] — 2026-07-08 · Creatives 列表 🧪 在测维度标记
+
+- 每条素材行上,**在测的维度前加 🧪**(Format/Hook/Visual Style 列内直接标);测 Offer / Game Type(列表无此列)时在假设编号下方显示「🧪 Offer · 变体名」。一眼看出每条素材这次测什么。
+- 修显示错位:此前 Offer/Game Type 的变体名错挂在 Visual Style 列下,现跟随 🧪 标记显示在正确位置。
+- 清理:删除 V 测试产生的 HYP-062-V2/V3/V4(库内,created_by=vvv)。
+- 备注:V 反馈 v65 排序在线上未生效;经真实数据模拟排序逻辑正确,判断为线上文件未更新/缓存,本版文件重新发放上传。
+
 ## [v66 — 已撤销,未上线] — 2026-07-08 · Variant 的 Format 例外
 
 - 曾做:Format 取值不同时免填 Variant。**V 复议后撤销**:Format 的 Variant 也有用(时长 15s/30s、配色等),规则回到 v65「五个维度一视同仁,恒必填」。此版从未上传 cPanel,`index.html` 已还原为 v65。
