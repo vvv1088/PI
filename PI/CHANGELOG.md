@@ -14,11 +14,9 @@ v5(1906行) → v6(1906行) → v7(1919行,=v7_1 同一份) → v8(1962行,=v8_1
 - `index_v7_1.html` 与 `index_v7.html` 字节相同;`index_v8_1.html` 与 `index_v8.html` 字节相同 —— `_1` 仅为重复另存的副本,非分叉版本。
 - 历史导出文件仍留在 `~/Downloads/`(v5–v9),未改动;可随时自行清理。
 
-## [v66] — 2026-07-08 · Variant 的 Format 例外
+## [v66 — 已撤销,未上线] — 2026-07-08 · Variant 的 Format 例外
 
-- **Format 免填 Variant**(V double confirm):4 种机械格式(视频/静态图/轮播/DCO)取值即全部信息,无内容变体。在测 Format 且取值不同 → 不显示 Variant 框、不要求填。
-- **保留后门**:Format 在测且取值全同(如同是视频测 15s vs 30s)→ Variant 框出现当区分器,规则同内容维度。
-- Hook / Visual Style / Offer / Game Type 不变(恒必填)。
+- 曾做:Format 取值不同时免填 Variant。**V 复议后撤销**:Format 的 Variant 也有用(时长 15s/30s、配色等),规则回到 v65「五个维度一视同仁,恒必填」。此版从未上传 cPanel,`index.html` 已还原为 v65。
 
 ## [v65] — 2026-07-08 · Variant 恒必填(含交叉测) + Creatives 分组排序 + Monthly 默认当月
 
