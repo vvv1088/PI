@@ -1,5 +1,15 @@
 # Changelog — Marketing Intelligent System
 
+## [v69] — 2026-08-11 · 新登录页(V 设计)
+
+- **登录门整体替换**为 V 的新设计:暗色 hero 场景 + 6 只吉祥物跟随鼠标 3D 转头 + 眼球高光点动效,表单(Username/Password/显隐密码/Sign In/反馈条)。
+- **体积优化**:8 张内嵌 PNG 转 WebP(hero q82,头像 q90),1665KB → 127KB,整页 408KB(原稿 2.28MB);hero 图里烙死的 "Welcome back" 文字用地板纹理擦除(否则与 h1 重影)。
+- **接线**:`doLogin()` 改读新表单(id username/password),错误/状态走 `#feedback`;表单 submit + Enter 均触发;登录逻辑(Supabase Auth/profile 校验/audit)不变。动效在门隐藏后停止渲染。
+- **隔离**:新页 CSS 全部 `#loginGate` 前缀 + 变量落地,不污染仪表盘样式;旧 lg* 样式/lgKey 清除。
+- 验证:17 视图无头冒烟零报错 + 登录门渲染 ✓。
+
+## [后端] — 2026-08-10 · 提醒管道大修 + 「发送计划」三连催
+
 ## [后端] — 2026-08-10 · 提醒管道大修 + 「发送计划」三连催
 
 - **修复 Daily Reminders 全量丢失 bug**:n8n「MIS Daily Reminders」的 Split Messages 只读第一个 item,导致上线以来所有每日提醒(含 7/20 的 4 条 1st Reminder)一条未发。修复后 #test-test 实测 24 条全部送达,已恢复正式频道路由。

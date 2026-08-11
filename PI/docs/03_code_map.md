@@ -109,7 +109,9 @@
 - `tmSaveLock()` — Save 锁定（不一致拦下；锁后只读、仅 Admin 解锁，存 `locked_tags._locked`）。
 - `tmUnlock()` — 解锁回 Draft（仅 Admin）。
 - `tmEditable()` / `tmSaveHyp(hyp,patch)` — 可编辑判定 / 存假设字段。
-- **变体标注（v62）**：`tmVariantChange`（保存变体，重算红条）/ `tmNormVariant`（已有写法优先→Title Case）/ `tmTitleCase` / `crVar`（列表显示 `· 变体` 小字）。存 `creatives.variants jsonb`；仅单维度测试时生效（`checkHypoConsistency` 的 `single`/`variantGap`）；取消勾选维度时 `tmToggleDim` 自动清掉不合法变体。
+- **变体标注（v62，v65 定稿）**：`tmVariantChange`（保存变体，重算红条）/ `tmNormVariant`（已有写法优先→Title Case）/ `tmTitleCase` / `crVar`（列表显示 `· 变体` 小字）/ `crTestDims`/`crTM`（列表 🧪 在测维度标记，v67）。存 `creatives.variants jsonb`；在测维度恒必填（含交叉测，`checkHypoConsistency` 的 `varMissing`，有效值=取值+变体）；取消勾选维度时 `tmToggleDim` 自动清掉不合法变体；改取值时清本行本维度旧变体。
+- **Creatives 列表（v65-v68）**：按假设分组排序（组间按最新素材倒序、组内 V 序正序）；v68 删 Spend/FDC/CPA 列、补 Offer/Game Type 列。
+- **登录页（v69）**：V 设计的暗色 hero + 吉祥物动效；`doLogin` 读 `#username/#password`、反馈进 `#feedback`；动效 IIFE 在门隐藏时停止渲染；图片 WebP 内嵌（127KB）。
 - 常量：`MATRIX_DIMS`（5 维 `[key,label,required]`）、`MATRIX_DIM_KEYS`、`DIM_DICT_TAB`（维度 key → 字典 tab）、`dimLabel`/`dimTabOpts`/`dictName`/`optsHtml`。
 
 ### Creatives

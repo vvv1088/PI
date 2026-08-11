@@ -207,7 +207,7 @@ dashboard 事件(确认发送/预算待决/已定)
    → n8n「MIS Slack Notify」(webhook mis-notify:格式化+@人+按品牌分频道)
    → Slack 原生节点(MIS Bot 应用直发)
 n8n「MIS Daily Reminders」每天 09:00 → Supabase RPC mis_reminders(密钥校验)
-   → 逐条转发 mis-notify(到期未判定/该上线/20-25-30 月度节奏/效果告警/周一汇总)
+   → 逐条转发 mis-notify(到期未判定/该上线/预算瓶颈催办 20·23·26·29/发送计划催办 25·27·30/待决策超48h/效果告警/周一汇总)
 ```
 频道:USC → #ops-marketing-usc-mis;INZ9 → #ops-marketing-inz9-mis。
 

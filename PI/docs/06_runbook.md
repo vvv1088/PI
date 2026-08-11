@@ -171,7 +171,8 @@ python3 PI/demo_src/gen_demo.py
 api.slack.com/apps → **MIS Bot** → OAuth & Permissions → 复制 **Bot User OAuth Token(xoxb-)** → n8n Credentials「MIS Bot」替换保存。注意 scope 要在 **Bot Token Scopes**(不是 User)且含 `chat:write`;bot 加新频道用频道 → Integrations → Add apps。
 
 ### 提醒时间 / 月度节奏
-「MIS Daily Reminders」触发器 = 每天 09:00(要改在 Schedule 节点);月度 20/25/30 号三段写在 `mis_reminders` RPC 的 `d=20/25/25` 分支。
+「MIS Daily Reminders」触发器 = 每天 09:00(要改在 Schedule 节点)。月度节奏(2026-08-10 改版)全部写在 `mis_reminders` RPC:**预算瓶颈催办** 20/23/26/29 号(每品牌只催卡住的一步:申请没填@mkt→核批没填@usc→待决策@zq)、**发送计划催办** 25/27/30 号(@mkt)、**待决策超 48 小时**每日兜底(@zq);短月(2 月)29/30 档自动落到当月最后一天。
+> ⚠️ 历史坑(2026-08-10 修):Daily Reminders 的 Split Messages 节点曾只读第一个 item,导致所有提醒静默丢弃——改动该节点后务必手动 Execute + `channel_override` 到 #test-test 验证真的有消息发出,不要只看执行 success。
 
 ### n8n 配额
 2026-07-08 已升级付费档;若再见「Execution limit reached」→ app.n8n.cloud → Usage and plan 检查/升档(通知、每日提醒、AI 想法全在此账号)。

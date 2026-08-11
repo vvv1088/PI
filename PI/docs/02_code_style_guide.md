@@ -75,7 +75,7 @@ function gameTypesOf(a){ return (a.game_type||'').split(',').map(s=>s.trim()).fi
 - **排期/日期**：月-日解析统一走 `parseMD`/`fmtMD`；周口径用 `isoWeekOf`。素材排期**继承假设**（`hypSchedOf`），不在素材上另存一份。
 - **单一数据源原则**：同一个数值出现在两处 UI（如 测试周期 同时驱动 Schedule 和 Capacity Check）时，存一个字段、两处读取，不建第二个字段。
 - **并发写冲突**：多人可能同时编辑的行（budgets），保存前比对服务端最新值/状态，不一致时提示刷新而非直接覆盖。
-- **变体标注（v62）**：「同一取值下的不同变体」（同风格不同游戏/人物）用 `creatives.variants jsonb` 表达，**禁止再往 Dictionary 塞人名/游戏名当取值**。规则：仅单维度测试可用、只挂在测维度、裁判有效值=取值+变体；自由文本入库前必须过 `tmNormVariant`（已有写法优先 → Title Case + 空格归一），提示候选用 datalist。
+- **变体标注（v62，v65 定稿）**：「这条素材具体是什么」用 `creatives.variants jsonb` 表达，**禁止再往 Dictionary 塞人名/游戏名当取值**。规则：在测维度恒必填（单测+交叉都是）；取值相同=区分器（互不相同）、取值不同=内容备注（可相同）；交叉测同取值的 Variant 必须一致（裁判按有效值=取值+变体校验 2×2）；自由文本入库前必须过 `tmNormVariant`（已有写法优先 → Title Case + 空格归一），提示候选用 datalist。
 
 ---
 
