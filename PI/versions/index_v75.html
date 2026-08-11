@@ -523,7 +523,7 @@
 
   <div class="tablebar">
     <select id="f-market" onchange="marketChange()">
-      <option value="">All Markets</option><option value="USC">USC</option><option value="MY">MY</option><option value="SG">SG</option>
+      <option value="">All Markets</option><option value="KH">KH</option><option value="MY">MY</option>
     </select>
     <select id="f-hbrand" onchange="renderHypo()">
       <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
@@ -576,12 +576,6 @@
             <select id="hf-brand" onchange="onBrandChange()">
               <option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
             </select>
-          </div>
-          <div class="fld"><label>市场</label>
-            <select id="hf-market"><option>USC</option></select>
-          </div>
-          <div class="fld"><label>广告目标 Ad Setting</label>
-            <select id="hf-setting"><option value="SALES">Sales（默认）</option></select>
           </div>
           <div class="fld"><label>起因</label>
             <select id="hf-trigger">
@@ -1094,7 +1088,6 @@ function syncMetricByBrand(){
 }
 function onBrandChange(){
   const brand=document.getElementById('hf-brand').value,cfg=BRAND_METRIC[brand];
-  fillHfMarket(brand);   // v76:市场下拉 = 该品牌可投市场(INZ9 出 MY/SG,其余锁 USC)
   syncMetricByBrand();
   // 指标被替换的品牌(OK188/17WIN/SBKH):清空旧数值,不平移到新指标
   if(cfg){['hf-target','hf-pct','hf-guard-v'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});}
@@ -1252,14 +1245,8 @@ async function tmEnsureRows(hyp,target){
   if(existing.length>=target)return false;
   const used=existing.map(c=>{const mm=(c.gen||'').match(/-V(\d+)$/);return mm?+mm[1]:0;});
   let n=used.length?Math.max(...used):0;const locked=hyp.lockedTags||{};const rows=[];
-  // v76:正式发号 —— 每条新素材领 ref code(市场前缀+假设批次+流水),批次首次分配时回写 hypotheses.ref_batch
-  let refInfo=null;
-  try{refInfo=MISNaming.officialRefs(hyp,target-existing.length);}catch(e){console.warn('发号失败(素材仍会创建):',e);}
-  for(let i=existing.length;i<target;i++){n++;const row={gen_code:hyp.id+'-V'+n,ads_code:null,ref_code:refInfo?(refInfo.refs[i-existing.length]||null):null,hyp_code:hyp.id,hyp_label:hyp.id+' · '+hyp.x,label:'素材 '+n,status:'待上线',created_by:(currentUser&&currentUser.name)||''};MATRIX_DIM_KEYS.forEach(k=>{if(!(hyp.testDims||[]).includes(k))row[k]=locked[k]||null;});rows.push(row);}
+  for(let i=existing.length;i<target;i++){n++;const row={gen_code:hyp.id+'-V'+n,ads_code:null,hyp_code:hyp.id,hyp_label:hyp.id+' · '+hyp.x,label:'素材 '+n,status:'待上线',created_by:(currentUser&&currentUser.name)||''};MATRIX_DIM_KEYS.forEach(k=>{if(!(hyp.testDims||[]).includes(k))row[k]=locked[k]||null;});rows.push(row);}
   try{const {error}=await db.from('creatives').insert(rows);if(error)throw error;}catch(e){toast('自动加素材失败: '+rpcErr(e));return false;}
-  if(refInfo&&refInfo.batch&&hyp.refBatch!==refInfo.batch){
-    try{await db.from('hypotheses').update({ref_batch:refInfo.batch}).eq('code',hyp.id);hyp.refBatch=refInfo.batch;}catch(e){console.warn('ref_batch 回写失败:',e);}
-  }
   return true;
 }
 async function tmTrimRows(hyp,target){
@@ -1382,7 +1369,7 @@ function promote(id){
 }
 function prepHypoSelects(){
   document.querySelectorAll('#v-form select').forEach(sel=>{
-    if(sel.id==='hf-guard-op'||sel.id==='hf-metric'||sel.id==='hf-guard-m'||sel.id==='hf-persona'||sel.id==='hf-age'||sel.id==='hf-market'||sel.id==='hf-setting')return;
+    if(sel.id==='hf-guard-op'||sel.id==='hf-metric'||sel.id==='hf-guard-m'||sel.id==='hf-persona'||sel.id==='hf-age')return;
     if(![...sel.options].some(o=>o.value===''&&/unselected/i.test(o.textContent))){
       const o=document.createElement('option');o.value='';o.textContent='— unselected —';sel.insertBefore(o,sel.firstChild);
     }
@@ -1393,8 +1380,6 @@ function resetHypoForm(){
   // 人群 / 年龄段:词表动态读 DICT
   const pe=document.getElementById('hf-persona');if(pe)pe.innerHTML=dimTabOpts('audience','');
   const ae=document.getElementById('hf-age');if(ae)ae.innerHTML=dimTabOpts('age','');
-  // v76:市场跟品牌走,广告目标读字典 Ad Setting
-  fillHfMarket((document.getElementById('hf-brand')||{}).value||'');fillHfSetting('');
   const se=document.getElementById('hf-stage');if(se)se.innerHTML=stageOpts('');
   ['hf-brand','hf-persona','hf-age','hf-stage','hf-type','hf-trigger','hf-evi','hf-metric','hf-guard-m'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['hf-x','hf-target','hf-pct','hf-guard-v','cc-budget','hf-plan-launch','hf-plan-days'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -1419,7 +1404,7 @@ async function saveHypothesis(status){
   const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const brand=g('hf-brand');
   const x=g('hf-x').trim();
-  const market=g('hf-market')||brandMarkets(brand)[0]||'USC';   // v76:市场是明确选择(INZ9 可选 MY/SG)
+  const market=(brand==='INZ9')?'MY':'KH';
   const now=new Date();const month=now.toLocaleString('en-US',{month:'short'})+' '+now.getFullYear();
   let from='…';try{const ob=getBase().own;if(ob&&ob.base!=null)from=(ob.unit==='周均'?'周均 ':'')+ob.base;}catch(e){}
   const gm=g('hf-guard-m');const guard=gm?(gm+' '+g('hf-guard-op')+' '+g('hf-guard-v')):'无';
@@ -1431,7 +1416,7 @@ async function saveHypothesis(status){
   if(planLaunch&&!parseMD(planLaunch)){toast('预计上线日格式应为 M/D,如 7/12');return;}
   const planDaysRaw=g('hf-plan-days').trim();const planDays=planDaysRaw===''?null:parseInt(planDaysRaw,10);
   if(planDaysRaw!==''&&(isNaN(planDays)||planDays<=0)){toast('测试天数应为正整数');return;}
-  const row={statement:x,metric:g('hf-metric'),val_from:from,val_to:g('hf-target'),mode:'新测试',market:market,month:month,brand:brand,test_type:g('hf-type'),owner:(currentUser&&currentUser.name)||'',capacity:cap,status:status,idea_code:pi?pi.code:null,idea_label:pi?(pi.code+' · '+pi.src):null,evidence:evidence,guard:guard,trigger_type:g('hf-trigger'),persona:g('hf-persona'),age_range:g('hf-age'),customer_stage:g('hf-stage')||null,plan_launch:planLaunch||null,plan_test_days:planDays,ad_setting:g('hf-setting')||'SALES',created_by:(currentUser&&currentUser.name)||''};
+  const row={statement:x,metric:g('hf-metric'),val_from:from,val_to:g('hf-target'),mode:'新测试',market:market,month:month,brand:brand,test_type:g('hf-type'),owner:(currentUser&&currentUser.name)||'',capacity:cap,status:status,idea_code:pi?pi.code:null,idea_label:pi?(pi.code+' · '+pi.src):null,evidence:evidence,guard:guard,trigger_type:g('hf-trigger'),persona:g('hf-persona'),age_range:g('hf-age'),customer_stage:g('hf-stage')||null,plan_launch:planLaunch||null,plan_test_days:planDays,created_by:(currentUser&&currentUser.name)||''};
   let code;
   const editCode=window._editHypoCode||null;
   try{
@@ -1460,33 +1445,12 @@ async function saveHypothesis(status){
   toast('假设已保存 '+code+' · '+status+' — 打开它用「＋ 加素材」逐支建骨架');go('hypo');
 }
 
-/* v76:品牌×市场从 brand_aliases 主数据来(登录后 MISNaming.syncFromDb 会调 refreshMktBrands 覆盖),
- * 此处为离线/mock fallback。市场词汇统一为 USC/MY/SG(存量 'KH' 读侧归一为 USC,库已迁移)。 */
-const MKT_BRANDS={USC:['OK188KH','17WINKH','SBKH'],MY:['INZ9'],SG:['INZ9']};
-function allMktBrands(){return [...new Set(Object.values(MKT_BRANDS).flat())];}
-function brandMarkets(b){return Object.keys(MKT_BRANDS).filter(m=>MKT_BRANDS[m].includes(b));}
-function refreshMktBrands(){
-  try{
-    const out={};
-    (MISNaming.BRANDS||[]).filter(x=>x.status==='active').forEach(x=>(x.markets||[]).forEach(m=>{(out[m]=out[m]||[]).push(x.code);}));
-    if(Object.keys(out).length){Object.keys(MKT_BRANDS).forEach(k=>delete MKT_BRANDS[k]);Object.assign(MKT_BRANDS,out);}
-  }catch(e){}
-}
-function fillHfMarket(brand,cur){
-  const e=document.getElementById('hf-market');if(!e)return;
-  const list=brandMarkets(brand);
-  e.innerHTML=(list.length?list:['USC']).map(m=>`<option${m===cur?' selected':''}>${m}</option>`).join('');
-}
-function fillHfSetting(cur){
-  const e=document.getElementById('hf-setting');if(!e)return;
-  const rows=(DICT['Ad Setting']||[]).filter(r=>r.on!==false);
-  if(rows.length)e.innerHTML=rows.map(r=>`<option value="${esc(r.c)}"${r.c===(cur||'SALES')?' selected':''}>${esc(r.n||r.c)}</option>`).join('');
-}
+const MKT_BRANDS={KH:['OK188KH','17WINKH','SBKH'],MY:['INZ9']};
 function marketChange(){
   const m=document.getElementById('f-market').value;
   const bSel=document.getElementById('f-hbrand');
   const keep=bSel.value;
-  const list=m?(MKT_BRANDS[m]||[]):allMktBrands();
+  const list=m?MKT_BRANDS[m]:[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
   bSel.innerHTML='<option value="">All Brands</option>'+list.map(b=>`<option>${b}</option>`).join('');
   bSel.value=list.includes(keep)?keep:'';
   renderHypo();
@@ -1539,7 +1503,7 @@ function editHypothesis(i){
   window._editHypoCode=h.id;window._promoteIdea=null;
   resetHypoForm();
   const setV=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null&&v!=='')e.value=v;};
-  setV('hf-brand',h.brand);fillHfMarket(h.brand,h.market);fillHfSetting(h.adSetting);syncMetricByBrand();const bcfg=BRAND_METRIC[h.brand];
+  setV('hf-brand',h.brand);syncMetricByBrand();const bcfg=BRAND_METRIC[h.brand];
   setV('hf-type',h.type);setV('hf-trigger',h.trigger);setV('hf-persona',h.persona);setV('hf-age',h.age);
   {const se=document.getElementById('hf-stage');if(se){se.innerHTML=stageOpts(h.stage||'');}}
   setV('hf-plan-launch',h.planLaunch);setV('hf-plan-days',h.planDays!=null?String(h.planDays):'');
@@ -2725,7 +2689,7 @@ function renderMonthlyPlan(){
   if(!mpMonth||arr.indexOf(mpMonth)<0)mpMonth=bgCurMonth();   // 默认永远=当前月(此前取 arr[0] 会跳到排期最远的月份,v65 修)
   sel.innerHTML=arr.map(m=>`<option${m===mpMonth?' selected':''}>${m}</option>`).join('');
   const fb=(document.getElementById('mp-brand')||{value:''}).value;
-  const allBrands=allMktBrands().filter(x=>!fb||x===fb);
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY].filter(x=>!fb||x===fb);
   document.getElementById('mpBanner').innerHTML='';
   let okBudget=0,nHypo=0,nReady=0,issues=[];window._mpBrandIssues={};
   document.getElementById('mpBody').innerHTML=allBrands.map(br=>{
@@ -2909,7 +2873,7 @@ async function bgReopen(mo,br){
 }
 function renderBudget(){
   bgFillMonths();bgRenderDemoBar();
-  const allBrands=allMktBrands();
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
   let tReq=0,tAll=0,tFin=0,tSp=0;
   document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{
     const e=bgEntry(bgMonth,br)||{},a=bgAssign(br);
@@ -3010,7 +2974,7 @@ function bgSwitchUser(un){const u=users.find(x=>x.username===un);if(!u)return;cu
 // Budget 分工编辑(Administration → Budget 分工,仅 Admin)
 function renderBgAssign(){
   const el=document.getElementById('bgAssignBody');if(!el)return;
-  const allBrands=allMktBrands();
+  const allBrands=[...MKT_BRANDS.KH,...MKT_BRANDS.MY];
   const opt=(sel)=>'<option value="">— 空 —</option>'+users.map(u=>`<option value="${u.username}"${u.username===sel?' selected':''}>${esc(u.name)}</option>`).join('');
   const dis=bgIsAdmin()?'':' disabled';
   el.innerHTML=allBrands.map(br=>{const a=bgAssign(br);return `<tr>
@@ -3036,8 +3000,8 @@ async function saveBgAssign(br,field,val){
 }
 async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
 async function loadIdeas(){const {data,error}=await db.from('ideas').select('*').order('created_at',{ascending:false});if(error){showErr('loadIdeas 加载失败: '+error.message);}ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
-async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:(r.market==='KH'?'USC':r.market),adSetting:r.ad_setting||'SALES',refBatch:r.ref_batch||null,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
-async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',ref:r.ref_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,variants:r.variants||{},planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
+async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:r.market,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
+async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,variants:r.variants||{},planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}
 function daysSince(ts){try{return Math.max(0,Math.floor((Date.now()-new Date(ts).getTime())/86400000));}catch(e){return 0;}}
 function fmtMMDD(ts){try{const d=new Date(ts);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}catch(e){return '';}}
 async function doLogin(){

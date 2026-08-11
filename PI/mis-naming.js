@@ -50,12 +50,12 @@ window.MISNaming = (function () {
 
   /* Ad Setting(V 定;TRSA 为现行默认,其余为 Meta 六大 objective 补齐) */
   const SETTINGS = [
-    { code: 'TRSA', label: 'Sales' },
-    { code: 'AWAR', label: 'Awareness' },
-    { code: 'TRFC', label: 'Traffic' },
-    { code: 'ENGA', label: 'Engagement' },
-    { code: 'LEAD', label: 'Leads' },
-    { code: 'APPP', label: 'App Promotion' },
+    { code: 'TRSA', dictCode: 'SALES',      label: 'Sales' },
+    { code: 'AWAR', dictCode: 'AWARENESS',  label: 'Awareness' },
+    { code: 'TRFC', dictCode: 'TRAFFIC',    label: 'Traffic' },
+    { code: 'ENGA', dictCode: 'ENGAGEMENT', label: 'Engagement' },
+    { code: 'LEAD', dictCode: 'LEADS',      label: 'Leads' },
+    { code: 'APPP', dictCode: 'APP_PROMO',  label: 'App Promotion' },
   ];
 
   /* Format(与 MIS 字典 1:1;IM/VD 为生产已用,CR/DC 为 V 确认新定) */
@@ -92,10 +92,11 @@ window.MISNaming = (function () {
         const fmts = ds.data.filter(r => r.tab === 'Format' && r.active && r.short_code);
         if (fmts.length) { Object.keys(FORMATS).forEach(k => delete FORMATS[k]); fmts.forEach(r => { FORMATS[r.code] = r.short_code; }); }
         const sets = ds.data.filter(r => r.tab === 'Ad Setting' && r.active && r.short_code).sort((a, b) => (a.sort || 0) - (b.sort || 0));
-        if (sets.length) { SETTINGS.length = 0; sets.forEach(r => SETTINGS.push({ code: r.short_code, label: r.name })); }
+        if (sets.length) { SETTINGS.length = 0; sets.forEach(r => SETTINGS.push({ code: r.short_code, dictCode: r.code, label: r.name })); }
       }
       rebuild();
       synced = true;
+      try { if (typeof refreshMktBrands === 'function') refreshMktBrands(); } catch (e2) {}
     } catch (e) { /* 离线/mock:保持常量 */ }
   }
   setTimeout(syncFromDb, 2500);   // 登录后自动同步;fvGen 前也会再试一次
@@ -186,6 +187,30 @@ window.MISNaming = (function () {
     return pre + String(nb).padStart(2, '0') + '01';
   }
 
+  /* v76:正式发号 —— 建素材时调用,批次优先用 hyp.refBatch(已落库的),
+   * 没有则在该市场内分配下一个批次(同时看已用 ref 和其他假设已领的 ref_batch)。
+   * 返回 {batch, refs:[...count 个连续 ref]};唯一性由 creatives.ref_code 唯一索引兜底。 */
+  function officialRefs(hyp, count) {
+    const mk = MARKETS[hyp.market || 'USC'];
+    if (!mk || !count || count < 1) return null;
+    const pre = mk.refPrefix;
+    const used = refsInUse().filter(r => r.indexOf(pre) === 0);
+    let batch = hyp.refBatch || null;
+    if (!batch) {
+      const taken = used.map(r => Number(r.slice(2, 4)) || 0);
+      G('hypos').forEach(h => {
+        const hm = MARKETS[h.market || 'USC'];
+        if (hm && hm.refPrefix === pre && h.refBatch) taken.push(Number(h.refBatch) || 0);
+      });
+      batch = String((taken.length ? Math.max.apply(null, taken) : 0) + 1).padStart(2, '0');
+    }
+    const serials = used.filter(r => r.slice(2, 4) === batch).map(r => Number(r.slice(4, 6)) || 0);
+    let next = (serials.length ? Math.max.apply(null, serials) : 0);
+    const refs = [];
+    for (let i = 0; i < count; i++) { next++; refs.push(pre + batch + String(next).padStart(2, '0')); }
+    return { batch, refs };
+  }
+
   /* ---------- Creative 表单集成(fv-ads 的「生成」按钮) ---------- */
 
   function genForCreative(i) {
@@ -196,11 +221,15 @@ window.MISNaming = (function () {
     const market = h.market || 'USC';
     const format = (c.format || c.fmt || '').toUpperCase();
     if (!FORMATS[format]) return { error: '素材 Format=' + (format || '空') + ' 不在字典(IMAGE/VIDEO/CAROUSEL/DCO)' };
-    const ref = provisionalRef(market, h.id);
+    // v76:优先用素材已正式领取的 ref_code;没有(存量素材)才临时发号
+    const ref = c.ref || provisionalRef(market, h.id);
     if (!ref) return { error: '市场 ' + market + ' 无法发号' };
-    const r = buildAdName({ market, brandCode: h.brand, setting: 'TRSA', format, ref });
+    // setting:假设上选的 Ad Setting(字典 code → 短码);拿不到回落 TRSA
+    let setting = 'TRSA';
+    if (h.adSetting) { const hit = SETTINGS.find(s => s.dictCode === h.adSetting || s.code === h.adSetting); if (hit) setting = hit.code; }
+    const r = buildAdName({ market, brandCode: h.brand, setting, format, ref });
     if (r.error) return r;
-    return { name: r.name, parts: { market, brand: h.brand, setting: 'TRSA(Sales 默认)', format, ref } };
+    return { name: r.name, parts: { market, brand: h.brand, setting, format, ref, official: !!c.ref } };
   }
 
   async function fvGen(i) {
@@ -213,5 +242,5 @@ window.MISNaming = (function () {
     if (note) note.textContent = '已生成(预览发号,正式发号第 2 期):市场 ' + r.parts.market + ' · ' + r.parts.brand + ' · ' + r.parts.setting + ' · ' + r.parts.format + ' · ref ' + r.parts.ref;
   }
 
-  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, genForCreative, fvGen, syncFromDb };
+  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, officialRefs, genForCreative, fvGen, syncFromDb };
 })();

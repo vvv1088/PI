@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v76 + 后端] — 2026-08-11 · 表单接主数据 + 市场词汇统一 + 正式发号
+
+- **Hypothesis 表单接品牌主数据**:新增「市场」下拉(= 该品牌可投市场:INZ9 出 MY/SG,其余锁 USC)与「广告目标 Ad Setting」下拉(读字典 Ad Setting tab,默认 Sales);品牌×市场关系登录后由 brand_aliases 同步(refreshMktBrands),离线回落常量。市场不再从品牌硬推(旧逻辑 INZ9→MY、其余→KH 删除)。
+- **市场词汇统一 USC/MY/SG**:存量 50 条 market='KH' 已迁移为 'USC'(迁移 hypotheses_market_kh_to_usc,迁后 USC 50 / MY 13 / KH 0);读侧保留 KH→USC 归一兜底(防旧版本页面残写);筛选/月计划/预算的品牌清单改走 allMktBrands()。
+- **正式发号上线**:「＋ 加素材」(tmEnsureRows)时每条新素材自动领 ref code(市场前缀+假设批次+流水)写入 creatives.ref_code;假设批次首次分配时回写 hypotheses.ref_batch;「⚙ 生成」优先用已领的正式 ref(存量素材才临时发号),setting 段取假设所选 Ad Setting。唯一性由 ref_code 唯一索引兜底。
+- demo 字典快照补 Ad Setting 6 行;hf-market/hf-setting 不加 "— unselected —" 空选项。
+- 验证:36 视图冒烟零报错(index+demo);定向测试:INZ9→[MY,SG]、OK188KH→[USC]、存量假设显示 USC、officialRefs 续批/新批正确;库上 market 分布校验。
+
 ## [v75 + 后端] — 2026-08-11 · 命名引擎第 2 期:Supabase 落库(前 3 项)
 
 - **Supabase 三个迁移已执行**(项目 bfukphakofrjalsqteda,校验通过):
