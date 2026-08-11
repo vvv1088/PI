@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v77 + 后端] — 2026-08-11 · Users 统一 + Activity Log 合并 + 命名尾巴收官
+
+- **两套 Users 统一为一页**(V 定):Administration → Users 现在 = MIS 用户表 + 「系统 2 账号映射」区——每个 MIS 用户可挂一个系统 2 账号(映射存新表 `meta_user_map`,Supabase 迁移 create_meta_user_map),行内直接看/编辑该账号的 Meta 权限(权限矩阵弹窗保留),未映射的系统 2 账号列在下方;「Users (Meta)」独立页退役。一人一个身份,审计可对人。
+- **Activity Log 合并为一张流水**(V 定):不再分 MIS/Meta 两个 tab——两边记录归一化(时间/来源/用户/动作/对象/详情)后按时间排序合成一张表,带来源筛选和搜索;原生 renderAudit 委托给合并渲染器,logAction 实时刷新的行为保留。
+- **换版投放名(衍生版)**:「编辑这版」弹窗(非草稿)显示本版投放名 = 基码 + V{版本号},一键复制——基码优先用素材现有 ads code(严格新式),否则现场生成。
+- **retired 品牌「已整合」标记**(方案 A 展示层):Spending 行的广告名若解析出整合前品牌,行内加「已整合」徽章,历史数据留在旧名下;mock 补一条 SB99 历史行演示。
+- 验证:35 视图 + 6 项交互抽查(合并审计含 Source 列 / 统一 Users 映射表 / Rotation Logs / 导航 / Brands 详情 / 图表)冒烟零报错(index+demo)。
+
 ## [v76 + 后端] — 2026-08-11 · 表单接主数据 + 市场词汇统一 + 正式发号
 
 - **Hypothesis 表单接品牌主数据**:新增「市场」下拉(= 该品牌可投市场:INZ9 出 MY/SG,其余锁 USC)与「广告目标 Ad Setting」下拉(读字典 Ad Setting tab,默认 Sales);品牌×市场关系登录后由 brand_aliases 同步(refreshMktBrands),离线回落常量。市场不再从品牌硬推(旧逻辑 INZ9→MY、其余→KH 删除)。

@@ -166,6 +166,8 @@ window.MIS_MOCK = (function () {
     if (di % 5 === 2) {
       SPEND_ROWS.push({ date, ad_name: 'TRSA_IM_AMB1_CN07', line: 'null', spending: 6.4, remark: null, remark_by: null, _brand: null, _ref: null });
       SPEND_ROWS.push({ date, ad_name: 'USC_WIKH_TRSA_VD_2473_KH02', line: 'LINE-B', spending: 9.1, remark: null, remark_by: null, _brand: '17WINKH', _ref: null });
+      /* 整合前品牌(SB99=SBKH99, retired)的历史行 —— 演示「已整合」标记(方案 A) */
+      SPEND_ROWS.push({ date, ad_name: 'USC_SB99_TRSA_VD_KH9901', line: 'LINE-C', spending: 4.2, remark: null, remark_by: null, _brand: null, _ref: null });
     }
   });
 

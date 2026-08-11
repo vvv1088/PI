@@ -522,7 +522,6 @@ window.supabase={createClient:function(){return __mockClient;}};
       <div class="nitem" data-v="roles" onclick="go('roles',this)">Roles & Permissions</div>
       <div class="nitem" data-v="bgassign" onclick="go('bgassign',this)">Budget Permission</div>
       <div class="nitem" data-v="users" onclick="go('users',this)">Users</div>
-      <div class="nitem" data-v="mm-users" onclick="go('mm-users',this)">Users (Meta)</div>
       <div class="nitem" data-v="audit" onclick="go('audit',this)">Activity Log</div>
     </div>
   </div>
@@ -976,19 +975,16 @@ window.supabase={createClient:function(){return __mockClient;}};
 </section>
 
 <section class="view" id="v-users">
-  <div class="head"><div><h1>Users</h1><div class="sub">Each user is assigned one role; permissions follow the role. Five people, same setup = same role.</div></div></div>
+  <div class="head"><div><h1>Users</h1><div class="sub">一人一个身份:MIS 账号 + 角色,并映射其系统 2(Meta)账号与权限 — 两套 user 统一在此管理。</div></div></div>
   <div id="usersBody"></div>
+  <!-- v77(V 定): 系统 2 账号映射区(渲染逻辑在 mis-resources.js) -->
+  <div id="usersMetaBody" style="margin-top:18px"></div>
 </section>
 
 <section class="view" id="v-audit">
-  <div class="head"><div><h1>Activity Log</h1><div class="sub">Who did what — every add / edit / delete on a section is logged automatically.</div></div></div>
-  <!-- v72: 双数据源 tab —— MIS(Supabase audit_log)/ Meta(系统 2 action_logs,渲染逻辑在 mis-operations.js) -->
-  <div class="tabs" id="auditTabs">
-    <div class="tabbtn on" onclick="MISOps.auditTab('mis',this)">MIS</div>
-    <div class="tabbtn" onclick="MISOps.auditTab('meta',this)">Meta（系统 2）</div>
-  </div>
+  <div class="head"><div><h1>Activity Log</h1><div class="sub">两边系统的操作记录合并成一张流水（MIS + Meta 系统 2）— 渲染逻辑在 mis-operations.js。</div></div></div>
+  <!-- v77(V 定): 不分 tab,统一一张表;#auditBody 由 renderMergedAudit 接管 -->
   <div id="auditBody"></div>
-  <div id="auditMetaBody" style="display:none"></div>
 </section>
 
 <!-- v70: PERFORMANCE / ASSETS 视图挂载点（内容由 mis-performance.js / mis-assets.js 注入） -->
@@ -1009,7 +1005,7 @@ window.supabase={createClient:function(){return __mockClient;}};
 <section class="view" id="v-mm-dash"></section>
 <section class="view" id="v-mm-rotation"></section>
 <section class="view" id="v-mm-sop"></section>
-<section class="view" id="v-mm-users"></section>
+<!-- v77: v-mm-users 并入 v-users(两套 user 统一) -->
 <!-- v72: v-mm-actionlogs 并入 v-audit 的 Meta tab -->
 <section class="view" id="v-an-accounts"></section>
 <section class="view" id="v-an-ads"></section>
@@ -2121,6 +2117,10 @@ function editCreativeCopy(i){if((creatives[i].versions||[]).length===0)return fi
       </div>
     </div>
     <div class="remark" style="margin:6px 0 12px">${isDraft?'这条还是草稿 — 文案 / 图直接改;改完可设为「上线中」提交。':'这版已提交。改文案或图都会<b>存成新一版</b>(append),旧版保留 — 所以要选换版原因。'}</div>
+    ${(!isDraft&&window.MISNaming)?(function(){const vn=MISNaming.versionName(i);return vn?`
+    <div class="row"><div class="fld"><label>本版投放名(衍生版 = 基码 + V 后缀,去 Meta 建广告用这个名)</label>
+      <div style="display:flex;gap:8px"><input type="text" readonly value="${esc(vn)}" style="flex:1;background:var(--bg2)" onclick="this.select()">
+      <button type="button" class="btn ghost sm" style="flex:none" onclick="navigator.clipboard.writeText('${esc(vn)}').then(()=>toast('已复制'))">复制</button></div></div></div>`:''})():''}
     <div class="row"><div class="fld"><label>图 / 视频(点选替换 — 原型仅预览,不真存)</label>
       <div style="display:flex;gap:10px;align-items:center">
         <div id="ec-imgprev">${thumbBox(cur.img,cur.imgSrc,creatives[i].label,64)}</div>
@@ -3162,7 +3162,7 @@ async function resetUserPw(id){const u=users.find(x=>x.id===id);const pw=prompt(
 /* 操作记录 */
 function fmtTs(ts){try{return new Date(ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return ts;}}
 function secName(k){const s=PERM_SECTIONS.find(x=>x.k===k);return s?s.n:k;}
-async function renderAudit(){const el=document.getElementById('auditBody');if(!el)return;let rows=[];try{const {data}=await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(200);rows=data||[];}catch(e){}let h='<table class="dt"><thead><tr><th>Time</th><th>User</th><th>Section</th><th>Action</th><th>Target</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="5" class="empty">No activity yet — every add / edit / delete is logged here automatically</td></tr>';rows.forEach(e=>{h+='<tr><td class="sm">'+esc(fmtTs(e.created_at))+'</td><td>'+esc(e.name||e.username||'?')+'</td><td>'+esc(secName(e.section))+'</td><td>'+esc(ACT_LABEL[e.action]||e.action)+'</td><td class="sm">'+esc(e.target||'')+'</td></tr>';});el.innerHTML=h+'</tbody></table>';}
+async function renderAudit(){if(window.MISOps&&MISOps.renderMergedAudit)return MISOps.renderMergedAudit();/* v77:合并视图接管;以下为兜底 */const el=document.getElementById('auditBody');if(!el)return;let rows=[];try{const {data}=await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(200);rows=data||[];}catch(e){}let h='<table class="dt"><thead><tr><th>Time</th><th>User</th><th>Section</th><th>Action</th><th>Target</th></tr></thead><tbody>';if(!rows.length)h+='<tr><td colspan="5" class="empty">No activity yet — every add / edit / delete is logged here automatically</td></tr>';rows.forEach(e=>{h+='<tr><td class="sm">'+esc(fmtTs(e.created_at))+'</td><td>'+esc(e.name||e.username||'?')+'</td><td>'+esc(secName(e.section))+'</td><td>'+esc(ACT_LABEL[e.action]||e.action)+'</td><td class="sm">'+esc(e.target||'')+'</td></tr>';});el.innerHTML=h+'</tbody></table>';}
 /* 新增想法:提出人 = 当前账号 */
 
 try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();updateAll();}catch(e){console.error('startup render error:',e);}

@@ -12,7 +12,8 @@
 
   const BAD = { ACTIVE: 'g', VALID: 'g', OK: 'g', DONE: 'g', BANNED: 'r', FAILED: 'r', EXPIRED: 'r', REVOKED: 'r',
     DISABLED: 'n', INACTIVE: 'n', SKIPPED: 'n', PENDING: 'y', PAUSED: 'y',
-    MAIN: 'b', BACKUP1: 'b', BACKUP2: 'b', CREATE: 'g', UPDATE: 'b', DELETE: 'r', ROTATION: 'y', LOGIN: 'n' };
+    MAIN: 'b', BACKUP1: 'b', BACKUP2: 'b', CREATE: 'g', UPDATE: 'b', DELETE: 'r', ROTATION: 'y', LOGIN: 'n',
+    Add: 'g', Edit: 'b', Delete: 'r' };
   const badge = v => v == null || v === '' ? '<span class="sub" style="display:inline">—</span>'
     : `<span class="mmr-badge mmr-${BAD[v] || 'n'}">${esc(v)}</span>`;
 
@@ -278,50 +279,59 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
 
-  /* ================= Action Logs（v72 起并入 Administration → Activity Log 的 Meta tab） ================= */
-  const AL = { user_id: '', action_type: '', entity_type: '', from: '', to: '' };
-  const AL_ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'ROTATION', 'LOGIN'];
-  const AL_ENTITIES = ['brands', 'businessManagers', 'pixels', 'adAccounts', 'developerApps', 'tokens', 'pixelShares', 'users', 'BM', 'PIXEL', 'USER'];
-  async function loadLogs() {
-    const el = document.getElementById('auditMetaBody');
+  /* ================= Activity Log(v77:两边审计统一成一张流水,V 定) ================= */
+  const AU = { source: '', q: '' };
+  const lex = name => { try { const v = (0, eval)(name); return v; } catch (e) { return undefined; } };
+  async function renderMergedAudit() {
+    const el = document.getElementById('auditBody');
     if (!el) return;
-    const users = (await metaApi('/api/users?status=ACTIVE&limit=200')).items;
-    const sp = new URLSearchParams({ limit: '100' });
-    Object.keys(AL).forEach(k => { if (AL[k]) sp.set(k, AL[k]); });
-    const d = await metaApi('/api/action-logs?' + sp.toString());
-    let t = `<tr><th>Time (UTC+8)</th><th>User</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>Details</th></tr>`;
-    if (!d.items.length) t += `<tr><td colspan="6" class="empty">No matching records.</td></tr>`;
-    d.items.forEach(log => {
-      t += `<tr><td style="white-space:nowrap">${esc(fmtTs(log.createdAt))}</td>
-        <td><b>${esc(log.user ? log.user.displayName : '-')}</b><div class="sub" style="display:block">${esc(log.user ? log.user.username : '')}</div></td>
-        <td>${badge(log.actionType)}</td><td>${esc(log.entityType || '-')}</td><td>${esc(log.entityId || '-')}</td>
-        <td>${log.details ? `<details style="max-width:420px"><summary style="cursor:pointer;font-size:12px;color:var(--mut,#888)">View</summary>
-          <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:8px;font-size:11px;margin-top:6px">${esc(JSON.stringify(log.details, null, 2))}</pre></details>` : '-'}</td></tr>`;
+    const db = lex('typeof db!=="undefined"?db:null');
+    let misRows = [];
+    if (db && typeof db.from === 'function') {
+      try {
+        const r = await db.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200);
+        misRows = (r && r.data) || [];
+      } catch (e) {}
+    }
+    let metaRows = [];
+    try { metaRows = (await metaApi('/api/action-logs?limit=100')).items || []; } catch (e) {}
+    const secNameFn = lex('typeof secName==="function"?secName:null');
+    const ACT = lex('typeof ACT_LABEL!=="undefined"?ACT_LABEL:{}') || {};
+    const rows = [];
+    misRows.forEach(e => rows.push({
+      ts: e.created_at, user: e.name || e.username || '?', src: 'MIS',
+      act: ACT[e.action] || e.action,
+      obj: (secNameFn ? secNameFn(e.section) : e.section) + (e.target ? ' · ' + e.target : ''), detail: null,
+    }));
+    metaRows.forEach(l => rows.push({
+      ts: l.createdAt, user: l.user ? l.user.displayName : '-', src: 'Meta',
+      act: l.actionType, obj: (l.entityType || '-') + (l.entityId ? ' #' + l.entityId : ''), detail: l.details,
+    }));
+    rows.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+    const q = AU.q.toLowerCase();
+    const view = rows.filter(r =>
+      (!AU.source || r.src === AU.source) &&
+      (!q || [r.user, r.act, r.obj].join(' ').toLowerCase().indexOf(q) >= 0));
+    let t = `<tr><th>Time</th><th>Source</th><th>User</th><th>Action</th><th>Object</th><th>Details</th></tr>`;
+    if (!view.length) t += `<tr><td colspan="6" class="empty">No activity.</td></tr>`;
+    view.slice(0, 300).forEach(r => {
+      t += `<tr><td style="white-space:nowrap">${esc(fmtTs(r.ts))}</td>
+        <td><span class="mmr-badge ${r.src === 'MIS' ? 'mmr-b' : 'mmr-n'}">${r.src}</span></td>
+        <td>${esc(r.user)}</td><td>${badge(r.act)}</td><td>${esc(r.obj)}</td>
+        <td>${r.detail ? `<details style="max-width:420px"><summary style="cursor:pointer;font-size:12px;color:var(--mut,#888)">View</summary>
+          <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:8px;font-size:11px;margin-top:6px">${esc(JSON.stringify(r.detail, null, 2))}</pre></details>` : '-'}</td></tr>`;
     });
     el.innerHTML = `
-      <div class="card" style="padding:14px;margin-bottom:12px">
-        <div class="sub" style="display:block;margin-bottom:8px">系统 2 侧审计（CREATE / UPDATE / DELETE / ROTATION / LOGIN）。MIS 自己的操作记录在 MIS tab。</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
-          <select onchange="MISOps.logF('user_id',this.value)"><option value="">All users</option>
-            ${users.map(u => `<option value="${esc(u.id)}"${AL.user_id === String(u.id) ? ' selected' : ''}>${esc(u.displayName)} (${esc(u.username)})</option>`).join('')}</select>
-          <select onchange="MISOps.logF('action_type',this.value)"><option value="">All action types</option>
-            ${AL_ACTIONS.map(a => `<option${AL.action_type === a ? ' selected' : ''}>${a}</option>`).join('')}</select>
-          <select onchange="MISOps.logF('entity_type',this.value)"><option value="">All entity types</option>
-            ${AL_ENTITIES.map(a => `<option${AL.entity_type === a ? ' selected' : ''}>${a}</option>`).join('')}</select>
-          <input type="date" value="${esc(AL.from)}" onchange="MISOps.logF('from',this.value)">
-          <input type="date" value="${esc(AL.to)}" onchange="MISOps.logF('to',this.value)"></div>
-        <div class="sub" style="display:block;margin-top:8px">Showing latest ${d.items.length} of ${d.meta ? d.meta.total : d.items.length} matching record(s).
-          <button class="btn ghost sm" style="margin-left:8px" onclick="MISOps.loadLogs()">↻ 刷新</button></div></div>
+      <div class="filters" style="margin-bottom:12px">
+        <select onchange="MISOps.auF('source',this.value)">
+          <option value=""${AU.source === '' ? ' selected' : ''}>全部来源</option>
+          <option value="MIS"${AU.source === 'MIS' ? ' selected' : ''}>MIS</option>
+          <option value="Meta"${AU.source === 'Meta' ? ' selected' : ''}>Meta（系统 2）</option></select>
+        <input type="text" placeholder="搜用户 / 动作 / 对象…" value="${esc(AU.q)}" style="width:200px"
+          onkeydown="if(event.key==='Enter')MISOps.auF('q',this.value)">
+        <button class="btn ghost sm" onclick="MISOps.renderMergedAudit()">↻ 刷新</button>
+        <span class="sub" style="display:inline;align-self:center">共 ${view.length} 条（MIS ${rows.filter(r => r.src === 'MIS').length} + Meta ${rows.filter(r => r.src === 'Meta').length}）</span></div>
       <div class="tablewrap"><table>${t}</table></div>`;
-  }
-  /* Activity Log 页的 MIS / Meta tab 切换 */
-  function auditTab(which, btn) {
-    const bar = document.getElementById('auditTabs');
-    if (bar) [...bar.children].forEach(b => b.classList.toggle('on', b === btn));
-    const mis = document.getElementById('auditBody'), meta = document.getElementById('auditMetaBody');
-    if (mis) mis.style.display = which === 'mis' ? '' : 'none';
-    if (meta) meta.style.display = which === 'meta' ? '' : 'none';
-    if (which === 'meta' && meta && !meta.innerHTML) loadLogs();
   }
 
   /* ================= 样式 + 注册 ================= */
@@ -333,7 +343,7 @@
   document.head.appendChild(css);
 
   window.MISOps = {
-    loadDash, loadRotation, loadSop, loadLogs, auditTab,
+    loadDash, loadRotation, loadSop, renderMergedAudit,
     rtTab: t => { RT.tab = t; RT.sopId = ''; loadRotation(); },
     logType: v => { RT.logType = v; loadRotation(); },
     pickBrand: v => { RT.brandId = v; RT.pixelId = ''; loadRotation(); },
@@ -341,11 +351,11 @@
     gotoSop: id => { SP.mode = 'detail'; SP.groupId = id; go('mm-sop'); MIS_MODULES.reload('mm-sop'); },
     sopMode: m => { SP.mode = m; loadSop(); },
     sopSet, tplSave, tplClear, tplEdit,
-    logF: (k, v) => { AL[k] = v; loadLogs(); },
+    auF: (k, v) => { AU[k] = v; renderMergedAudit(); },
   };
 
   MIS_MODULES.register('mm-dash', loadDash);
   MIS_MODULES.register('mm-rotation', loadRotation);
   MIS_MODULES.register('mm-sop', loadSop);
-  MIS_MODULES.register('audit', loadLogs);   // v72:进入 Activity Log 即预载 Meta tab 数据(默认隐藏,切 tab 显示)
+  MIS_MODULES.register('audit', renderMergedAudit);   // v77:统一流水(MIS+Meta 合并)
 })();

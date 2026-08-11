@@ -7,7 +7,7 @@
  *   v-mm-apps / v-mm-tokens
  * 特殊页面：
  *   v-mm-shares  Pixel Shares 矩阵（品牌 MAIN pixel × 广告账户三态）
- *   v-mm-users   Users 管理（权限矩阵 + Superadmin）
+ *   #usersMetaBody 统一 Users:MIS 用户 ↔ 系统 2 账号映射 + Meta 权限编辑(v77)
  * 详情页 = 列表内切换的子视图（Basic Info + 关联 tabs + 特殊面板：
  * CAPI 事件开关 / BM FB 个人号 / 广告账户品牌关联）。
  * 数据一律经 metaApi()；写操作在 mock 模式落内存（刷新复位）。
@@ -20,10 +20,10 @@
   css.textContent = `
   /* v74:v70/v71 新页面的表格没包 thead,表头落回浏览器默认(居中无边距)导致与内容错位。
      此规则给所有新视图的 th 补上与 MIS 原生 thead th 一致的样式(左对齐;数字列的行内 right 不受影响)。 */
-  #v-perf-loop th,#v-perf-spending th,#v-as-health th,[id^="v-mm-"] th,[id^="v-an-"] th,#auditMetaBody th{
+  #v-perf-loop th,#v-perf-spending th,#v-as-health th,[id^="v-mm-"] th,[id^="v-an-"] th,#auditBody th,#usersMetaBody th{
     font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3,#8a8a94);font-weight:600;
     text-align:left;padding:8px 12px;background:var(--bg2,#f6f7f9);border-bottom:1px solid var(--line,#e3e3e8);white-space:nowrap}
-  #v-perf-loop td,#v-perf-spending td,#v-as-health td,[id^="v-mm-"] td,[id^="v-an-"] td,#auditMetaBody td{
+  #v-perf-loop td,#v-perf-spending td,#v-as-health td,[id^="v-mm-"] td,[id^="v-an-"] td,#auditBody td,#usersMetaBody td{
     padding:9px 12px;border-bottom:1px solid var(--line,#e3e3e8);vertical-align:middle}
   .mmr-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
   .mmr-g{background:#e6f6ee;color:#1a7f4e;border:1px solid #b6e5cd}
@@ -623,26 +623,68 @@
     { title: 'System', keys: ['users', 'action-logs'] },
     { title: 'Analytics', keys: ['analytics-accounts', 'analytics-ads', 'analytics-brands', 'analytics-spending', 'analytics-lifecycle'] },
   ];
-  const MU = { form: null };
-  async function loadUsers() {
-    const el = document.getElementById('v-mm-users');
+  const MU = { form: null, rows: [] };
+  const lexUsers = () => { try { const v = (0, eval)('users'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const lexRoles = () => { try { const v = (0, eval)('roles'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const lexDb = () => { try { return (0, eval)('typeof db!=="undefined"?db:null'); } catch (e) { return null; } };
+
+  /* v77(V 定:两套 user 统一)—— 渲染进 v-users 的 #usersMetaBody:
+   * 每个 MIS 用户一行,可映射一个系统 2 账号(存 Supabase meta_user_map),
+   * 行内直接看/编辑该账号的 Meta 权限;未映射的系统 2 账号列在下方。 */
+  async function loadUnifiedUsers() {
+    const el = document.getElementById('usersMetaBody');
     if (!el) return;
-    const d = await metaApi('/api/users?limit=200');
-    let t = `<tr><th>Username</th><th>Display Name</th><th>Role</th><th>Status</th><th>Created</th><th style="width:130px">Actions</th></tr>`;
-    d.items.forEach((u, i) => {
-      t += `<tr><td>${esc(u.username)}</td><td>${esc(u.displayName)}</td>
-        <td>${u.permissions === null ? badge('Superadmin') : 'Custom'}</td>
-        <td>${badge(u.status)}</td><td>${esc(fmtTs(u.createdAt))}</td>
-        <td><button class="btn ghost sm" onclick="MISRes.userEdit(${i})">Edit</button>
-            <button class="btn ghost sm" style="color:#c62f36" onclick="MISRes.userDisable('${esc(u.id)}')">Disable</button></td></tr>`;
+    let metaUsers = [];
+    try { metaUsers = (await metaApi('/api/users?limit=200')).items || []; } catch (e) {}
+    MU.rows = metaUsers;
+    const misUsers = lexUsers(), roles = lexRoles();
+    const db = lexDb();
+    let map = [];
+    if (db && typeof db.from === 'function') {
+      try { const r = await db.from('meta_user_map').select('*'); map = (r && r.data) || []; } catch (e) {}
+    }
+    const mapOf = uid => { const m = map.find(x => String(x.mis_user_id) === String(uid)); return m ? m.meta_username : ''; };
+    const mappedSet = new Set(map.map(m => m.meta_username));
+    const roleName = rid => { const r = roles.find(x => String(x.id) === String(rid)); return r ? r.name : '—'; };
+    const metaCell = un => {
+      const mu = metaUsers.find(x => x.username === un);
+      if (!mu) return '<span class="sub" style="display:inline">—</span>';
+      const idx = metaUsers.indexOf(mu);
+      return `${mu.permissions === null ? badge('Superadmin') : 'Custom'} ${badge(mu.status)}
+        <button class="btn ghost sm" onclick="MISRes.userEdit(${idx})">权限</button>`;
+    };
+    let t = `<tr><th>MIS 用户</th><th>MIS 角色</th><th>系统 2 账号</th><th>Meta 权限</th></tr>`;
+    if (!misUsers.length) t += `<tr><td colspan="4" class="empty">MIS 用户未加载（需登录）。</td></tr>`;
+    misUsers.forEach(u => {
+      const cur = mapOf(u.id);
+      t += `<tr><td><b>${esc(u.name)}</b> <span class="sub" style="display:inline">${esc(u.username)}</span></td>
+        <td>${esc(roleName(u.roleId))}</td>
+        <td><select onchange="MISRes.mapMeta('${esc(String(u.id))}',this.value)">
+          <option value="">— 未映射 —</option>
+          ${metaUsers.map(m => `<option value="${esc(m.username)}"${cur === m.username ? ' selected' : ''}${(mappedSet.has(m.username) && cur !== m.username) ? ' disabled' : ''}>${esc(m.displayName)} (${esc(m.username)})</option>`).join('')}</select></td>
+        <td>${cur ? metaCell(cur) : '<span class="sub" style="display:inline">—</span>'}</td></tr>`;
     });
+    const orphans = metaUsers.filter(m => !mappedSet.has(m.username));
     el.innerHTML = `
-      <div class="head"><div><h1>Users（系统 2）</h1>
-        <div class="sub">Meta Ads 后台的账号与页面级权限（edit / view / none；Superadmin 绕过全部检查）。与 MIS 自己的登录用户是两套体系 —— 合并方案见「权限映射设计」待办。</div></div>
-        <div class="filters"><button class="btn ghost sm" onclick="MISRes.loadUsers()">↻ 刷新</button>
-        <button class="btn sm" onclick="MISRes.userNew()">＋ New</button></div></div>
-      <div class="tablewrap"><table>${t}</table></div>`;
-    MU.rows = d.items;
+      <div class="card" style="padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <b style="font-size:12.5px">系统 2(Meta)账号映射 — 一人一个身份</b>
+          <span><button class="btn ghost sm" onclick="MISRes.loadUnifiedUsers()">↻ 刷新</button>
+          <button class="btn ghost sm" onclick="MISRes.userNew()">＋ 新建 Meta 账号</button></span></div>
+        <div class="sub" style="display:block;margin:4px 0 10px">把系统 2 的账号挂到对应的 MIS 用户上;映射后此人在两边就是同一个身份,审计可对人。Meta 权限点行内「权限」编辑(live 后经系统 2 接口写回)。</div>
+        <div class="tablewrap"><table>${t}</table></div>
+        ${orphans.length ? `<div class="sub" style="display:block;margin-top:10px">未映射的系统 2 账号:${orphans.map(m => `${esc(m.displayName)} (${esc(m.username)})${m.status === 'INACTIVE' ? ' · 已停用' : ''}`).join('、')}</div>` : ''}
+      </div>`;
+  }
+  async function mapMeta(misUserId, metaUsername) {
+    const db = lexDb();
+    if (!db) { toast('未登录,无法保存映射'); return; }
+    try {
+      if (metaUsername) await db.from('meta_user_map').upsert({ mis_user_id: misUserId, meta_username: metaUsername, updated_at: new Date().toISOString() });
+      else await db.from('meta_user_map').delete().eq('mis_user_id', misUserId);
+      toast('映射已保存');
+    } catch (e) { toast('保存失败:' + (e.message || e)); }
+    loadUnifiedUsers();
   }
   function userForm() {
     const f = MU.form;
@@ -707,12 +749,12 @@
     if (!f.id) body.password = pw;   // 新建必填
     try {
       await metaApi('/api/users' + (f.id ? '/' + f.id : ''), { method: f.id ? 'PUT' : 'POST', body });
-      closeModal(); toast('Saved'); loadUsers();
+      closeModal(); toast('Saved'); loadUnifiedUsers();
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function userDisable(id) {
     if (!confirm('Disable this user?')) return;
-    try { await metaApi('/api/users/' + id, { method: 'DELETE' }); toast('Disabled'); loadUsers(); }
+    try { await metaApi('/api/users/' + id, { method: 'DELETE' }); toast('Disabled'); loadUnifiedUsers(); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
   }
 
@@ -730,7 +772,7 @@
     del, save, formSet, cancel: closeModal,
     capiToggle, fbSave, fbClear, fbEdit, fbDisable, accLink, accUnlink,
     loadShares, shareBrand: v => { SH.brandId = v; loadShares(); }, shareAct,
-    loadUsers, userNew, userEdit, userSave, userSuper, userDisable,
+    loadUnifiedUsers, mapMeta, userNew, userEdit, userSave, userSuper, userDisable,
   };
 
   MIS_MODULES.register('mm-brands', () => open('brands'));
@@ -740,5 +782,5 @@
   MIS_MODULES.register('mm-apps', () => open('apps'));
   MIS_MODULES.register('mm-tokens', () => open('tokens'));
   MIS_MODULES.register('mm-shares', loadShares);
-  MIS_MODULES.register('mm-users', loadUsers);
+  MIS_MODULES.register('users', loadUnifiedUsers);   // v77:统一 Users(渲染进 v-users 的映射区)
 })();

@@ -46,7 +46,7 @@ const path = require('path');
     'perf-loop', 'perf-spending', 'as-health',
     // v71 系统 2 搬家(v72 收编:mm-actionlogs→audit Meta tab)
     'mm-brands', 'mm-bms', 'mm-pixels', 'mm-accounts', 'mm-apps', 'mm-tokens', 'mm-shares',
-    'mm-dash', 'mm-rotation', 'mm-sop', 'mm-users',
+    'mm-dash', 'mm-rotation', 'mm-sop',
     'an-accounts', 'an-ads', 'an-brands', 'an-lifecycle',
   ];
   const results = {};
@@ -76,10 +76,16 @@ const path = require('path');
     return { on: true, htmlLen: sec.innerHTML.length, hasTable: !!sec.querySelector('table tr') };
   });
   await page.evaluate(() => { window.go('audit'); });
-  await page.waitForTimeout(500);
-  results['audit@meta'] = await page.evaluate(() => {
-    const meta = document.getElementById('auditMetaBody');
-    return { on: true, htmlLen: meta ? meta.innerHTML.length : 0, hasTable: !!(meta && meta.querySelector('table tr')) };
+  await page.waitForTimeout(600);
+  results['audit@merged'] = await page.evaluate(() => {
+    const b = document.getElementById('auditBody');
+    return { on: true, htmlLen: b ? b.innerHTML.length : 0, hasTable: !!(b && b.querySelector('table tr')), hasSource: !!(b && b.textContent.includes('Meta')) };
+  });
+  await page.evaluate(() => { window.go('users'); });
+  await page.waitForTimeout(600);
+  results['users@unified'] = await page.evaluate(() => {
+    const b = document.getElementById('usersMetaBody');
+    return { on: true, htmlLen: b ? b.innerHTML.length : 0, hasTable: !!(b && b.querySelector('table tr')) };
   });
   // 交互抽查：Brands 详情页 + 分析页图表 SVG
   await page.evaluate(() => { window.go('mm-brands'); });

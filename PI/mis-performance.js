@@ -164,7 +164,10 @@
     let html = `<tr><th>Date</th><th>Ad Name</th><th>Line</th><th style="text-align:right">Spending</th><th>Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
     if (!d.rows.length) html += `<tr><td colspan="5" class="empty">无数据</td></tr>`;
     d.rows.forEach((r, i) => {
-      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}</td><td>${esc(r.line || '-')}</td>
+      /* v77:方案 A —— 整合前品牌的历史行标「已整合」,数据留在旧名下 */
+      let retiredTag = '';
+      if (window.MISNaming) { const p = MISNaming.parseAdName(r.ad_name); if (p.brandStatus === 'retired') retiredTag = ` <span class="mmr-badge mmr-n" title="品牌已整合(${esc(p.brand)}),历史数据保留">已整合</span>`; }
+      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}${retiredTag}</td><td>${esc(r.line || '-')}</td>
         <td style="text-align:right">$${misMoney(r.spending)}</td>
         <td>${canEditRemark
           ? `<input type="text" value="${esc(r.remark || '')}" placeholder="备注…" style="width:170px"

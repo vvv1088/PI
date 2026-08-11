@@ -232,6 +232,18 @@ window.MISNaming = (function () {
     return { name: r.name, parts: { market, brand: h.brand, setting, format, ref, official: !!c.ref } };
   }
 
+  /* v77:换版(衍生版)投放名 —— 基码 + V{版本号}。基码优先用素材现有 ads code
+   * (严格新式才可续),否则现场生成;旧 V 后缀先剥掉再加新号。 */
+  function versionName(i) {
+    const c = G('creatives')[i];
+    if (!c) return null;
+    const vn = (c.versions || []).length + 1;
+    let base = null;
+    if (c.ads) { const p = parseAdName(c.ads); if (p.ok && !p.loose) base = String(c.ads).trim(); }
+    if (!base) { const g = genForCreative(i); if (g.error) return null; base = g.name; }
+    return base.replace(/V\d+$/, '') + 'V' + vn;
+  }
+
   async function fvGen(i) {
     await syncFromDb();
     const r = genForCreative(i);
@@ -242,5 +254,5 @@ window.MISNaming = (function () {
     if (note) note.textContent = '已生成(预览发号,正式发号第 2 期):市场 ' + r.parts.market + ' · ' + r.parts.brand + ' · ' + r.parts.setting + ' · ' + r.parts.format + ' · ref ' + r.parts.ref;
   }
 
-  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, officialRefs, genForCreative, fvGen, syncFromDb };
+  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, officialRefs, genForCreative, fvGen, versionName, syncFromDb };
 })();
