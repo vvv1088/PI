@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v79] — 2026-08-11 · 字典短码显示 + Our Ads 改名 + live 只读闸门 + 引擎回归检查
+
+- **Dictionary 显示广告名短码**:Format / Ad Setting 词条的 code 下方显示「短码 IM/VD/…」(命名契约可见化;数据 v75 已落库)。
+- **Ad Gallery 改名 Our Ads**(防混淆,V 前述认可):导航与页头改名,副标题注明"竞品素材在 CI → Ads Library"。
+- **live 只读总闸门**(`MIS_META.allowMetaWrite`,默认 false):全部 14 个 Meta 侧写操作入口(资源 CRUD/CAPI 开关/FB 号/品牌关联/共享/轮转执行/SOP/Meta 用户)统一过闸——mock 随便演练;live 下未开闸一律拦截并提示"P1 token 只读"。P2 开写 = 改一个布尔。
+- **命名引擎回归检查固化进冒烟**(engine@checks,9 项):生成/retired 禁发/市场校验/新旧式解析/脏名拒绝/三层归因逐层验证,今后每次冒烟自动跑。
+- 验证:35 视图 + 7 项交互 + 9 项引擎检查全过,零报错(index+demo)。
+
 ## [v78] — 2026-08-11 · 实体连接 L1–L6 + 三层归因(过渡期机制正式落地)
 
 - **三层归因引擎**(MISNaming.resolveCreative,闭环/Spending/Ad Gallery 共用):①严格 ref 匹配(新广告)→ ②素材登记 ads_code 整串精确匹配(旧 ongoing 广告,登记制)→ ③宽松只归品牌 → 未归因。闭环页未归因清单区分「已归品牌(去素材登记此名即可归因)」与「完全未归(命名不规范)」——过渡期的工作清单。存量 23 条已登记的 6 段旧式 ads_code 由第 2 层直接覆盖(核实后零回填、零风险)。

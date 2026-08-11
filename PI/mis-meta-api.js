@@ -13,7 +13,18 @@ window.MIS_META = {
   baseUrl: 'https://meta-ads.ohmediaa.com',    // 系统 2 生产域名
   token: '',                                   // MIS service token（Bearer）
   allowRemarkEdit: false,                      // 与后端 MIS_ALLOW_REMARK_PUT 同步
+  allowMetaWrite: false,                       // v79:live 写总开关(P1 token 只读;P2 开写时置 true)
 };
+
+/* v79:Meta 侧写操作统一闸门 —— mock 随便玩;live 必须 allowMetaWrite */
+function misMetaWritable() {
+  if (window.MIS_META.mode === 'mock') return true;
+  if (!window.MIS_META.allowMetaWrite) {
+    if (typeof toast === 'function') toast('live 接入初期 token 只读(P1),写操作待 P2 开放');
+    return false;
+  }
+  return true;
+}
 
 /* ---------- 统一取数入口 ---------- */
 async function metaApi(path, opts) {

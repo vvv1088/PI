@@ -131,7 +131,7 @@
     if (AG.status) sp.set('status', AG.status);
     const d = await metaApi('/api/analytics/ads?' + sp.toString());
     el.innerHTML = `
-      <div class="head"><div><h1>Ad Gallery</h1><div class="sub">Ad cards with spend, clicks, and conversions.（点卡片看日花费与状态历史）</div></div>
+      <div class="head"><div><h1>Our Ads</h1><div class="sub">自家 Meta 广告的卡片墙(花费/点击/转化;点卡片看日明细与状态历史)。竞品素材在 CI → Ads Library。</div></div>
         <div class="filters">
           <select onchange="MISAn.agSet('accId',this.value)"><option value="">All ad accounts</option>
             ${accs.items.map(a => `<option value="${esc(a.id)}"${AG.accId === String(a.id) ? ' selected' : ''}>${esc(a.name)}</option>`).join('')}</select>

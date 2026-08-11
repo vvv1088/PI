@@ -149,6 +149,7 @@
     }
   }
   async function execBm() {
+    if (!misMetaWritable()) return;
     const bmId = document.getElementById('rtBm').value;
     const reason = document.getElementById('rtReason').value;
     if (!bmId) { setRt('Select a Pixel BM first'); return; }
@@ -163,6 +164,7 @@
     } catch (e) { setRt(e.message || 'Rotation failed'); }
   }
   async function execPixel() {
+    if (!misMetaWritable()) return;
     const pixelId = document.getElementById('rtPixel').value;
     const reason = document.getElementById('rtReason').value;
     if (!RT.brandId || !pixelId) { setRt('Select Brand and Pixel first'); return; }
@@ -279,6 +281,7 @@
   }
   function tplClear() { Object.assign(TF, { id: '', triggerType: 'BM_ROTATION', stepOrder: 1, title: '', description: '', isManual: 'true' }); loadSop(); }
   async function tplSave() {
+    if (!misMetaWritable()) return;
     const body = {
       id: document.getElementById('tfId').value || undefined,
       triggerType: document.getElementById('tfType').value,
@@ -294,6 +297,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function sopSet(id, status) {
+    if (!misMetaWritable()) return;
     try {
       await metaApi('/api/sop/instances', { method: 'PUT', body: { id, status } });
       toast('Saved'); loadSop();

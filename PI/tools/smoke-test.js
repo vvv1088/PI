@@ -104,6 +104,23 @@ const path = require('path');
   });
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'shot-an-accounts-chart.png') });
 
+  // v79:命名引擎回归检查(纯函数 + mock 注册表,不依赖登录)
+  results['engine@checks'] = await page.evaluate(() => {
+    const N = window.MISNaming;
+    const ok = [];
+    ok.push(N.buildAdName({ market: 'USC', brandCode: '17WINKH', setting: 'TRSA', format: 'IMAGE', ref: 'KH0201' }).name === 'USC_WIKH_TRSA_IM_KH0201');
+    ok.push(!!N.buildAdName({ market: 'USC', brandCode: 'SBKH99', setting: 'TRSA', format: 'IMAGE', ref: 'KH0101' }).error);   // retired 禁发
+    ok.push(!!N.buildAdName({ market: 'SG', brandCode: '17WINKH', setting: 'TRSA', format: 'IMAGE', ref: 'SG0101' }).error);   // 市场不符
+    ok.push(N.parseAdName('USC_WIKH_TRSA_IM_KH0201V2').ok === true);
+    ok.push(N.parseAdName('USC_OK18_TRSA_VD_WD1_KH06').loose === true && N.parseAdName('USC_OK18_TRSA_VD_WD1_KH06').brand === 'OK188KH');
+    ok.push(N.parseAdName('TRSA_IM_AMB1_CN07').ok === false);
+    ok.push(N.resolveCreative('MYR_INZ9_TRSA_IM_MY1101').tier === 1);                       // 严格 ref
+    ok.push(N.resolveCreative('USC_WIKH_TRSA_VD_2473_KH02').tier === 2);                    // 登记全名
+    ok.push(N.resolveCreative('USC_SB99_TRSA_VD_KH9901').tier === 3);                       // 只归品牌
+    return { on: true, htmlLen: 99, pass: ok.filter(Boolean).length, total: ok.length };
+  });
+  if (results['engine@checks'].pass !== results['engine@checks'].total) fails++;
+
   console.log(JSON.stringify(results, null, 1));
   console.log('VIEWS:', views.length, 'FAILED:', fails);
   console.log('ERRORS(前10):', errors.slice(0, 10));

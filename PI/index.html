@@ -435,7 +435,7 @@
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Analytics <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="an-accounts" onclick="go('an-accounts',this)">Account Overview</div>
-      <div class="nitem" data-v="an-ads" onclick="go('an-ads',this)">Ad Gallery</div>
+      <div class="nitem" data-v="an-ads" onclick="go('an-ads',this)">Our Ads</div>
       <div class="nitem" data-v="an-brands" onclick="go('an-brands',this)">Brand Comparison</div>
       <div class="nitem" data-v="an-lifecycle" onclick="go('an-lifecycle',this)">Asset Lifecycle</div>
     </div>
@@ -2206,9 +2206,10 @@ function renderDict(){
   if(HIDDEN_DICT_TABS.includes(dictTab))dictTab=Object.keys(DICT).find(k=>!HIDDEN_DICT_TABS.includes(k))||dictTab;
   document.getElementById('dictTabs').innerHTML=Object.keys(DICT).filter(k=>!HIDDEN_DICT_TABS.includes(k)).map(k=>`<div class="tabbtn ${k===dictTab?'on':''}" onclick="dictTab='${k}';renderDict()">${k}</div>`).join('');
   const noToggle=dictTab==='Capacity';
+  const hasSc=(DICT[dictTab]||[]).some(r=>r.sc);   // v79:Format / Ad Setting 显示广告名短码
   document.getElementById('dictBody').innerHTML=(DICT[dictTab]||[]).map((r,i)=>`
    <tr class="${r.on?'':'inactive'}">
-    <td class="code"><b style="color:var(--ink)">${esc(r.c)}</b></td><td>${esc(r.n)}</td><td>${esc(r.d)}</td><td class="code">${esc(r.u)}</td>
+    <td class="code"><b style="color:var(--ink)">${esc(r.c)}</b>${hasSc?`<div class="sub" style="display:block;font-size:10.5px" title="广告名短码(命名契约)">短码 ${esc(r.sc||'—')}</div>`:''}</td><td>${esc(r.n)}</td><td>${esc(r.d)}</td><td class="code">${esc(r.u)}</td>
     <td>${noToggle?'<span class="code">—</span>':`<button class="btn ${r.on?'danger':'ghost'} sm" data-perm="dict:edit" onclick="toggleDict('${dictTab}',${i})">${r.on?'停用':'启用'}</button>`}</td>
    </tr>`).join('');
   document.getElementById('dictNote').textContent=DICT_NOTES[dictTab]||DICT_NOTES['default'];
@@ -3034,7 +3035,7 @@ async function saveBgAssign(br,field,val){
   logAction('budget','分工',br+' '+key+'→'+(v||'空'));
   toast('已更新分工');renderBudget();
 }
-async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active});});DICT=d;}
+async function loadDict(){const {data,error}=await db.from('dict_entries').select('*').order('sort',{ascending:true});if(error){showErr('loadDict 加载失败: '+error.message);}const d={};(data||[]).forEach(r=>{(d[r.tab]=d[r.tab]||[]).push({c:r.code,n:r.name,d:r.descr,u:r.usage||'—',on:r.active,sc:r.short_code||null});});DICT=d;}
 async function loadIdeas(){const {data,error}=await db.from('ideas').select('*').order('created_at',{ascending:false});if(error){showErr('loadIdeas 加载失败: '+error.message);}ideas=(data||[]).map(r=>({id:r.code,txt:r.txt,src:r.src,tags:r.tags||[],pri:r.pri,by:r.created_by,date:fmtMMDD(r.created_at),age:daysSince(r.created_at),st:r.status}));}
 async function loadHypos(){const {data,error}=await db.from('hypotheses').select('*').order('created_at',{ascending:false});if(error){showErr('loadHypos 加载失败: '+error.message);}hypos=(data||[]).map(r=>({id:r.code,x:r.statement,metric:r.metric,from:r.val_from,to:r.val_to,mode:r.mode,market:(r.market==='KH'?'USC':r.market),adSetting:r.ad_setting||'SALES',refBatch:r.ref_batch||null,month:r.month,brand:r.brand,type:r.test_type,owner:r.owner,cap:r.capacity,st:r.status,stage:r.customer_stage||'',planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days),idea:r.idea_label||r.idea_code||'',evi:r.evidence,persona:r.persona,guard:r.guard,format:r.format,trigger:r.trigger_type,age:r.age_range,game:r.game_type,vs:r.visual_style,hook:r.hook,offer:r.offer,matrix:r.matrix||null,testDims:(r.test_dim||'').split(',').map(s=>s.trim()).filter(Boolean),lockedTags:r.locked_tags||{},tests:r.tests||[],verdict:r.verdict||null,created:r.created_at}));}
 async function loadCreatives(){const {data,error}=await db.from('creatives').select('*').order('created_at',{ascending:false});if(error){showErr('loadCreatives 加载失败: '+error.message);}creatives=(data||[]).map(r=>({th:r.thumb,label:r.label,code:r.gen_code||r.ads_code||'',ads:r.ads_code||'',ref:r.ref_code||'',gen:r.gen_code||'',hyp:r.hyp_label||r.hyp_code||'',fmt:r.format,vs:r.visual_style,spend:r.spend,fdc:r.fdc,cpa:r.cpa,stc:r.stc,st:r.status,versions:r.versions||[],runs:r.runs||[],format:r.format,hook:r.hook,visual_style:r.visual_style,offer:r.offer,audience:r.audience,age:r.age,game_type:r.game_type,variants:r.variants||{},planLaunch:r.plan_launch||'',planDays:(r.plan_test_days==null?null:r.plan_test_days)}));}

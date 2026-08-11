@@ -452,6 +452,7 @@
     if (input.tagName === 'SELECT') renderForm(k);
   }
   async function save(k) {
+    if (!misMetaWritable()) return;
     const cfg = R[k], s = st8(k), vals = s._formVals;
     const miss = (cfg.fields || []).find(f => f.required && fieldVisible(f, vals) && !vals[f.name]);
     if (miss) { toast(miss.label + ' is required'); return; }
@@ -464,6 +465,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function del(k, id) {
+    if (!misMetaWritable()) return;
     if (!confirm('Confirm this status change?')) return;
     try { await metaApi(R[k].api + '/' + id, { method: 'DELETE' }); toast('Updated'); await loadList(k); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
@@ -547,6 +549,7 @@
         <button class="mmr-sw ${row.enabled ? 'on' : ''}" onclick="MISRes.capiToggle('${brandId}','${esc(row.eventType)}',${row.enabled ? 'false' : 'true'},this)"></button></div>`).join('');
   }
   async function capiToggle(brandId, eventType, enabled, btn) {
+    if (!misMetaWritable()) return;
     try {
       await metaApi(`/api/brands/${brandId}/capi-events`, { method: 'PUT', body: { eventType, enabled: enabled === 'true' || enabled === true } });
       const bodyEl = btn.closest('#mmrTabBody-brands') || btn.parentElement.parentElement;
@@ -584,6 +587,7 @@
   }
   function fbClear() { fbEdit('', '', 'MAIN', 'ACTIVE'); }
   async function fbSave(bmId) {
+    if (!misMetaWritable()) return;
     const id = document.getElementById('fbId').value;
     const bodyData = { id: id || undefined, fbAccountName: document.getElementById('fbName').value, role: document.getElementById('fbRole').value, status: document.getElementById('fbStatus').value };
     if (!bodyData.fbAccountName) { toast('FB account name is required'); return; }
@@ -593,6 +597,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function fbDisable(bmId, id) {
+    if (!misMetaWritable()) return;
     try {
       await metaApi(`/api/business-managers/${bmId}/fb-accounts`, { method: 'DELETE', body: { id } });
       toast('Updated'); fbPanel(document.getElementById('mmrTabBody-bms'), bmId);
@@ -620,6 +625,7 @@
         : '<p class="sub" style="display:block">No brands linked.</p>'}</div></div>`;
   }
   async function accLink(accId) {
+    if (!misMetaWritable()) return;
     const v = document.getElementById('accBrandSel').value;
     if (!v) { toast('Select a brand'); return; }
     try {
@@ -628,6 +634,7 @@
     } catch (e) { toast('操作失败：' + (e.message || e)); }
   }
   async function accUnlink(accId, brandId) {
+    if (!misMetaWritable()) return;
     if (!confirm('Unlink 是硬删除（无法撤销、不进审计日志），确认？')) return;
     try {
       await metaApi(`/api/ad-accounts/${accId}/brands`, { method: 'DELETE', body: { brandId } });
@@ -677,6 +684,7 @@
     SH._main = main; SH._shares = shares.items;
   }
   async function shareAct(accId) {
+    if (!misMetaWritable()) return;
     const main = SH._main;
     if (!main) return;
     const existing = SH._shares.find(s => String(s.pixelId) === String(main.id) && String(s.adAccountId) === String(accId));
@@ -807,6 +815,7 @@
     if (el) el.style.display = on ? 'none' : '';
   }
   async function userSave() {
+    if (!misMetaWritable()) return;
     const f = MU.form;
     const perms = {};
     document.querySelectorAll('#muPerms [data-perm]').forEach(s => { perms[s.getAttribute('data-perm')] = s.value; });
@@ -825,6 +834,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function userDisable(id) {
+    if (!misMetaWritable()) return;
     if (!confirm('Disable this user?')) return;
     try { await metaApi('/api/users/' + id, { method: 'DELETE' }); toast('Disabled'); loadUnifiedUsers(); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
