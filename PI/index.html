@@ -1501,7 +1501,7 @@ function renderHypo(){
     <td><div class="qt"><b>${esc(h.metric)}</b></div><div class="hmeta">${esc(h.from)} → ${esc(h.to)}</div></td>
     <td><span class="mode mode-${h.mode}">${h.mode}</span></td>
     <td><span class="pill" style="background:var(--bg2);color:var(--ink2)">${h.market}</span></td>
-    <td>${esc(h.brand)}</td><td>${esc(h.type)}</td><td>${esc(h.owner)}</td>
+    <td><span class="link" onclick="event.stopPropagation();goBrand('${esc(h.brand)}')" title="品牌全景(资产/花费/CAPI)">${esc(h.brand)}</span></td><td>${esc(h.type)}</td><td>${esc(h.owner)}</td>
     <td><span class="st" style="color:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}" title="创建时容量体检结果,定义见 Dictionary"><i style="background:${h.cap==='red'?'var(--red)':h.cap==='amber'?'var(--amber)':h.cap==='green'?'var(--green)':'var(--ink3)'}"></i>${h.cap==='red'?'红':h.cap==='amber'?'黄':h.cap==='green'?'绿':'—'}</span></td>
     <td><span class="st st-${h.st}"><i></i>${h.st}</span></td>
    </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--ink3);padding:28px">该筛选条件下暂无假设</td></tr>';
@@ -2751,7 +2751,7 @@ function renderMonthlyPlan(){
     const canSend=bgIsAdmin()||a.mkt===bgMe();
     return `<div class="card" style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <h3 style="margin:0">${br}</h3>
+        <h3 style="margin:0"><span class="link" onclick="goBrand('${br}')" title="品牌全景(资产/花费/CAPI)">${br}</span></h3>
         <div style="display:flex;gap:10px;align-items:center;font-size:12.5px">
           <span class="bgro">${fin!=null?'预算 <b>'+bgMoney(fin)+'</b>':'预算 —'}</span>
           <span class="bgst" style="background:${st[1]};color:${st[2]}">${st[0]}</span>
@@ -2927,7 +2927,7 @@ function renderBudget(){
       finCell=`<span class="bgro"><b>${bgMoney(fin)}</b></span>`+(canReopen?` <a class="bglink" onclick="bgReopen('${bgMonth}','${br}')" title="清除决定,回到可编辑">重开</a>`:'')+(decided?`<div class="bgsub">${esc(bgUserName(e.final_by))}${e.final_reason?` · <span title="${esc(e.final_reason)}">${esc(e.final_reason.length>14?e.final_reason.slice(0,14)+'…':e.final_reason)}</span>`:''}</div>`:'');
     }else finCell='<span class="bgro" style="color:var(--ink3)">—</span>';
     return `<tr>
-      <td><b>${br}</b></td>
+      <td><b class="link" onclick="goBrand('${br}')" title="品牌全景(资产/花费/CAPI)">${br}</b></td>
       <td>${bgAmtCell(e,bgMonth,br,'mkt')}</td>
       <td>${bgAmtCell(e,bgMonth,br,'usc')}</td>
       <td><span class="bgst" style="background:${st[1]};color:${st[2]}">${st[0]}</span></td>

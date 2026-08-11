@@ -59,7 +59,7 @@
       `${label} ${badge(st || 'INACTIVE')}${name ? `<div class="sub" style="display:block;font-size:10.5px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>` : ''}`;
     let grid = `<tr><th>Brand</th>${ROLES.map(r => `<th>${r}</th>`).join('')}</tr>`;
     brands.items.forEach(b => {
-      grid += `<tr><td><b>${esc(b.code)}</b></td>` + ROLES.map(role => {
+      grid += `<tr><td><b class="mmr-link" onclick="goBrand('${esc(b.code)}')">${esc(b.code)}</b></td>` + ROLES.map(role => {
         const p = pixels.items.find(x => String(x.brandId) === String(b.id) && x.role === role);
         if (!p) return `<td><span class="sub" style="display:inline">— 空槽</span></td>`;
         const bm = p.businessManager || null;

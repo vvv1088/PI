@@ -152,7 +152,11 @@
               ${ad.image_url ? `<img src="${esc(ad.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover">` : '<span class="sub" style="display:inline">No image</span>'}</div>
             <div style="padding:10px 12px">
               <div style="font-size:12.5px;font-weight:600;line-height:1.35;max-height:34px;overflow:hidden">${esc(ad.name || '(no name)')}</div>
-              <div style="margin:6px 0">${badge(ad.status)} ${ad.derived_brand_code ? badge(ad.derived_brand_code).replace('mmr-n', 'mmr-b') : ''}</div>
+              <div style="margin:6px 0">${badge(ad.status)} ${ad.derived_brand_code ? badge(ad.derived_brand_code).replace('mmr-n', 'mmr-b') : ''}${(function () {
+                if (!window.MISNaming) return '';
+                const a = MISNaming.resolveCreative(ad.name);
+                return (a.tier === 1 || a.tier === 2) && a.hyp ? ` <span class="mmr-badge mmr-y" style="cursor:pointer" title="${esc(a.gen)} · ${esc(a.label)}" onclick="event.stopPropagation();goHyp('${esc(a.hyp)}')">🧪 ${esc(a.hyp)}</span>` : '';
+              })()}</div>
               <div class="sub" style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px">
                 <span>Spend ${money2(ad.spend)}</span><span>Clicks ${misInt(ad.clicks)}</span><span>Conv ${misInt(ad.conversions)}</span></div></div></div>`).join('')
         || '<p class="sub" style="display:block">No ads.</p>'}</div>

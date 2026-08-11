@@ -119,6 +119,13 @@
       filters: [{ name: 'status', label: 'Status', options: ['ACTIVE', 'INACTIVE'] }],
       detail: {
         title: 'Brand Detail',
+        panelsFirst: true,
+        panels: [
+          { title: 'MIS 决策', render: brandMisPanel },        // v78(L1):该品牌的预算/在测假设/素材
+          { title: '近 30 天花费', render: brandSpendPanel },   // v78(L1):spending 按品牌过滤
+          { title: 'CAPI Events', render: capiPanel },
+          { title: '命名契约', render: brandNamingPanel },      // v78:short code / 可投市场 / 状态
+        ],
         sections: [
           { title: 'Business Managers', key: 'businessManagers', cfg: 'bms' },
           { title: 'Pixels', key: 'pixels', cfg: 'pixels' },
@@ -128,7 +135,6 @@
             { key: 'adAccount.sourceBm.name', label: 'Source BM' },
             { key: 'adAccount.status', label: 'Status', type: 'badge' } ] },
         ],
-        panels: [{ title: 'CAPI Events', render: capiPanel }],
       },
     },
     bms: {
@@ -465,6 +471,72 @@
 
   /* ================= 特殊面板 ================= */
 
+  /* ---------- v78(L1):品牌全景的三个新面板 ---------- */
+  const lexArr = n => { try { const v = (0, eval)(n); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const lexFn = n => { try { const v = (0, eval)(n); return typeof v === 'function' ? v : null; } catch (e) { return null; } };
+  const brandCodeOf = () => { const d = st8('brands')._detailData; return d ? d.code : null; };
+
+  /* MIS 决策面板:当月预算 + 在测假设 + 素材数(读 MIS 内存数据,登录后即真数据) */
+  function brandMisPanel(body) {
+    const code = brandCodeOf();
+    const hs = lexArr('hypos').filter(h => h.brand === code);
+    const cs = lexArr('creatives');
+    const crOf = h => cs.filter(c => (c.hyp || '').startsWith(h.id)).length;
+    const running = hs.filter(h => !['已判定', '已归档'].includes(h.st));
+    const bgCur = lexFn('bgCurMonth');
+    const buds = lexArr('budgets');
+    const bud = bgCur ? buds.find(b => b.month === bgCur() && b.brand === code) : null;
+    const money = v => v == null || v === '' ? '—' : Number(v).toLocaleString('en-US');
+    body.innerHTML = `
+      <div class="kpis">
+        ${kpi(String(running.length), '进行中的测试')}
+        ${kpi(String(hs.length), '历史假设总数')}
+        ${kpi(String(hs.reduce((s, h) => s + crOf(h), 0)), '素材总数')}
+        ${kpi(bud ? money(bud.final != null ? bud.final : bud.allocated != null ? bud.allocated : bud.requested) : '—', '当月预算' + (bud && bud.final == null ? '(未决)' : ''))}</div>
+      ${running.length ? `<div class="tablewrap"><table>
+        <tr><th>Hypothesis</th><th>状态</th><th>负责人</th><th>素材</th><th>上线计划</th></tr>
+        ${running.slice(0, 10).map(h => `<tr>
+          <td><span class="mmr-link" onclick="goHyp('${esc(h.id)}')">${esc(h.id)}</span> <span class="sub" style="display:inline">${esc((h.x || '').slice(0, 40))}</span></td>
+          <td>${esc(h.st || '—')}</td><td>${esc(h.owner || '—')}</td><td>${crOf(h)}</td><td>${esc(h.planLaunch || '—')}</td></tr>`).join('')}</table></div>`
+        : '<p class="sub" style="display:block">该品牌当前没有进行中的测试。</p>'}
+      <div style="margin-top:10px">
+        <button class="btn ghost sm" onclick="go('hypo');(function(){const e=document.getElementById('f-hbrand');if(e){e.value='${esc(code)}';renderHypo();}})()">去 Hypotheses（带筛选）→</button>
+        <button class="btn ghost sm" onclick="go('budget')">去 Budget →</button></div>
+      ${lexArr('hypos').length ? '' : '<p class="sub" style="display:block;margin-top:8px">（MIS 数据需登录后可见;demo 里此区显示 demo 数据)</p>'}`;
+  }
+
+  /* 近 30 天花费面板:spending 按品牌过滤(命名解析归属) */
+  async function brandSpendPanel(body) {
+    const code = brandCodeOf();
+    const to = new Date(), from = new Date(); from.setDate(from.getDate() - 29);
+    const d = await metaApi(`/api/analytics/spending?from=${misDateISO(from)}&to=${misDateISO(to)}&pageSize=all`);
+    const mine = d.rows.filter(r => { const p = window.MISNaming ? MISNaming.parseAdName(r.ad_name) : {}; return p.brand === code; });
+    const total = mine.reduce((s, r) => s + Number(r.spending), 0);
+    const byAd = {};
+    mine.forEach(r => { byAd[r.ad_name] = (byAd[r.ad_name] || 0) + Number(r.spending); });
+    const tops = Object.keys(byAd).sort((a, b) => byAd[b] - byAd[a]).slice(0, 10);
+    body.innerHTML = `
+      <div class="kpis">${kpi('$' + misMoney(total), '近 30 天花费')} ${kpi(String(Object.keys(byAd).length), '广告数')}</div>
+      ${tops.length ? `<div class="tablewrap"><table><tr><th>Ad Name</th><th style="text-align:right">Spend</th></tr>
+        ${tops.map(n => `<tr><td>${esc(n)}</td><td style="text-align:right">$${misMoney(byAd[n])}</td></tr>`).join('')}</table></div>`
+        : '<p class="sub" style="display:block">区间内没有可归到该品牌的花费。</p>'}
+      <div style="margin-top:10px"><button class="btn ghost sm" onclick="go('perf-spending')">去 Spending 明细 →</button>
+      <button class="btn ghost sm" onclick="go('perf-loop')">去闭环报表 →</button></div>`;
+  }
+
+  /* 命名契约面板:short code / 可投市场 / 生命周期(brand_aliases 主数据) */
+  function brandNamingPanel(body) {
+    const code = brandCodeOf();
+    const b = window.MISNaming ? MISNaming.BRANDS.find(x => x.code === code) : null;
+    if (!b) { body.innerHTML = '<p class="sub" style="display:block">该品牌不在命名契约登记表里(brand_aliases)。</p>'; return; }
+    body.innerHTML = `<div class="mmr-dl">
+      <div class="it"><dt>广告名缩写 short code</dt><dd><span class="code">${esc(b.short)}</span></dd></div>
+      <div class="it"><dt>可投市场</dt><dd>${(b.markets || []).map(m => badge(m).replace('mmr-n', 'mmr-b')).join(' ') || '—'}</dd></div>
+      <div class="it"><dt>生命周期</dt><dd>${b.status === 'active' ? badge('ACTIVE') : '<span class="mmr-badge mmr-n">已整合(retired)</span>'}</dd></div>
+      <div class="it"><dt>广告名示例</dt><dd><span class="code" style="font-size:11px">${b.status === 'active' ? esc((MISNaming.MARKETS[(b.markets || ['USC'])[0]] || {}).seg + '_' + b.short + '_TRSA_IM_KH0101') : '只解析历史,不发新码'}</span></dd></div></div>
+      <p class="sub" style="display:block;margin-top:8px">主数据在 Supabase brand_aliases 表;retired 品牌只用于解析历史广告名,永不参与生成(方案 A:历史留旧名)。</p>`;
+  }
+
   /* CAPI 事件开关（brand 详情） */
   async function capiPanel(body, brandId) {
     const d = await metaApi(`/api/brands/${brandId}/capi-events`);
@@ -760,6 +832,25 @@
 
   /* ================= 对外 + 注册 ================= */
   async function open(k) { await loadLookups(k); st8(k).detailId = null; await loadList(k); }
+
+  /* v78(L2/L4):全局跳转 —— 任何页面的品牌名/假设号都能走到它的另一面 */
+  window.goBrand = async function (code) {
+    try {
+      const d = await metaApi('/api/brands?limit=200');
+      const b = d.items.find(x => x.code === code);
+      if (!b) { toast('系统 2 品牌表里没有 ' + code); return; }
+      go('mm-brands');
+      await open('brands');
+      detail('brands', String(b.id));
+    } catch (e) { toast('打开品牌全景失败:' + (e.message || e)); }
+  };
+  window.goHyp = function (code) {
+    const hs = lexArr('hypos');
+    const i = hs.findIndex(h => h.id === code);
+    if (i < 0) { toast('MIS 里找不到假设 ' + code + '(demo 的 Meta 数据与 MIS 假设是两套演示样本)'); return; }
+    go('hypo');
+    try { const od = lexFn('openDrawer'); if (od) od(i); } catch (e) {}
+  };
 
   window.MISRes = {
     open, reload: k => open(k),

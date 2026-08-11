@@ -124,6 +124,8 @@ window.MIS_MOCK = (function () {
 
   /* --- 闭环演示：素材注册表（真实版来自 Supabase creatives，ref code 即 join 键） --- */
   const CREATIVES = [
+    /* 登记制示例:旧 ongoing 广告不改名,把现名登记进 ads 字段 → 三层归因第 2 层整串匹配 */
+    { ref: null, ads: 'USC_WIKH_TRSA_VD_2473_KH02', gen: 'AD-WIKH-012', hyp: 'H-2608-03', label: '旧广告 · 登记名归因', brand: '17WINKH' },
     { ref: 'KH0201', gen: 'AD-WIKH-041', hyp: 'H-2608-03', label: '真人证言 · 提现快', brand: '17WINKH' },
     { ref: 'KH0202', gen: 'AD-WIKH-042', hyp: 'H-2608-03', label: '真人证言 · 大奖',   brand: '17WINKH' },
     { ref: 'KH0310', gen: 'AD-OK-055',   hyp: 'H-2608-05', label: '游戏实录 · 捕鱼',   brand: 'OK188KH' },
@@ -140,8 +142,10 @@ window.MIS_MOCK = (function () {
 
   /* --- spending：近 14 天，广告名尾段带 ref code（与实际命名契约一致） --- */
   const LINES = ['LINE-A', 'LINE-B', 'LINE-C'];
-  const ADS = CREATIVES.map((c, i) => ({
-    ad_name: (c.brand === 'INZ9' ? 'MYR_INZ9_TRSA_IM_' : 'USC_' + c.brand.slice(0, 4) + '_TRSA_IM_') + c.ref,
+  const BRAND_SHORT = { INZ9: 'INZ9', '17WINKH': 'WIKH', OK188KH: 'OK18', SBKH: 'SBKH' };
+  /* 只有带 ref 的素材才生成自己的花费行;登记名素材(ref=null)的花费走脏名演示行 */
+  const ADS = CREATIVES.filter(c => c.ref).map((c, i) => ({
+    ad_name: (c.brand === 'INZ9' ? 'MYR_' : 'USC_') + (BRAND_SHORT[c.brand] || c.brand.slice(0, 4)) + '_TRSA_IM_' + c.ref,
     ref: c.ref, brand: c.brand, line: LINES[i % LINES.length], base: 18 + (i * 7) % 30,
   }));
   const days = [];

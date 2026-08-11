@@ -232,6 +232,41 @@ window.MISNaming = (function () {
     return { name: r.name, parts: { market, brand: h.brand, setting, format, ref, official: !!c.ref } };
   }
 
+  /* v78:三层归因 —— 广告名 → 素材(过渡期方案的正式落地)。
+   *   第 1 层:严格解析出 ref code,按 ref 精确匹配素材(新广告);
+   *   第 2 层:广告名与素材登记的 ads_code 整串精确匹配(旧 ongoing 广告,登记制);
+   *   第 3 层:宽松解析只归到品牌(到不了素材,进未归因清单);
+   *   全失败:tier 0。
+   * 数据源:live/demo 用 MIS 的 creatives/hypos 数组;mock 用 MIS_MOCK 的素材注册表。 */
+  function resolveCreative(adName) {
+    const name = String(adName || '').trim();
+    if (!name) return { tier: 0 };
+    const p = parseAdName(name);
+    /* mock 模式(含 demo)必须配 mock 花费数据用 mock 注册表,否则两边对不上;
+     * live 模式用 MIS 真素材表(ref_code 已正式发号) */
+    const mockMode = !!(window.MIS_META && MIS_META.mode === 'mock' && window.MIS_MOCK);
+    if (mockMode) {
+      try {
+        const reg = MIS_MOCK.route('/api/mis/creative-registry', {});
+        let c = null, tier = 0;
+        if (p.ref) { c = reg.creatives.find(x => x.ref && (x.ref === p.ref || p.ref.indexOf(x.ref) === 0)); if (c) tier = 1; }
+        if (!c) { c = reg.creatives.find(x => x.ads && String(x.ads).trim() === name); if (c) tier = 2; }
+        if (c) return { tier, gen: c.gen, label: c.label || '', hyp: c.hyp, brand: c.brand };
+      } catch (e) {}
+    } else {
+      const cs = G('creatives'), hs = G('hypos');
+      let c = null, tier = 0;
+      if (p.ref) { c = cs.find(x => x.ref && (x.ref === p.ref || p.ref.indexOf(x.ref) === 0)); if (c) tier = 1; }
+      if (!c) { c = cs.find(x => x.ads && String(x.ads).trim() === name); if (c) tier = 2; }
+      if (c) {
+        const h = hs.find(x => (c.hyp || '').startsWith(x.id));
+        return { tier, gen: c.gen, label: c.label || '', hyp: h ? h.id : (c.hyp || '').split(' ')[0], brand: h ? h.brand : (p.brand || '') };
+      }
+    }
+    if (p.brand) return { tier: 3, brand: p.brand, brandStatus: p.brandStatus };
+    return { tier: 0 };
+  }
+
   /* v77:换版(衍生版)投放名 —— 基码 + V{版本号}。基码优先用素材现有 ads code
    * (严格新式才可续),否则现场生成;旧 V 后缀先剥掉再加新号。 */
   function versionName(i) {
@@ -254,5 +289,5 @@ window.MISNaming = (function () {
     if (note) note.textContent = '已生成(预览发号,正式发号第 2 期):市场 ' + r.parts.market + ' · ' + r.parts.brand + ' · ' + r.parts.setting + ' · ' + r.parts.format + ' · ref ' + r.parts.ref;
   }
 
-  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, officialRefs, genForCreative, fvGen, versionName, syncFromDb };
+  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, officialRefs, genForCreative, fvGen, versionName, resolveCreative, syncFromDb };
 })();

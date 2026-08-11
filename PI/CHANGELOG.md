@@ -1,5 +1,16 @@
 # Changelog — Marketing Intelligent System
 
+## [v78] — 2026-08-11 · 实体连接 L1–L6 + 三层归因(过渡期机制正式落地)
+
+- **三层归因引擎**(MISNaming.resolveCreative,闭环/Spending/Ad Gallery 共用):①严格 ref 匹配(新广告)→ ②素材登记 ads_code 整串精确匹配(旧 ongoing 广告,登记制)→ ③宽松只归品牌 → 未归因。闭环页未归因清单区分「已归品牌(去素材登记此名即可归因)」与「完全未归(命名不规范)」——过渡期的工作清单。存量 23 条已登记的 6 段旧式 ads_code 由第 2 层直接覆盖(核实后零回填、零风险)。
+- **L1 品牌全景**:Meta Brands 详情页新增 4 个面板——「MIS 决策」(进行中测试/素材数/当月预算,读 MIS 真数据,可跳 Hypotheses 带筛选)、「近 30 天花费」(spending 按品牌归因过滤 + top 广告)、「命名契约」(short code/可投市场/生命周期)、CAPI Events 保留。
+- **L2 全局品牌可点**:Hypotheses 列表、Budget 行、Monthly Overview 块头的品牌名 → goBrand() 品牌全景。**L3** Health 网格品牌列同样可点。
+- **L4 花费↔假设互通**:Spending 行与 Ad Gallery 卡片解析出素材后挂「🧪 假设号」徽章,点击 goHyp() 直达假设抽屉。
+- **L5 闭环页资产健康**:选定品牌后显示其 MAIN Pixel 状态徽章(非 ACTIVE 红字提醒"先查 Health")+ 品牌全景入口。
+- **L6 轮转影响面**:选中要封的 BM 即时显示"影响哪些品牌 + 这些品牌在 MIS 有 N 个进行中的测试"。
+- 修 mock 生成器:登记名素材(ref=null)不再生成自己的花费行(此前带出 _null 垃圾名);17WINKH 的 mock 广告名改用正确缩写 WIKH。
+- 验证:35 视图冒烟零报错;定向实测:登记名行进闭环表、未归因清单 2 条语义正确、品牌全景 7 个 tab、Spending/Gallery 🧪 徽章、轮转影响面(4 品牌 6 测试)。
+
 ## [v77 + 后端] — 2026-08-11 · Users 统一 + Activity Log 合并 + 命名尾巴收官
 
 - **两套 Users 统一为一页**(V 定):Administration → Users 现在 = MIS 用户表 + 「系统 2 账号映射」区——每个 MIS 用户可挂一个系统 2 账号(映射存新表 `meta_user_map`,Supabase 迁移 create_meta_user_map),行内直接看/编辑该账号的 Meta 权限(权限矩阵弹窗保留),未映射的系统 2 账号列在下方;「Users (Meta)」独立页退役。一人一个身份,审计可对人。

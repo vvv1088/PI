@@ -101,9 +101,10 @@
       el.innerHTML = shell(`
         <div class="mmo-2col2">
           <div class="card" style="padding:14px"><b style="font-size:12.5px">Execute BM Rotation</b>
-            <div class="mmr-field" style="margin-top:10px"><select id="rtBm">
+            <div class="mmr-field" style="margin-top:10px"><select id="rtBm" onchange="MISOps.rtImpact()">
               <option value="" disabled${RT.bmId ? '' : ' selected'}>Select Pixel BM to mark BANNED</option>
               ${bms.map(b => `<option value="${esc(b.id)}"${RT.bmId === String(b.id) ? ' selected' : ''}>${esc(b.name)} / ${esc(b.role || '-')} / ${esc(b.status)}</option>`).join('')}</select></div>
+            <div id="rtImpact"></div>
             <div class="mmr-field"><textarea id="rtReason">BM banned or disabled</textarea></div>
             <button class="btn sm" onclick="MISOps.execBm()">Mark BANNED</button>
             <div class="mmr-status" id="rtStatus"></div>${sopLink()}</div>
@@ -176,6 +177,26 @@
     } catch (e) { setRt(e.message || 'Rotation failed'); }
   }
   const setRt = m => { const el = document.getElementById('rtStatus'); if (el) el.textContent = m; };
+
+  /* v78(L6):封 BM 前显示影响面 —— 受影响品牌 + 这些品牌在 MIS 里进行中的测试数 */
+  async function rtImpact() {
+    const el = document.getElementById('rtImpact');
+    const bmId = (document.getElementById('rtBm') || {}).value;
+    if (!el || !bmId) return;
+    try {
+      const px = await metaApi('/api/pixels?limit=200');
+      const bs = await metaApi('/api/brands?limit=200');
+      const codes = [...new Set(px.items.filter(p => String(p.bmId) === String(bmId)).map(p => {
+        const b = bs.items.find(x => String(x.id) === String(p.brandId)); return b ? b.code : null;
+      }).filter(Boolean))];
+      let hypos = [];
+      try { const v = (0, eval)('hypos'); if (Array.isArray(v)) hypos = v; } catch (e) {}
+      const running = hypos.filter(h => codes.includes(h.brand) && !['已判定', '已归档'].includes(h.st)).length;
+      el.innerHTML = codes.length
+        ? `<div class="mmr-status" style="color:#b26a00">影响面:${codes.map(c => `<b>${esc(c)}</b>`).join('、')} 的 MAIN 追踪将中断${running ? `;这些品牌在 MIS 有 <b>${running}</b> 个进行中的测试会受影响` : ''}。</div>`
+        : '<div class="mmr-status">该 BM 下没有挂任何品牌的 pixel。</div>';
+    } catch (e) { el.innerHTML = ''; }
+  }
 
   /* ================= SOP ================= */
   const SP = { mode: 'list', groupId: null };
@@ -347,7 +368,7 @@
     rtTab: t => { RT.tab = t; RT.sopId = ''; loadRotation(); },
     logType: v => { RT.logType = v; loadRotation(); },
     pickBrand: v => { RT.brandId = v; RT.pixelId = ''; loadRotation(); },
-    execBm, execPixel,
+    execBm, execPixel, rtImpact,
     gotoSop: id => { SP.mode = 'detail'; SP.groupId = id; go('mm-sop'); MIS_MODULES.reload('mm-sop'); },
     sopMode: m => { SP.mode = m; loadSop(); },
     sopSet, tplSave, tplClear, tplEdit,

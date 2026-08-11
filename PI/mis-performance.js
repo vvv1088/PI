@@ -47,6 +47,23 @@
   }
 
   /* ================= 闭环报表 ================= */
+  const lex = n => { try { const v = (0, eval)(n); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  /* v78:素材注册表 —— mock 模式用占位注册表(与 mock 花费自洽);live 用 MIS 真素材表 */
+  function registry() {
+    if (window.MIS_META.mode === 'mock' && window.MIS_MOCK) {
+      try { return MIS_MOCK.route('/api/mis/creative-registry', {}); } catch (e) {}
+    }
+    const cs = lex('creatives'), hs = lex('hypos');
+    const hypMap = {};
+    hs.forEach(h => { hypMap[h.id] = { brand: h.brand, statement: h.x }; });
+    return {
+      creatives: cs.map(c => {
+        const h = hs.find(x => (c.hyp || '').startsWith(x.id));
+        return { ref: c.ref || null, ads: c.ads || null, gen: c.gen, hyp: h ? h.id : (c.hyp || '').split(' ')[0], label: c.label || '', brand: h ? h.brand : '' };
+      }).filter(c => c.hyp),
+      hypotheses: hypMap,
+    };
+  }
   async function loadLoop() {
     const brandSel = document.getElementById('plBrand');
     const rangeSel = document.getElementById('plRange');
@@ -55,24 +72,31 @@
     const to = new Date(), from = new Date(); from.setDate(from.getDate() - (daysN - 1));
     const fromS = misDateISO(from), toS = misDateISO(to);
 
-    // 三路数据：花费（系统2）、成交（BO 通道）、素材注册表（Supabase creatives；mock 期走占位）
-    const [spend, bo, reg] = await Promise.all([
+    // 三路数据：花费（系统2）、成交（BO 通道）、素材注册表
+    const [spend, bo] = await Promise.all([
       metaApi(`/api/analytics/spending?from=${fromS}&to=${toS}&pageSize=all`),
       metaApi(`/api/mis/bo-daily?from=${fromS}&to=${toS}${brand === 'ALL' ? '' : '&brand=' + brand}`),
-      metaApi('/api/mis/creative-registry'),
     ]);
+    /* v78:注册表 —— live/demo 直接用 MIS 的 creatives/hypos(ref_code 已正式发号);
+     * mock 模式用占位注册表(保持 mock 数据自洽) */
+    const reg = registry();
 
     // 填品牌下拉（首次）
     if (brandSel.options.length === 1) {
-      const bs = [...new Set(reg.creatives.map(c => c.brand))];
+      const bs = [...new Set(reg.creatives.map(c => c.brand).filter(Boolean))];
       bs.forEach(b => brandSel.insertAdjacentHTML('beforeend', `<option>${esc(b)}</option>`));
       brandSel.value = brand;
     }
 
-    // 花费按 ref code 归集（命名契约：ad_name 尾段 = ref code）
-    const refOf = n => { const m = reg.creatives.find(c => n.includes(c.ref)); return m ? m.ref : null; };
-    const spendByRef = {};
-    spend.rows.forEach(r => { const ref = refOf(r.ad_name); if (ref) spendByRef[ref] = (spendByRef[ref] || 0) + Number(r.spending); });
+    /* v78:三层归因(MISNaming.resolveCreative)——
+     * 1 严格 ref → 2 登记全名 → 3 只归品牌(进未归因清单) */
+    const spendByGen = {};
+    const unRows = [];   // 未落到素材的行
+    spend.rows.forEach(r => {
+      const a = window.MISNaming ? MISNaming.resolveCreative(r.ad_name) : { tier: 0 };
+      if (a.tier === 1 || a.tier === 2) spendByGen[a.gen] = (spendByGen[a.gen] || 0) + Number(r.spending);
+      else unRows.push({ name: r.ad_name, s: Number(r.spending), tier: a.tier, brand: a.brand || null });
+    });
     const boByRef = {};
     bo.rows.forEach(r => {
       const t = boByRef[r.ref_code] || (boByRef[r.ref_code] = { fd: 0, fdAmt: 0, d7: 0 });
@@ -84,7 +108,7 @@
     reg.creatives.forEach(c => {
       if (brand !== 'ALL' && c.brand !== brand) return;
       const g = groups[c.hyp] || (groups[c.hyp] = { hyp: c.hyp, brand: c.brand, statement: (reg.hypotheses[c.hyp] || {}).statement || '', rows: [] });
-      const s = spendByRef[c.ref] || 0, b = boByRef[c.ref] || { fd: 0, fdAmt: 0, d7: 0 };
+      const s = spendByGen[c.gen] || 0, b = (c.ref && boByRef[c.ref]) || { fd: 0, fdAmt: 0, d7: 0 };
       g.rows.push({ c, spend: s, fd: b.fd, fdAmt: b.fdAmt, d7: b.d7, cpa: b.fd ? s / b.fd : null });
     });
 
@@ -104,7 +128,7 @@
     if (!gs.length) html += `<tr><td colspan="8" class="empty">该品牌暂无带 ref code 的在投素材</td></tr>`;
     gs.forEach(g => {
       const gSpend = g.rows.reduce((s, r) => s + r.spend, 0), gFd = g.rows.reduce((s, r) => s + r.fd, 0);
-      html += `<tr style="background:rgba(125,125,125,.06)"><td colspan="3"><b>${esc(g.hyp)}</b> · ${esc(g.brand)}
+      html += `<tr style="background:rgba(125,125,125,.06)"><td colspan="3"><b class="mmr-link" onclick="goHyp('${esc(g.hyp)}')">${esc(g.hyp)}</b> · <span class="mmr-link" onclick="goBrand('${esc(g.brand)}')">${esc(g.brand)}</span>
         <span class="sub" style="display:inline">${esc(g.statement)}</span></td>
         <td style="text-align:right"><b>$${misMoney(gSpend)}</b></td>
         <td style="text-align:right"><b>${misInt(gFd)}</b></td>
@@ -113,7 +137,7 @@
         <td style="text-align:right"><b>$${misMoney(g.rows.reduce((s, r) => s + r.d7, 0))}</b></td></tr>`;
       g.rows.sort((a, b) => b.spend - a.spend).forEach(r => {
         html += `<tr><td></td><td>${esc(r.c.gen)} <span class="sub" style="display:inline">${esc(r.c.label)}</span></td>
-          <td><span class="code">${esc(r.c.ref)}</span></td>
+          <td>${r.c.ref ? `<span class="code">${esc(r.c.ref)}</span>` : (r.c.ads ? `<span class="mmr-badge mmr-n" title="旧广告按登记全名归因:${esc(r.c.ads)}">登记名</span>` : '—')}</td>
           <td style="text-align:right">$${misMoney(r.spend)}</td>
           <td style="text-align:right">${misInt(r.fd)}</td>
           <td style="text-align:right">${r.cpa != null ? '$' + misMoney(r.cpa) : '—'}</td>
@@ -123,18 +147,36 @@
     });
     document.getElementById('plTable').innerHTML = html;
 
-    /* v73:未归因告警 —— 广告名解析不出 ref code 的花费(拼错/不规范命名会静默丢归因,这里显式报出) */
+    /* v78:未归因清单(三层归因后仍未落到素材的行)——过渡期这就是工作清单:
+     * 「已归品牌」= 旧广告,去对应素材登记现名即可;「完全未归」= 命名不规范,要人工排查 */
     const un = {};
-    spend.rows.forEach(r => { if (!refOf(r.ad_name)) { const u = un[r.ad_name] || (un[r.ad_name] = { s: 0 }); u.s += Number(r.spending); } });
+    unRows.forEach(r => { const u = un[r.name] || (un[r.name] = { s: 0, tier: r.tier, brand: r.brand }); u.s += r.s; });
     const unNames = Object.keys(un);
     const unSpend = unNames.reduce((s, n) => s + un[n].s, 0);
     const warn = unNames.length
-      ? `<div style="color:#b26a00;margin-bottom:6px">⚠ <b>${unNames.length} 条广告名无法归因到素材</b>（区间内花费 $${misMoney(unSpend)} 不在上表）：`
-        + `<details style="display:inline"><summary style="cursor:pointer;display:inline">查看清单</summary>${unNames.map(n => `<div class="code" style="font-size:11px;margin-top:3px">${esc(n)} — $${misMoney(un[n].s)}</div>`).join('')}</details></div>`
+      ? `<div style="color:#b26a00;margin-bottom:6px">⚠ <b>${unNames.length} 条广告未落到素材</b>（区间内花费 $${misMoney(unSpend)} 不在上表）：`
+        + `<details style="display:inline"><summary style="cursor:pointer;display:inline">查看清单</summary>${unNames.map(n =>
+          `<div class="code" style="font-size:11px;margin-top:3px">${esc(n)} — $${misMoney(un[n].s)} · ${un[n].tier === 3 ? '已归品牌 ' + esc(un[n].brand || '') + '（去素材登记此名即可归因）' : '完全未归（命名不规范）'}</div>`).join('')}</details></div>`
       : '';
-    document.getElementById('plNote').innerHTML = warn +
+
+    /* v78(L5):品牌 MAIN pixel 健康徽章 —— 投放数字异常的第一排查项,不用切页 */
+    let healthNote = '';
+    if (brand !== 'ALL') {
+      try {
+        const bs = await metaApi('/api/brands?limit=200');
+        const b = bs.items.find(x => x.code === brand);
+        if (b) {
+          const px = await metaApi(`/api/pixels?brand_id=${b.id}&role=MAIN&limit=10`);
+          const main = px.items.find(p => p.status === 'ACTIVE') || px.items[0] || null;
+          const st = main ? main.status : '无 MAIN';
+          const color = st === 'ACTIVE' ? '#1a7f4e' : '#c62f36';
+          healthNote = `<div style="margin-bottom:6px">品牌资产:MAIN Pixel <b style="color:${color}">${esc(st)}</b>${main ? ` <span class="code" style="font-size:11px">${esc(main.name)}</span>` : ''}${st !== 'ACTIVE' ? ' ⚠ 投放追踪可能中断,先查 Health 页' : ''} · <span class="mmr-link" onclick="goBrand('${esc(brand)}')">品牌全景 →</span></div>`;
+        }
+      } catch (e) {}
+    }
+    document.getElementById('plNote').innerHTML = healthNote + warn +
       esc((window.MIS_META.mode === 'mock' ? '⚠ 演示数据（mock）。' : '') +
-      `区间 ${fromS} ~ ${toS}；花费=系统2 spending 接口；FD/D7=BO 通道（D 节拍板后接真）；join 键=广告名内 ref code。`);
+      `区间 ${fromS} ~ ${toS}；花费=系统2 spending 接口；FD/D7=BO 通道（D 节拍板后接真）；归因=严格 ref → 登记全名 → 品牌。`);
   }
 
   /* ================= Spending 明细 ================= */
@@ -164,10 +206,15 @@
     let html = `<tr><th>Date</th><th>Ad Name</th><th>Line</th><th style="text-align:right">Spending</th><th>Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
     if (!d.rows.length) html += `<tr><td colspan="5" class="empty">无数据</td></tr>`;
     d.rows.forEach((r, i) => {
-      /* v77:方案 A —— 整合前品牌的历史行标「已整合」,数据留在旧名下 */
-      let retiredTag = '';
-      if (window.MISNaming) { const p = MISNaming.parseAdName(r.ad_name); if (p.brandStatus === 'retired') retiredTag = ` <span class="mmr-badge mmr-n" title="品牌已整合(${esc(p.brand)}),历史数据保留">已整合</span>`; }
-      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}${retiredTag}</td><td>${esc(r.line || '-')}</td>
+      /* v77:方案 A —— 整合前品牌的历史行标「已整合」;v78(L4):行挂所测假设,点击直达 */
+      let tags = '';
+      if (window.MISNaming) {
+        const p = MISNaming.parseAdName(r.ad_name);
+        if (p.brandStatus === 'retired') tags += ` <span class="mmr-badge mmr-n" title="品牌已整合(${esc(p.brand)}),历史数据保留">已整合</span>`;
+        const a = MISNaming.resolveCreative(r.ad_name);
+        if ((a.tier === 1 || a.tier === 2) && a.hyp) tags += ` <span class="mmr-badge mmr-b" style="cursor:pointer" title="${esc(a.gen)} · ${esc(a.label)}" onclick="goHyp('${esc(a.hyp)}')">🧪 ${esc(a.hyp)}</span>`;
+      }
+      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}${tags}</td><td>${esc(r.line || '-')}</td>
         <td style="text-align:right">$${misMoney(r.spending)}</td>
         <td>${canEditRemark
           ? `<input type="text" value="${esc(r.remark || '')}" placeholder="备注…" style="width:170px"
