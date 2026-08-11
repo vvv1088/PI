@@ -1,9 +1,8 @@
 /* =====================================================================
- * mis-assets.js — ASSETS 模块（v70 新增，P1 精选三视图，全部只读）
- *   v-as-health    Health 体检：品牌×轮转槽位网格 + 最近检查流水
- *   v-as-rotation  轮转历史：rotation_log 流水
- *   v-as-overview  资产状态总览：四类资产状态汇总 + 广告账户清单
- * P2 阶段的资产 CRUD / 轮转执行等操作视图按映射表另建。
+ * mis-assets.js — ASSETS 模块（v70 新增）
+ *   v-as-health    Health Monitor：KPI + 品牌×槽位(BM/Pixel/Token)网格 + 体检流水
+ * v72 收编：原 v-as-rotation(轮转流水)并入 mis-operations.js 的 Rotation 页
+ * Logs tab;原 v-as-overview(资产状态总览)并入 Meta Overview(mm-dash)。
  * ===================================================================== */
 (function () {
   'use strict';
@@ -32,29 +31,6 @@
         <div class="note">每个品牌应有 MAIN 且为 ACTIVE；空槽 = 该角色缺配置（轮转后未补位）。Token 取该槽位 BM 下 purpose=CAPI 且未 REVOKED 的一条。</div></div>
       <div class="tablewrap"><table id="ahLog"></table></div>`;
 
-    const r = document.getElementById('v-as-rotation');
-    if (r) r.innerHTML = `
-      <div class="head"><div>
-        <h1>Rotation Log</h1>
-        <div class="sub">封号 → 递补的完整轨迹（rotation_log 流水，只读）</div>
-      </div><div class="filters">
-        <select id="arType" onchange="MISAssets.loadRotation()">
-          <option value="ALL">All Types</option><option>BM</option><option>PIXEL</option><option>AD_ACCOUNT</option>
-        </select>
-        <button class="btn ghost sm" onclick="MISAssets.loadRotation()">↻ 刷新</button></div></div>
-      <div class="tablewrap"><table id="arTable"></table></div>`;
-
-    const o = document.getElementById('v-as-overview');
-    if (o) o.innerHTML = `
-      <div class="head"><div>
-        <h1>Asset Status</h1>
-        <div class="sub">BM / Pixel / 广告账户 / 开发者应用的存量与状态总览（只读；操作在 P2 迁入）</div>
-      </div><div class="filters"><button class="btn ghost sm" onclick="MISAssets.loadOverview()">↻ 刷新</button></div></div>
-      <div class="kpis" id="aoKpis"></div>
-      <div class="card" style="padding:14px;margin-bottom:14px"><b style="font-size:12.5px">Business Managers</b>
-        <div class="tablewrap" style="margin-top:8px"><table id="aoBms"></table></div></div>
-      <div class="card" style="padding:14px"><b style="font-size:12.5px">广告账户</b>
-        <div class="tablewrap" style="margin-top:8px"><table id="aoAccounts"></table></div></div>`;
   }
 
   /* ================= Health ================= */
@@ -107,56 +83,8 @@
     document.getElementById('ahLog').innerHTML = log;
   }
 
-  /* ================= Rotation ================= */
-  async function loadRotation() {
-    const t = document.getElementById('arType').value || 'ALL';
-    const d = await metaApi('/api/rotation/logs?limit=100' + (t === 'ALL' ? '' : '&entity_type=' + t));
-    let html = `<tr><th>时间 (UTC+8)</th><th>类型</th><th>对象</th><th>Role</th><th>Status</th><th>原因</th><th>操作人</th></tr>`;
-    if (!d.items.length) html += `<tr><td colspan="7" class="empty">暂无记录</td></tr>`;
-    d.items.forEach(r => {
-      const roleChg = (r.oldRole || r.newRole) ? `${esc(r.oldRole || '—')} → ${esc(r.newRole || '—')}` : '—';
-      const stChg = (r.oldStatus || r.newStatus) ? `${esc(r.oldStatus || '—')} → ${esc(r.newStatus || '—')}` : '—';
-      html += `<tr><td>${esc(fmtTs(r.createdAt))}</td><td>${esc(r.entityType)}</td><td>#${esc(r.entityId)}</td>
-        <td>${roleChg}</td><td>${stChg}</td><td>${esc(r.reason || '')}</td><td>${esc(r.operator)}</td></tr>`;
-    });
-    document.getElementById('arTable').innerHTML = html;
-  }
-
-  /* ================= Overview ================= */
-  async function loadOverview() {
-    const [bms, pixels, accounts, apps] = await Promise.all([
-      metaApi('/api/business-managers?limit=100'),
-      metaApi('/api/pixels?limit=100'),
-      metaApi('/api/ad-accounts?limit=100'),
-      metaApi('/api/developer-apps?limit=100'),
-    ]);
-    const cnt = (items, st) => items.filter(x => x.status === st).length;
-    const fmt = items => `${items.filter(x => x.status === 'ACTIVE').length} <span style="font-size:12px;font-weight:400">/ ${items.length}</span>`;
-    document.getElementById('aoKpis').innerHTML =
-      kpi(fmt(bms.items), 'BM · ACTIVE/总') + kpi(fmt(pixels.items), 'Pixel · ACTIVE/总') +
-      kpi(fmt(accounts.items), '广告账户 · ACTIVE/总') + kpi(fmt(apps.items), 'App · ACTIVE/总') +
-      kpi(String(cnt(pixels.items, 'BANNED') + cnt(bms.items, 'BANNED') + cnt(accounts.items, 'BANNED')), 'BANNED 合计');
-
-    let bt = `<tr><th>BM</th><th>BM ID</th><th>类型</th><th>Role</th><th>状态</th></tr>`;
-    bms.items.forEach(b => {
-      bt += `<tr><td>${esc(b.name)}</td><td><span class="code">${esc(b.bmId)}</span></td>
-        <td>${esc(b.bmType)}</td><td>${esc(b.role || '—')}</td><td>${badge(b.status)}</td></tr>`;
-    });
-    document.getElementById('aoBms').innerHTML = bt;
-
-    let at = `<tr><th>账户名</th><th>Account ID</th><th>品牌</th><th>状态</th></tr>`;
-    accounts.items.forEach(a => {
-      const codes = (a.brandLinks || []).map(l => l.brand && l.brand.code).filter(Boolean);
-      at += `<tr><td>${esc(a.name)}</td><td><span class="code">${esc(a.adAccountId)}</span></td>
-        <td>${esc(codes.join(', ') || '—')}</td><td>${badge(a.status)}</td></tr>`;
-    });
-    document.getElementById('aoAccounts').innerHTML = at;
-  }
-
   /* ================= 注册 ================= */
   mount();
-  window.MISAssets = { loadHealth, loadRotation, loadOverview };
+  window.MISAssets = { loadHealth };
   MIS_MODULES.register('as-health', loadHealth);
-  MIS_MODULES.register('as-rotation', loadRotation);
-  MIS_MODULES.register('as-overview', loadOverview);
 })();

@@ -42,15 +42,21 @@ const path = require('path');
     'pool', 'hypo', 'form', 'creatives', 'mplan', 'budget', 'bgassign',
     'results', 'dict', 'reports', 'gallery', 'operators', 'funnel', 'candidates', 'watch',
     'roles', 'users', 'audit',
-    // v70
-    'perf-loop', 'perf-spending', 'as-health', 'as-rotation', 'as-overview',
-    // v71 系统 2 搬家
+    // v70(v72 收编:as-rotation→mm-rotation Logs tab、as-overview→mm-dash)
+    'perf-loop', 'perf-spending', 'as-health',
+    // v71 系统 2 搬家(v72 收编:mm-actionlogs→audit Meta tab)
     'mm-brands', 'mm-bms', 'mm-pixels', 'mm-accounts', 'mm-apps', 'mm-tokens', 'mm-shares',
-    'mm-dash', 'mm-rotation', 'mm-sop', 'mm-users', 'mm-actionlogs',
+    'mm-dash', 'mm-rotation', 'mm-sop', 'mm-users',
     'an-accounts', 'an-ads', 'an-brands', 'an-lifecycle',
   ];
   const results = {};
   let fails = 0;
+  // v72:导航默认收起 —— 必须在遍历视图之前检查(go() 会逐组展开)
+  results['nav@initial'] = await page.evaluate(() => {
+    const grps = [...document.querySelectorAll('.grp')];
+    return { on: true, htmlLen: 99, total: grps.length, open: grps.filter(g => !g.classList.contains('closed')).length };
+  });
+  if (results['nav@initial'].open > 1) fails++;
   for (const v of views) {
     await page.evaluate(vv => { window.go(vv); }, v);
     await page.waitForTimeout(650);
@@ -62,6 +68,19 @@ const path = require('path');
     if (!r.on || r.htmlLen < 40) fails++;
     if (shotDir) await page.screenshot({ path: path.join(shotDir, `shot-${v}.png`) });
   }
+  // v72 交互抽查：Rotation Logs tab / Activity Log Meta tab / 导航默认收起
+  await page.evaluate(() => { window.go('mm-rotation'); MISOps.rtTab('logs'); });
+  await page.waitForTimeout(500);
+  results['mm-rotation@logs'] = await page.evaluate(() => {
+    const sec = document.getElementById('v-mm-rotation');
+    return { on: true, htmlLen: sec.innerHTML.length, hasTable: !!sec.querySelector('table tr') };
+  });
+  await page.evaluate(() => { window.go('audit'); });
+  await page.waitForTimeout(500);
+  results['audit@meta'] = await page.evaluate(() => {
+    const meta = document.getElementById('auditMetaBody');
+    return { on: true, htmlLen: meta ? meta.innerHTML.length : 0, hasTable: !!(meta && meta.querySelector('table tr')) };
+  });
   // 交互抽查：Brands 详情页 + 分析页图表 SVG
   await page.evaluate(() => { window.go('mm-brands'); });
   await page.waitForTimeout(400);

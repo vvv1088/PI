@@ -4,7 +4,7 @@
  *   v-mm-rotation    Rotation：BM 轮转 / Pixel 轮转 两个执行 tab（高危写操作，
  *                    mock 模式在内存演练完整语义：封禁→递补→写日志→生成 SOP）
  *   v-mm-sop         SOP Tasks：分组进度 + 组内步骤详情（Complete / Skip）+ 模板管理
- *   v-mm-actionlogs  Action Logs：系统 2 审计流水（筛选：用户/动作/对象/日期）
+ *   #auditMetaBody   Action Logs：系统 2 审计流水,v72 起并入 Activity Log 的 Meta tab
  * 数据一律经 metaApi()。
  * ===================================================================== */
 (function () {
@@ -20,11 +20,14 @@
   async function loadDash() {
     const el = document.getElementById('v-mm-dash');
     if (!el) return;
-    const [brands, bms, pixels, tokens, failed, rotations] = await Promise.all([
+    /* v72:吸收原 Asset Status 视图 —— 补广告账户 / App 两个统计维度 */
+    const [brands, bms, pixels, tokens, accounts, apps, failed, rotations] = await Promise.all([
       metaApi('/api/brands?limit=100'),
       metaApi('/api/business-managers?limit=100'),
       metaApi('/api/pixels?limit=100'),
       metaApi('/api/tokens?limit=100'),
+      metaApi('/api/ad-accounts?limit=100'),
+      metaApi('/api/developer-apps?limit=100'),
       metaApi('/api/health?result=FAILED&limit=8'),
       metaApi('/api/rotation/logs?limit=8'),
     ]);
@@ -47,7 +50,9 @@
         ${kpi(String(brands.items.length), 'Brands')}
         ${kpi(grp(bms.items), 'BMs')}
         ${kpi(grp(pixels.items), 'Pixels')}
-        ${kpi(grp(tokens.items), 'Tokens')}</div>
+        ${kpi(grp(tokens.items), 'Tokens')}
+        ${kpi(grp(accounts.items), 'Ad Accounts')}
+        ${kpi(grp(apps.items), 'Apps')}</div>
       <div class="card" style="padding:14px;margin-bottom:14px"><b style="font-size:12.5px">Brand Overview</b>
         <div class="tablewrap" style="margin-top:8px"><table>${bt}</table></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="mmo-2col">
@@ -66,11 +71,30 @@
           : '<p class="sub" style="display:block;margin-top:8px">No rotation logs.</p>'}</div></div>`;
   }
 
-  /* ================= Rotation（执行页） ================= */
-  const RT = { tab: 'bm', bmId: '', brandId: '', pixelId: '', sopId: '' };
+  /* ================= Rotation（执行页 + v72 并入的 Logs tab） ================= */
+  const RT = { tab: 'bm', bmId: '', brandId: '', pixelId: '', sopId: '', logType: 'ALL' };
   async function loadRotation() {
     const el = document.getElementById('v-mm-rotation');
     if (!el) return;
+    if (RT.tab === 'logs') {
+      const d = await metaApi('/api/rotation/logs?limit=100' + (RT.logType === 'ALL' ? '' : '&entity_type=' + RT.logType));
+      let t = `<tr><th>时间 (UTC+8)</th><th>类型</th><th>对象</th><th>Role</th><th>Status</th><th>原因</th><th>操作人</th></tr>`;
+      if (!d.items.length) t += `<tr><td colspan="7" class="empty">暂无记录</td></tr>`;
+      d.items.forEach(r => {
+        const roleChg = (r.oldRole || r.newRole) ? `${esc(r.oldRole || '—')} → ${esc(r.newRole || '—')}` : '—';
+        const stChg = (r.oldStatus || r.newStatus) ? `${esc(r.oldStatus || '—')} → ${esc(r.newStatus || '—')}` : '—';
+        t += `<tr><td>${esc(fmtTs(r.createdAt))}</td><td>${esc(r.entityType)}</td><td>#${esc(r.entityId)}</td>
+          <td>${roleChg}</td><td>${stChg}</td><td>${esc(r.reason || '')}</td><td>${esc(r.operator)}</td></tr>`;
+      });
+      el.innerHTML = shell(`
+        <div class="filters" style="margin-bottom:12px">
+          <select onchange="MISOps.logType(this.value)">
+            <option value="ALL"${RT.logType === 'ALL' ? ' selected' : ''}>All Types</option>
+            ${['BM', 'PIXEL', 'AD_ACCOUNT'].map(x => `<option${RT.logType === x ? ' selected' : ''}>${x}</option>`).join('')}</select>
+          <button class="btn ghost sm" onclick="MISOps.loadRotation()">↻ 刷新</button></div>
+        <div class="tablewrap"><table>${t}</table></div>`);
+      return;
+    }
     if (RT.tab === 'bm') {
       const bms = (await metaApi('/api/business-managers?bm_type=PIXEL&limit=100')).items;
       el.innerHTML = shell(`
@@ -114,9 +138,8 @@
       return `
       <div class="head"><div><h1>Rotation</h1>
         <div class="sub">BM-level rotation bans an entire Pixel BM (all brands affected). Pixel-level rotation only rotates one brand's pixel, leaving the BM and other brands untouched.<b style="color:#b26a00"> mock 模式：在内存演练完整轮转语义，刷新即复位。</b></div></div></div>
-      <div class="tabs">
-        <div class="tab${RT.tab === 'bm' ? ' on' : ''}" style="padding:8px 12px;font-size:13px;cursor:pointer;${RT.tab === 'bm' ? 'border-bottom:2px solid var(--acc,#4650dd);font-weight:600;color:var(--acc,#4650dd)' : 'color:var(--mut,#777)'}" onclick="MISOps.rtTab('bm')">BM Rotation</div>
-        <div class="tab${RT.tab === 'pixel' ? ' on' : ''}" style="padding:8px 12px;font-size:13px;cursor:pointer;${RT.tab === 'pixel' ? 'border-bottom:2px solid var(--acc,#4650dd);font-weight:600;color:var(--acc,#4650dd)' : 'color:var(--mut,#777)'}" onclick="MISOps.rtTab('pixel')">Pixel Rotation</div></div>
+      <div class="tabs">${[['bm', 'BM Rotation'], ['pixel', 'Pixel Rotation'], ['logs', 'Logs']].map(([k, label]) => `
+        <div style="padding:8px 12px;font-size:13px;cursor:pointer;${RT.tab === k ? 'border-bottom:2px solid var(--acc,#4650dd);font-weight:600;color:var(--acc,#4650dd)' : 'color:var(--mut,#777)'}" onclick="MISOps.rtTab('${k}')">${label}</div>`).join('')}</div>
       ${inner}`;
     }
     function sopLink() {
@@ -255,12 +278,12 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
 
-  /* ================= Action Logs ================= */
+  /* ================= Action Logs（v72 起并入 Administration → Activity Log 的 Meta tab） ================= */
   const AL = { user_id: '', action_type: '', entity_type: '', from: '', to: '' };
   const AL_ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'ROTATION', 'LOGIN'];
   const AL_ENTITIES = ['brands', 'businessManagers', 'pixels', 'adAccounts', 'developerApps', 'tokens', 'pixelShares', 'users', 'BM', 'PIXEL', 'USER'];
   async function loadLogs() {
-    const el = document.getElementById('v-mm-actionlogs');
+    const el = document.getElementById('auditMetaBody');
     if (!el) return;
     const users = (await metaApi('/api/users?status=ACTIVE&limit=200')).items;
     const sp = new URLSearchParams({ limit: '100' });
@@ -276,10 +299,8 @@
           <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:8px;font-size:11px;margin-top:6px">${esc(JSON.stringify(log.details, null, 2))}</pre></details>` : '-'}</td></tr>`;
     });
     el.innerHTML = `
-      <div class="head"><div><h1>Action Logs（系统 2）</h1>
-        <div class="sub">Audit trail of writes (CREATE / UPDATE / DELETE / ROTATION / LOGIN)。系统 2 侧审计；MIS 自己的审计在 Administration → Activity Log。</div></div>
-        <div class="filters"><button class="btn ghost sm" onclick="MISOps.loadLogs()">↻ 刷新</button></div></div>
       <div class="card" style="padding:14px;margin-bottom:12px">
+        <div class="sub" style="display:block;margin-bottom:8px">系统 2 侧审计（CREATE / UPDATE / DELETE / ROTATION / LOGIN）。MIS 自己的操作记录在 MIS tab。</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
           <select onchange="MISOps.logF('user_id',this.value)"><option value="">All users</option>
             ${users.map(u => `<option value="${esc(u.id)}"${AL.user_id === String(u.id) ? ' selected' : ''}>${esc(u.displayName)} (${esc(u.username)})</option>`).join('')}</select>
@@ -289,8 +310,18 @@
             ${AL_ENTITIES.map(a => `<option${AL.entity_type === a ? ' selected' : ''}>${a}</option>`).join('')}</select>
           <input type="date" value="${esc(AL.from)}" onchange="MISOps.logF('from',this.value)">
           <input type="date" value="${esc(AL.to)}" onchange="MISOps.logF('to',this.value)"></div>
-        <div class="sub" style="display:block;margin-top:8px">Showing latest ${d.items.length} of ${d.meta ? d.meta.total : d.items.length} matching record(s).</div></div>
+        <div class="sub" style="display:block;margin-top:8px">Showing latest ${d.items.length} of ${d.meta ? d.meta.total : d.items.length} matching record(s).
+          <button class="btn ghost sm" style="margin-left:8px" onclick="MISOps.loadLogs()">↻ 刷新</button></div></div>
       <div class="tablewrap"><table>${t}</table></div>`;
+  }
+  /* Activity Log 页的 MIS / Meta tab 切换 */
+  function auditTab(which, btn) {
+    const bar = document.getElementById('auditTabs');
+    if (bar) [...bar.children].forEach(b => b.classList.toggle('on', b === btn));
+    const mis = document.getElementById('auditBody'), meta = document.getElementById('auditMetaBody');
+    if (mis) mis.style.display = which === 'mis' ? '' : 'none';
+    if (meta) meta.style.display = which === 'meta' ? '' : 'none';
+    if (which === 'meta' && meta && !meta.innerHTML) loadLogs();
   }
 
   /* ================= 样式 + 注册 ================= */
@@ -302,8 +333,9 @@
   document.head.appendChild(css);
 
   window.MISOps = {
-    loadDash, loadRotation, loadSop, loadLogs,
+    loadDash, loadRotation, loadSop, loadLogs, auditTab,
     rtTab: t => { RT.tab = t; RT.sopId = ''; loadRotation(); },
+    logType: v => { RT.logType = v; loadRotation(); },
     pickBrand: v => { RT.brandId = v; RT.pixelId = ''; loadRotation(); },
     execBm, execPixel,
     gotoSop: id => { SP.mode = 'detail'; SP.groupId = id; go('mm-sop'); MIS_MODULES.reload('mm-sop'); },
@@ -315,5 +347,5 @@
   MIS_MODULES.register('mm-dash', loadDash);
   MIS_MODULES.register('mm-rotation', loadRotation);
   MIS_MODULES.register('mm-sop', loadSop);
-  MIS_MODULES.register('mm-actionlogs', loadLogs);
+  MIS_MODULES.register('audit', loadLogs);   // v72:进入 Activity Log 即预载 Meta tab 数据(默认隐藏,切 tab 显示)
 })();

@@ -376,7 +376,8 @@
 <aside class="nav">
   <div class="brand"><b>Marketing Intelligent System</b></div>
 
-  <div class="grp">
+  <!-- v72: 导航合组为 6 组;默认全收起(.closed),go() 会自动展开当前视图所在组 -->
+  <div class="grp closed">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Competitor Intelligence <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem on" data-v="reports" onclick="go('reports',this)">Weekly Summary</div>
@@ -388,7 +389,7 @@
     </div>
   </div>
 
-  <div class="grp">
+  <div class="grp closed">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Planning Intelligence <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="budget" onclick="go('budget',this)">Budget Allocation</div>
@@ -401,8 +402,8 @@
     </div>
   </div>
 
-  <!-- v70: PERFORMANCE / ASSETS 导航（逻辑在 mis-performance.js / mis-assets.js） -->
-  <div class="grp">
+  <!-- v70: PERFORMANCE 导航（逻辑在 mis-performance.js） -->
+  <div class="grp closed">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Performance <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="perf-loop" onclick="go('perf-loop',this)">Closed-Loop Report</div>
@@ -410,19 +411,16 @@
     </div>
   </div>
 
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Assets <span class="car">▾</span></div>
+  <!-- v72: Assets + Meta Config + Meta Ops 合并为 Meta Assets 一组
+       (Asset Status 并入 Overview;Rotation Log 并入 Rotation 的 Logs tab;
+        Users (Meta) 移入 Administration;Action Logs (Meta) 并入 Activity Log) -->
+  <div class="grp closed">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Assets <span class="car">▾</span></div>
     <div class="grp-items">
+      <div class="nitem" data-v="mm-dash" onclick="go('mm-dash',this)">Overview</div>
       <div class="nitem" data-v="as-health" onclick="go('as-health',this)">Health</div>
-      <div class="nitem" data-v="as-rotation" onclick="go('as-rotation',this)">Rotation Log</div>
-      <div class="nitem" data-v="as-overview" onclick="go('as-overview',this)">Asset Status</div>
-    </div>
-  </div>
-
-  <!-- v71: 系统 2 全页面搬家（逻辑在 mis-resources.js / mis-operations.js / mis-analytics.js） -->
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Config <span class="car">▾</span></div>
-    <div class="grp-items">
+      <div class="nitem" data-v="mm-rotation" onclick="go('mm-rotation',this)">Rotation</div>
+      <div class="nitem" data-v="mm-sop" onclick="go('mm-sop',this)">SOP Tasks</div>
       <div class="nitem" data-v="mm-brands" onclick="go('mm-brands',this)">Brands</div>
       <div class="nitem" data-v="mm-bms" onclick="go('mm-bms',this)">Business Managers</div>
       <div class="nitem" data-v="mm-pixels" onclick="go('mm-pixels',this)">Pixels</div>
@@ -433,18 +431,7 @@
     </div>
   </div>
 
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Ops <span class="car">▾</span></div>
-    <div class="grp-items">
-      <div class="nitem" data-v="mm-dash" onclick="go('mm-dash',this)">Overview</div>
-      <div class="nitem" data-v="mm-rotation" onclick="go('mm-rotation',this)">Rotation</div>
-      <div class="nitem" data-v="mm-sop" onclick="go('mm-sop',this)">SOP Tasks</div>
-      <div class="nitem" data-v="mm-users" onclick="go('mm-users',this)">Users (Meta)</div>
-      <div class="nitem" data-v="mm-actionlogs" onclick="go('mm-actionlogs',this)">Action Logs (Meta)</div>
-    </div>
-  </div>
-
-  <div class="grp">
+  <div class="grp closed">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Analytics <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="an-accounts" onclick="go('an-accounts',this)">Account Overview</div>
@@ -454,12 +441,13 @@
     </div>
   </div>
 
-  <div class="grp" id="adminGrp" style="display:none">
+  <div class="grp closed" id="adminGrp" style="display:none">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
     <div class="grp-items">
       <div class="nitem" data-v="roles" onclick="go('roles',this)">Roles & Permissions</div>
       <div class="nitem" data-v="bgassign" onclick="go('bgassign',this)">Budget Permission</div>
       <div class="nitem" data-v="users" onclick="go('users',this)">Users</div>
+      <div class="nitem" data-v="mm-users" onclick="go('mm-users',this)">Users (Meta)</div>
       <div class="nitem" data-v="audit" onclick="go('audit',this)">Activity Log</div>
     </div>
   </div>
@@ -913,15 +901,21 @@
 
 <section class="view" id="v-audit">
   <div class="head"><div><h1>Activity Log</h1><div class="sub">Who did what — every add / edit / delete on a section is logged automatically.</div></div></div>
+  <!-- v72: 双数据源 tab —— MIS(Supabase audit_log)/ Meta(系统 2 action_logs,渲染逻辑在 mis-operations.js) -->
+  <div class="tabs" id="auditTabs">
+    <div class="tabbtn on" onclick="MISOps.auditTab('mis',this)">MIS</div>
+    <div class="tabbtn" onclick="MISOps.auditTab('meta',this)">Meta（系统 2）</div>
+  </div>
   <div id="auditBody"></div>
+  <div id="auditMetaBody" style="display:none"></div>
 </section>
 
 <!-- v70: PERFORMANCE / ASSETS 视图挂载点（内容由 mis-performance.js / mis-assets.js 注入） -->
 <section class="view" id="v-perf-loop"></section>
 <section class="view" id="v-perf-spending"></section>
 <section class="view" id="v-as-health"></section>
-<section class="view" id="v-as-rotation"></section>
-<section class="view" id="v-as-overview"></section>
+<!-- v72: v-as-rotation 并入 mm-rotation 的 Logs tab;v-as-overview 并入 mm-dash -->
+
 
 <!-- v71: 系统 2 全页面搬家挂载点（内容由 mis-resources.js / mis-operations.js / mis-analytics.js 注入） -->
 <section class="view" id="v-mm-brands"></section>
@@ -935,7 +929,7 @@
 <section class="view" id="v-mm-rotation"></section>
 <section class="view" id="v-mm-sop"></section>
 <section class="view" id="v-mm-users"></section>
-<section class="view" id="v-mm-actionlogs"></section>
+<!-- v72: v-mm-actionlogs 并入 v-audit 的 Meta tab -->
 <section class="view" id="v-an-accounts"></section>
 <section class="view" id="v-an-ads"></section>
 <section class="view" id="v-an-brands"></section>
@@ -983,10 +977,13 @@ function go(v,el){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   document.getElementById('v-'+v).classList.add('on');
   document.querySelectorAll('.nitem').forEach(t=>t.classList.remove('on'));
-  if(el)el.classList.add('on');
+  const ni=el||document.querySelector('.nitem[data-v="'+v+'"]');
+  if(ni){ni.classList.add('on');const g=ni.closest('.grp');if(g)g.classList.remove('closed');}
   if(currentUser)applyPerms();
   window.scrollTo(0,0);
 }
+/* v72: 导航默认全收起,启动时只展开初始视图所在组 */
+(function(){const ni=document.querySelector('.nitem.on');if(ni){const g=ni.closest('.grp');if(g)g.classList.remove('closed');}})();
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 function filterOverdue(){overdueOnly=!overdueOnly;renderPool();}
@@ -1581,7 +1578,7 @@ function openDrawer(i){
   const cr=creatives.filter(c=>c.hyp.startsWith(h.id));
   let crHtml=`<div class="card" style="margin-top:14px"><h3>Creatives · 关联素材(${cr.length})<button class="btn ghost sm" style="float:right" onclick="openTagMatrix('${h.id}')">素材管理 & 标签 →</button></h3>
     ${cr.length?cr.map(c=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
-      <div class="thumb ${c.empty?'empty':c.th}" style="width:44px;height:44px;font-size:8px">${c.label}</div>
+      ${thumbBox(c.empty?'empty':c.th,crImgOf(c),c.label,44)}
       <div style="flex:1"><span class="code">${c.code}</span><br><small style="color:var(--ink3)">${c.st}</small></div>
       <div class="code" style="text-align:right">FDC ${esc(c.fdc||'—')}<br>CPA ${esc(c.cpa||'—')}</div></div>`).join(''):'<div style="padding:10px 0;color:var(--ink3)">还没有素材 — 点「素材管理 & 标签 →」进去加素材、打标签。</div>'}
     </div>`;
@@ -1638,6 +1635,8 @@ function thumbBox(imgClass,imgSrc,label,px){
   if(imgSrc)return '<img src="'+imgSrc+'" style="width:'+sz+'px;height:'+sz+'px;border-radius:6px;border:1px solid var(--line);object-fit:cover;flex:none">';
   return '<div class="thumb '+(imgClass||'empty')+'" style="width:'+sz+'px;height:'+sz+'px">'+(label||'')+'</div>';
 }
+/* v72: 素材列表/假设抽屉的缩略图取最新版本的已上传图片(此前只画色块,上传的图不显示) */
+function crImgOf(c){const vs=c.versions||[];const last=vs[vs.length-1];return (last&&last.imgSrc)||'';}
 function editCreativeRun(i){
   const c=creatives[i];
   document.getElementById('d-title').textContent=c.code+' · 记录搬迁 / 运行';
@@ -2123,7 +2122,7 @@ function renderCreatives(){
   rows.sort((a,b)=>{const ha=hypKey(a),hb=hypKey(b);if(ha!==hb)return (grpRec[ha]||0)-(grpRec[hb]||0);return vnum(a)-vnum(b);});
   document.getElementById('creativeBody').innerHTML=rows.map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
-    <td><div class="asset-cell"><div class="thumb ${c.empty?'empty':c.th}">${c.label}</div><div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
+    <td><div class="asset-cell">${thumbBox(c.empty?'empty':c.th,crImgOf(c),c.label,56)}<div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
     <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
     <td><span class="qt">${crTM(c,'format')}<b>${esc(c.fmt||'—')}</b></span>${crVar(c,'format')}</td>
@@ -2791,11 +2790,15 @@ function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated)
 function bgFinalAmt(e){e=e||{};const fin=bgNum(e.final_amount);if(fin!=null)return fin;const all=bgNum(e.allocated),req=bgNum(e.requested);if(all!=null&&req!=null&&all>=req)return all;return null;}
 const BG_ST={empty:['待填','var(--bg2)','var(--ink3)'],await_usc:['待核批','var(--accent-soft)','var(--accent)'],await_mkt:['待申请','var(--accent-soft)','var(--accent)'],decide:['待决策','var(--amber-bg)','var(--amber)'],settled:['已定','var(--green-bg)','var(--green)']};
 function bgLocked(e){return bgNum(e&&e.final_amount)!=null;} // 决策拍板后锁
+function bgNextMonth(){const n=new Date();const d=new Date(n.getFullYear(),n.getMonth()+1,1);return d.toLocaleString('en-US',{month:'short'})+' '+d.getFullYear();}
 function bgFillMonths(){
   const sel=document.getElementById('bg-month');if(!sel)return;
   const set={};set[bgCurMonth()]=1;budgets.forEach(b=>{if(b.month)set[b.month]=1;});
+  /* v72(V 定):每月 15 号起出现下月并默认选中,预算链(申请→核批→决策)可提前走完,与瓶颈催办节奏衔接 */
+  const preOpen=new Date().getDate()>=15;
+  if(preOpen)set[bgNextMonth()]=1;
   const arr=Object.keys(set).sort((a,b)=>new Date('1 '+b)-new Date('1 '+a));
-  if(!bgMonth||arr.indexOf(bgMonth)<0)bgMonth=arr[0]||bgCurMonth();
+  if(!bgMonth||arr.indexOf(bgMonth)<0)bgMonth=preOpen?bgNextMonth():(arr.indexOf(bgCurMonth())>=0?bgCurMonth():arr[0]);
   sel.innerHTML=arr.map(m=>`<option${m===bgMonth?' selected':''}>${m}</option>`).join('');
 }
 // 金额格(申请/核批):显示金额 + 谁·理由;分工到的人(且未锁)点 ✏️ 开表单填「金额+理由」

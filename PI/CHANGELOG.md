@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v72] — 2026-08-11 · 页面收编 + 导航合组收起 + Creative 图片修复 + 预算月份提前
+
+- **页面收编三处**(V 定):①Asset Status 并入 Meta Overview(补 Ad Accounts / Apps 两个 KPI,独立页退役);②Rotation Log 并入 Rotation 页作第三个 **Logs** tab(执行与流水同页,退役独立页);③Action Logs (Meta) 并入 Administration → Activity Log,变 **MIS / Meta 双 tab**(两边 schema 不同各自保留原列与筛选;Meta 审计随之收口为 admin 可见)。
+- **导航合组 + 默认收起**(V 定):6 组 —— CI / Planning / Performance / **Meta Assets**(Overview·Health·Rotation·SOP + 7 个资产页,原 Assets/Meta Config/Meta Ops 三组合一)/ Meta Analytics / Administration(Users (Meta) 移入此组)。打开 MIS 时全部组默认收起,切视图自动展开所在组;总入口 40→37。
+- **修 Creative 图片不显示**(V 报):上传的图存 versions[].imgSrc,抽屉正常但列表格子只画色块从不读图。素材列表与假设抽屉改用 thumbBox(最新版 imgSrc),有图显图、无图回退色块(新增 crImgOf())。
+- **预算月份提前生成**(V 定 15 号):月份下拉每月 **15 号起出现下月并默认选中**(此前新月份只在日历翻月才出现,预算链无法提前走),会话内手动选过的月份不被覆盖。
+- 验证:36 视图 + 5 项交互抽查(Rotation Logs tab / Activity Log Meta tab / 导航初始只开 1 组 / Brands 详情 / 图表 SVG)无头冒烟零报错。
+
 ## [v71] — 2026-08-11 · 系统 2 全页面搬家(16 个新视图,mock 模式)
 
 - **系统 2(Meta Ads 统一管理)剩余页面全部 1:1 复刻进 MIS**(V 点单:"把他原有的页面和 UI 以我 coding 的方式加进来")。对照源码逐页搬,三个新导航组:
