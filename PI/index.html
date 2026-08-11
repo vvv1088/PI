@@ -1958,7 +1958,10 @@ function firstVersion(i){
         <div id="fv-imgprev">${thumbBox('','',c.label,64)}</div>
         <input type="file" id="fv-imgfile" accept="image/*" onchange="fvImgPick(this)">
       </div></div></div>
-    <div class="row"><div class="fld"><label>Ads Code（团队手动命名,可留空）</label><input id="fv-ads" type="text" value="${(c.ads||'').replace(/"/g,'&quot;')}"></div></div>
+    <div class="row"><div class="fld"><label>Ads Code（可自动生成 · 命名契约 market_brand_setting_format_ref）</label>
+      <div style="display:flex;gap:8px"><input id="fv-ads" type="text" style="flex:1" value="${(c.ads||'').replace(/"/g,'&quot;')}">
+        <button type="button" class="btn ghost sm" style="flex:none" onclick="MISNaming.fvGen(${i})">⚙ 生成</button></div>
+      <small id="fv-adsnote" style="color:var(--ink3)"></small></div></div>
     <div class="row"><div class="fld"><label>Primary text</label><textarea id="fv-p" rows="2"></textarea></div></div>
     <div class="row2">
       <div class="fld"><label>Headline</label><input id="fv-h" type="text"></div>
@@ -3096,6 +3099,7 @@ try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();up
 <!-- v70: 融合系统 2 —— 数据层 + PERFORMANCE + ASSETS（新代码一律在新文件，不进本文件） -->
 <script src="mis-meta-api.js"></script>
 <script src="mis-meta-admin-mock.js"></script>
+<script src="mis-naming.js"></script>
 <script src="mis-performance.js"></script>
 <script src="mis-assets.js"></script>
 <script src="mis-resources.js"></script>

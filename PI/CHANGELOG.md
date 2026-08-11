@@ -1,5 +1,18 @@
 # Changelog — Marketing Intelligent System
 
+## [v73] — 2026-08-11 · 广告命名引擎(素材实体连接·第 1 期)
+
+- **新文件 `mis-naming.js`**:命名契约 `<market>_<brand>_<setting>_<format>_<ref>` 的生成/解析/发号引擎(全部对照表 V 已逐项确认):
+  - 市场:MY→MYR、SG→SGD、USC→USC(MIS 存量 'KH' 作 USC 的 legacy 别名,第 2 期数据迁移);
+  - 品牌缩写 15 行照系统 2 归因 CASE 表,**现役 4 个可生成,11 个 retired 只解析历史永不发新码**(方案 A:历史留旧名);品牌×可投市场校验(INZ9=MY/SG,其余=USC);
+  - Ad Setting 6 码(TRSA=Sales 默认/AWAR/TRFC/ENGA/LEAD/APPP);Format 与 MIS 字典 1:1(IM/VD/CR/DC);
+  - 发号规则:`<市场2字母><假设批次2位><素材流水2位>`,同假设共享前 4 位,衍生版 V 后缀;
+  - 解析双模式:严格(新式 5 段)+ 宽松(存量旧式,同 CASE 表语义),解析失败显式返回。
+- **Creative 表单接生成器**:Setup 表单的 Ads Code 输入框旁加「⚙ 生成」按钮——按素材所属 hypothesis 的品牌/市场 + 素材 Format 自动拼全名填入(预览发号;正式发号与 Ad Setting 选择待第 2 期加列)。结果存现有 ads_code 字段,零库改动。
+- **未归因告警**:闭环报表页显式列出"广告名无法归因到素材"的条目与被丢花费(生产 27.7% 广告因命名不规范在报表隐形的问题,从此可见);Spending 页加"本页命名不规范行"计数。mock 混入 2 条照生产形态的脏名行供演示。
+- 修:引擎访问 MIS 顶层 `let` 全局(creatives/hypos)不能走 window,改词法全局读取。
+- 验证:命名引擎对 06 手册全部真实广告名(新式/旧式/脏名/retired 品牌)单元测试通过;36 视图冒烟零报错;demo 实测生成 `USC_OK18_TRSA_VD_KH0101`。
+
 ## [v72] — 2026-08-11 · 页面收编 + 导航合组收起 + Creative 图片修复 + 预算月份提前
 
 - **页面收编三处**(V 定):①Asset Status 并入 Meta Overview(补 Ad Accounts / Apps 两个 KPI,独立页退役);②Rotation Log 并入 Rotation 页作第三个 **Logs** tab(执行与流水同页,退役独立页);③Action Logs (Meta) 并入 Administration → Activity Log,变 **MIS / Meta 双 tab**(两边 schema 不同各自保留原列与筛选;Meta 审计随之收口为 admin 可见)。

@@ -161,6 +161,12 @@ window.MIS_MOCK = (function () {
         _brand: ad.brand, _ref: ad.ref,   // mock 内部用（live 模式由命名解析）
       });
     });
+    /* v73:混入 2 条命名不规范的行(形态照生产实测的脏名),
+     * 供闭环/Spending 页演示「未归因广告」告警 —— 生产 27.7% 广告因此隐形 */
+    if (di % 5 === 2) {
+      SPEND_ROWS.push({ date, ad_name: 'TRSA_IM_AMB1_CN07', line: 'null', spending: 6.4, remark: null, remark_by: null, _brand: null, _ref: null });
+      SPEND_ROWS.push({ date, ad_name: 'USC_WIKH_TRSA_VD_2473_KH02', line: 'LINE-B', spending: 9.1, remark: null, remark_by: null, _brand: '17WINKH', _ref: null });
+    }
   });
 
   /* --- BO（FD/D7）：按 日期×ref 生成，与花费走势弱相关 --- */

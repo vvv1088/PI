@@ -122,9 +122,19 @@
       });
     });
     document.getElementById('plTable').innerHTML = html;
-    document.getElementById('plNote').textContent =
-      (window.MIS_META.mode === 'mock' ? '⚠ 演示数据（mock）。' : '') +
-      `区间 ${fromS} ~ ${toS}；花费=系统2 spending 接口；FD/D7=BO 通道（D 节拍板后接真）；join 键=广告名内 ref code。`;
+
+    /* v73:未归因告警 —— 广告名解析不出 ref code 的花费(拼错/不规范命名会静默丢归因,这里显式报出) */
+    const un = {};
+    spend.rows.forEach(r => { if (!refOf(r.ad_name)) { const u = un[r.ad_name] || (un[r.ad_name] = { s: 0 }); u.s += Number(r.spending); } });
+    const unNames = Object.keys(un);
+    const unSpend = unNames.reduce((s, n) => s + un[n].s, 0);
+    const warn = unNames.length
+      ? `<div style="color:#b26a00;margin-bottom:6px">⚠ <b>${unNames.length} 条广告名无法归因到素材</b>（区间内花费 $${misMoney(unSpend)} 不在上表）：`
+        + `<details style="display:inline"><summary style="cursor:pointer;display:inline">查看清单</summary>${unNames.map(n => `<div class="code" style="font-size:11px;margin-top:3px">${esc(n)} — $${misMoney(un[n].s)}</div>`).join('')}</details></div>`
+      : '';
+    document.getElementById('plNote').innerHTML = warn +
+      esc((window.MIS_META.mode === 'mock' ? '⚠ 演示数据（mock）。' : '') +
+      `区间 ${fromS} ~ ${toS}；花费=系统2 spending 接口；FD/D7=BO 通道（D 节拍板后接真）；join 键=广告名内 ref code。`);
   }
 
   /* ================= Spending 明细 ================= */
@@ -143,9 +153,12 @@
     const lineSel = document.getElementById('spLine');
     if (lineSel.options.length === 1) d.lines.forEach(l => lineSel.insertAdjacentHTML('beforeend', `<option>${esc(l)}</option>`));
 
+    /* v73:命名体检 —— 当前页行里广告名连品牌都解析不出的(命名缺市场/品牌段),显式提示 */
+    const badRows = (window.MISNaming ? d.rows.filter(r => !MISNaming.parseAdName(r.ad_name).ok) : []);
     document.getElementById('spKpis').innerHTML =
       kpi('$' + misMoney(d.grandTotal), 'Grand Total') + kpi(misInt(d.totalsByDate.length), 'Days') +
-      kpi(misInt(d.totalsByLine.length), 'Lines') + kpi(misInt(d.total), 'Rows');
+      kpi(misInt(d.totalsByLine.length), 'Lines') + kpi(misInt(d.total), 'Rows') +
+      (badRows.length ? kpi(`<span style="color:#b26a00">${badRows.length}</span>`, '本页命名不规范行') : '');
 
     const canEditRemark = window.MIS_META.mode === 'mock' || window.MIS_META.allowRemarkEdit;
     let html = `<tr><th>Date</th><th>Ad Name</th><th>Line</th><th style="text-align:right">Spending</th><th>Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
