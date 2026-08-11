@@ -1,5 +1,16 @@
 # Changelog — Marketing Intelligent System
 
+## [v75 + 后端] — 2026-08-11 · 命名引擎第 2 期:Supabase 落库(前 3 项)
+
+- **Supabase 三个迁移已执行**(项目 bfukphakofrjalsqteda,校验通过):
+  1. `create_brand_aliases`:命名契约登记表 15 行(4 现役含 markets + 11 retired 只解析不生成);RLS 开启,authenticated 只读。
+  2. `dict_short_code_and_ad_setting`:dict_entries 加 `short_code` 列,Format 4 项填码(IM/VD/CR/DC),新增 **Ad Setting** tab 6 项(SALES/TRSA 默认…APP_PROMO/APPP)——字典页自动出现新 tab。
+  3. `naming_columns_hypotheses_creatives`:hypotheses 加 `ad_setting`(默认 SALES,63 条存量已回填)与 `ref_batch`;creatives 加 `ref_code`(唯一索引,129 条待正式发号)。
+- **mis-naming.js 接库**:登录后自动从 brand_aliases / dict_entries 同步对照表(库是权威),mock/离线自动回落到文件内常量;「⚙ 生成」前强制同步一次。
+- **第 4 项(market KH→USC 迁移,50 条)暂缓**:该迁移必须与前端 market 词汇改造(MKT_BRANDS/筛选/表单)同版落地,否则 Hypotheses 页筛选会错位——排入表单改造批次一起做。引擎已把 KH 作为 USC 的 legacy 别名处理,期间零功能损失。
+- 简化:原计划的 creatives.generated_ad_name 列不加 —— ads_code 本来就是广告全名字段,不重复。
+- 验证:36 视图冒烟零报错(mock 回落路径);库上 SELECT 校验(15/4/6/4/63/129)。
+
 ## [v74] — 2026-08-11 · 新页面表格对齐修复(V 报)
 
 - **根因**:MIS 的表格样式挂在 `thead th` 选择器上,v70/v71 新页面的表格没包 `<thead>`,表头全部落回浏览器默认样式(居中、无内边距),与左对齐的内容错位。

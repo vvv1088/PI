@@ -61,11 +61,44 @@ window.MISNaming = (function () {
   /* Format(与 MIS 字典 1:1;IM/VD 为生产已用,CR/DC 为 V 确认新定) */
   const FORMATS = { IMAGE: 'IM', VIDEO: 'VD', CAROUSEL: 'CR', DCO: 'DC' };
 
-  const bySh = {}, byCode = {};
-  BRANDS.forEach(b => { bySh[b.short] = b; byCode[b.code] = b; });
-  const fmtBySh = {};
-  Object.keys(FORMATS).forEach(k => { fmtBySh[FORMATS[k]] = k; });
-  const settingCodes = SETTINGS.map(s => s.code);
+  const bySh = {}, byCode = {}, fmtBySh = {};
+  let settingCodes = [];
+  function rebuild() {
+    Object.keys(bySh).forEach(k => delete bySh[k]);
+    Object.keys(byCode).forEach(k => delete byCode[k]);
+    Object.keys(fmtBySh).forEach(k => delete fmtBySh[k]);
+    BRANDS.forEach(b => { bySh[b.short] = b; byCode[b.code] = b; });
+    Object.keys(FORMATS).forEach(k => { fmtBySh[FORMATS[k]] = k; });
+    settingCodes = SETTINGS.map(s => s.code);
+  }
+  rebuild();
+
+  /* ---------- 第 2 期起:库是权威,本文件常量是离线/mock fallback ----------
+   * brand_aliases 表 + dict_entries(Format/Ad Setting 的 short_code)已建好,
+   * 登录后从 Supabase 同步覆盖;拉不到(mock/离线/未登录)保持常量。 */
+  let synced = false;
+  async function syncFromDb() {
+    if (synced) return;
+    const db = (function () { try { return (0, eval)('typeof db!=="undefined"?db:null'); } catch (e) { return null; } })();
+    if (!db || typeof db.from !== 'function') return;
+    try {
+      const ba = await db.from('brand_aliases').select('*');
+      if (ba && Array.isArray(ba.data) && ba.data.length) {
+        BRANDS.length = 0;
+        ba.data.forEach(r => BRANDS.push({ code: r.code, short: r.short_code, status: r.status, markets: r.markets || [] }));
+      }
+      const ds = await db.from('dict_entries').select('tab,code,name,short_code,active,sort').in('tab', ['Format', 'Ad Setting']);
+      if (ds && Array.isArray(ds.data) && ds.data.length) {
+        const fmts = ds.data.filter(r => r.tab === 'Format' && r.active && r.short_code);
+        if (fmts.length) { Object.keys(FORMATS).forEach(k => delete FORMATS[k]); fmts.forEach(r => { FORMATS[r.code] = r.short_code; }); }
+        const sets = ds.data.filter(r => r.tab === 'Ad Setting' && r.active && r.short_code).sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        if (sets.length) { SETTINGS.length = 0; sets.forEach(r => SETTINGS.push({ code: r.short_code, label: r.name })); }
+      }
+      rebuild();
+      synced = true;
+    } catch (e) { /* 离线/mock:保持常量 */ }
+  }
+  setTimeout(syncFromDb, 2500);   // 登录后自动同步;fvGen 前也会再试一次
 
   /* ---------- 生成 ---------- */
 
@@ -170,7 +203,8 @@ window.MISNaming = (function () {
     return { name: r.name, parts: { market, brand: h.brand, setting: 'TRSA(Sales 默认)', format, ref } };
   }
 
-  function fvGen(i) {
+  async function fvGen(i) {
+    await syncFromDb();
     const r = genForCreative(i);
     const note = document.getElementById('fv-adsnote');
     if (r.error) { if (typeof toast === 'function') toast('生成失败:' + r.error); if (note) note.textContent = '⚠ ' + r.error; return; }
@@ -179,5 +213,5 @@ window.MISNaming = (function () {
     if (note) note.textContent = '已生成(预览发号,正式发号第 2 期):市场 ' + r.parts.market + ' · ' + r.parts.brand + ' · ' + r.parts.setting + ' · ' + r.parts.format + ' · ref ' + r.parts.ref;
   }
 
-  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, genForCreative, fvGen };
+  return { MARKETS, BRANDS, SETTINGS, FORMATS, buildAdName, parseAdName, provisionalRef, genForCreative, fvGen, syncFromDb };
 })();
