@@ -16,12 +16,20 @@
     const h = document.getElementById('v-as-health');
     if (h) h.innerHTML = `
       <div class="head"><div>
-        <h1>Health</h1>
-        <div class="sub">品牌 × 轮转槽位一眼看全 + 每日体检流水（系统 2 Health Check 同源数据；时间已转本地 UTC+8）</div>
-      </div><div class="filters"><button class="btn ghost sm" onclick="MISAssets.loadHealth()">↻ 刷新</button></div></div>
-      <div class="card" style="padding:14px;margin-bottom:14px"><b style="font-size:12.5px">品牌 × Pixel 槽位</b>
+        <h1>Health Monitor</h1>
+        <div class="sub">Brand-level Pixel BM / Pixel / CAPI Token health status. Logs updated daily by the n8n Health Check workflow.（时间已转本地 UTC+8）</div>
+      </div><div class="filters">
+        <select id="ahEntity" onchange="MISAssets.loadHealth()">
+          <option value="ALL">All Entity Types</option><option>BM</option><option>PIXEL</option><option>TOKEN</option>
+        </select>
+        <select id="ahResult" onchange="MISAssets.loadHealth()">
+          <option value="ALL">All Results</option><option>OK</option><option>FAILED</option>
+        </select>
+        <button class="btn ghost sm" onclick="MISAssets.loadHealth()">↻ 刷新</button></div></div>
+      <div class="kpis" id="ahKpis"></div>
+      <div class="card" style="padding:14px;margin-bottom:14px"><b style="font-size:12.5px">品牌 × 轮转槽位（BM / Pixel / Token）</b>
         <div class="tablewrap" style="margin-top:8px"><table id="ahGrid"></table></div>
-        <div class="note">每个品牌应有 MAIN 且为 ACTIVE；空槽 = 该角色缺配置（轮转后未补位）。</div></div>
+        <div class="note">每个品牌应有 MAIN 且为 ACTIVE；空槽 = 该角色缺配置（轮转后未补位）。Token 取该槽位 BM 下 purpose=CAPI 且未 REVOKED 的一条。</div></div>
       <div class="tablewrap"><table id="ahLog"></table></div>`;
 
     const r = document.getElementById('v-as-rotation');
@@ -51,20 +59,39 @@
 
   /* ================= Health ================= */
   async function loadHealth() {
-    const [brands, pixels, health] = await Promise.all([
+    const entSel = document.getElementById('ahEntity'), resSel = document.getElementById('ahResult');
+    const ent = entSel ? entSel.value : 'ALL', res = resSel ? resSel.value : 'ALL';
+    const hq = '/api/health?limit=100' + (ent !== 'ALL' ? '&entity_type=' + ent : '') + (res !== 'ALL' ? '&result=' + res : '');
+    const [brands, pixels, tokens, healthAll, health] = await Promise.all([
       metaApi('/api/brands?limit=100'),
       metaApi('/api/pixels?limit=100'),
-      metaApi('/api/health?limit=40'),
+      metaApi('/api/tokens?limit=100'),
+      metaApi('/api/health?limit=100'),
+      metaApi(hq),
     ]);
-    const bMap = {}; brands.items.forEach(b => { bMap[b.id] = b.code; });
 
+    const ok = healthAll.items.filter(x => x.checkResult === 'OK').length;
+    const failed = healthAll.items.filter(x => x.checkResult === 'FAILED').length;
+    document.getElementById('ahKpis').innerHTML =
+      kpi(String(healthAll.meta ? healthAll.meta.total : healthAll.items.length), 'Total Checks') +
+      kpi(`<span style="color:#1a7f4e">${ok}</span>`, 'OK') +
+      kpi(`<span style="color:#c62f36">${failed}</span>`, 'FAILED');
+
+    /* 照系统 2 /health 页的 pickRole：槽位 pixel → 其 BM → 该 BM 下 CAPI 且未 REVOKED 的 token */
     const ROLES = ['MAIN', 'BACKUP1', 'BACKUP2'];
+    const cellOf = (label, st, name) =>
+      `${label} ${badge(st || 'INACTIVE')}${name ? `<div class="sub" style="display:block;font-size:10.5px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>` : ''}`;
     let grid = `<tr><th>Brand</th>${ROLES.map(r => `<th>${r}</th>`).join('')}</tr>`;
     brands.items.forEach(b => {
       grid += `<tr><td><b>${esc(b.code)}</b></td>` + ROLES.map(role => {
         const p = pixels.items.find(x => String(x.brandId) === String(b.id) && x.role === role);
         if (!p) return `<td><span class="sub" style="display:inline">— 空槽</span></td>`;
-        return `<td>${badge(p.status)} <span class="code" style="font-size:11px">${esc(p.pixelId)}</span></td>`;
+        const bm = p.businessManager || null;
+        const tk = bm ? tokens.items.find(t => String(t.bmId) === String(bm.id) && t.purpose === 'CAPI' && t.status !== 'REVOKED') : null;
+        return `<td><div style="display:grid;gap:3px;font-size:11.5px">
+          <div>${cellOf('BM', bm && bm.status, bm && bm.name)}</div>
+          <div>${cellOf('Pixel', p.status, p.name)}</div>
+          <div>Token ${badge(tk ? tk.status : 'INACTIVE')}</div></div></td>`;
       }).join('') + '</tr>';
     });
     document.getElementById('ahGrid').innerHTML = grid;
@@ -74,7 +101,7 @@
     health.items.forEach(it => {
       log += `<tr><td>${esc(fmtTs(it.checkedAt))}</td>
         <td>${esc(it.entityType)} #${esc(it.entityId)}</td>
-        <td>${badge(it.checkResult === 'PASSED' ? 'ACTIVE' : 'BANNED').replace('ACTIVE', 'PASSED').replace('BANNED', 'FAILED')}</td>
+        <td>${badge(it.checkResult === 'OK' ? 'ACTIVE' : 'BANNED').replace('>ACTIVE<', '>OK<').replace('>BANNED<', '>FAILED<')}</td>
         <td class="sub" style="display:table-cell">${esc(it.errorDetail || '')}</td></tr>`;
     });
     document.getElementById('ahLog').innerHTML = log;
@@ -119,8 +146,9 @@
 
     let at = `<tr><th>账户名</th><th>Account ID</th><th>品牌</th><th>状态</th></tr>`;
     accounts.items.forEach(a => {
+      const codes = (a.brandLinks || []).map(l => l.brand && l.brand.code).filter(Boolean);
       at += `<tr><td>${esc(a.name)}</td><td><span class="code">${esc(a.adAccountId)}</span></td>
-        <td>${esc((a.brands || []).join(', ') || '—')}</td><td>${badge(a.status)}</td></tr>`;
+        <td>${esc(codes.join(', ') || '—')}</td><td>${badge(a.status)}</td></tr>`;
     });
     document.getElementById('aoAccounts').innerHTML = at;
   }

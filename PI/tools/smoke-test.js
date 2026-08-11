@@ -1,6 +1,11 @@
-/* v70 冒烟测试：加载页面 → 绕过登录门 → 逐个打开 5 个新视图 → 截图 + 收集报错 */
+/* v71 冒烟测试：加载页面 → 绕过登录门 → 逐个打开全部视图（17 旧 + 5 v70 + 16 v71）
+ * → 检查渲染 + 收集 console 报错。用法：node smoke-test.js [index.html 路径] [截图目录]
+ * 通过标准：每个视图 .on 且有内容、console 零报错（CDN 垫桩报错除外）。 */
 const { chromium } = require('playwright');
+const path = require('path');
 (async () => {
+  const target = process.argv[2] || path.join(__dirname, '..', 'index.html');
+  const shotDir = process.argv[3] || '';
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
@@ -23,7 +28,7 @@ const { chromium } = require('playwright');
     route.fulfill({ contentType: 'application/javascript', body });
   });
 
-  await page.goto('file:///home/claude/mis/index.html', { waitUntil: 'load', timeout: 60000 });
+  await page.goto('file://' + path.resolve(target), { waitUntil: 'load', timeout: 60000 });
   await page.waitForTimeout(1500);
 
   // 绕过登录门（仅测试；不触发 Supabase）
@@ -32,18 +37,51 @@ const { chromium } = require('playwright');
     document.querySelectorAll('.page,.app,main,aside').forEach(x => x.style.visibility = 'visible');
   });
 
-  const views = ['perf-loop', 'perf-spending', 'as-health', 'as-rotation', 'as-overview'];
+  const views = [
+    // MIS 原生视图（tagmatrix 是从 Hypothesis 带上下文打开的子视图，直开必空，不在此列）
+    'pool', 'hypo', 'form', 'creatives', 'mplan', 'budget', 'bgassign',
+    'results', 'dict', 'reports', 'gallery', 'operators', 'funnel', 'candidates', 'watch',
+    'roles', 'users', 'audit',
+    // v70
+    'perf-loop', 'perf-spending', 'as-health', 'as-rotation', 'as-overview',
+    // v71 系统 2 搬家
+    'mm-brands', 'mm-bms', 'mm-pixels', 'mm-accounts', 'mm-apps', 'mm-tokens', 'mm-shares',
+    'mm-dash', 'mm-rotation', 'mm-sop', 'mm-users', 'mm-actionlogs',
+    'an-accounts', 'an-ads', 'an-brands', 'an-lifecycle',
+  ];
   const results = {};
+  let fails = 0;
   for (const v of views) {
     await page.evaluate(vv => { window.go(vv); }, v);
-    await page.waitForTimeout(700);
-    results[v] = await page.evaluate(vv => {
+    await page.waitForTimeout(650);
+    const r = await page.evaluate(vv => {
       const sec = document.getElementById('v-' + vv);
-      return { visible: sec && sec.classList.contains('on'), htmlLen: sec ? sec.innerHTML.length : 0, hasTable: !!(sec && sec.querySelector('table tr')) };
+      return { on: !!(sec && sec.classList.contains('on')), htmlLen: sec ? sec.innerHTML.length : 0 };
     }, v);
-    await page.screenshot({ path: `/home/claude/mis/shot-${v}.png` });
+    results[v] = r;
+    if (!r.on || r.htmlLen < 40) fails++;
+    if (shotDir) await page.screenshot({ path: path.join(shotDir, `shot-${v}.png`) });
   }
+  // 交互抽查：Brands 详情页 + 分析页图表 SVG
+  await page.evaluate(() => { window.go('mm-brands'); });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => MISRes.detail('brands', '1'));
+  await page.waitForTimeout(500);
+  results['mm-brands@detail'] = await page.evaluate(() => {
+    const sec = document.getElementById('v-mm-brands');
+    return { on: true, htmlLen: sec.innerHTML.length, hasTabs: !!sec.querySelector('.mmr-tabs') };
+  });
+  await page.evaluate(() => { window.go('an-accounts'); MISAn.acSet('accId', '1'); });
+  await page.waitForTimeout(700);
+  results['an-accounts@chart'] = await page.evaluate(() => {
+    const sec = document.getElementById('v-an-accounts');
+    return { on: true, htmlLen: sec.innerHTML.length, hasSvg: !!sec.querySelector('svg polyline') };
+  });
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'shot-an-accounts-chart.png') });
+
   console.log(JSON.stringify(results, null, 1));
-  console.log('ERRORS(前8):', errors.slice(0, 8));
+  console.log('VIEWS:', views.length, 'FAILED:', fails);
+  console.log('ERRORS(前10):', errors.slice(0, 10));
   await browser.close();
+  process.exit(fails || errors.length ? 1 : 0);
 })();

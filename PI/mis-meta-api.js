@@ -72,48 +72,54 @@ function misDateISO(d) { return d.toISOString().slice(0, 10); }
  * BO 侧（FD/D7）走占位路径 /api/mis/bo-daily —— 真通道等 D 节拍板。
  * ===================================================================== */
 window.MIS_MOCK = (function () {
+  /* 基础实体（v71 起补齐 06 手册的完整响应形状：createdAt/updatedAt、关联对象、
+   * _count、健康虚拟字段 lastHealthResult / lastHealthCheckedAt）。
+   * 关联对象（brand / businessManager / sourceBm / brandLinks）由文件末尾的
+   * link() 统一装配，保证同一份数据改一处全联动。 */
   const BRANDS = [
-    { id: '1', code: 'INZ9',    name: 'INZ9' },
-    { id: '2', code: '17WINKH', name: '17WINKH' },
-    { id: '3', code: 'OK188KH', name: 'OK188KH' },
-    { id: '4', code: 'SBKH',    name: 'SBKH' },
+    { id: '1', code: 'INZ9',    name: 'INZ9',    status: 'ACTIVE', createdAt: '2026-05-20T03:11:02.000Z', updatedAt: '2026-08-01T09:22:41.000Z' },
+    { id: '2', code: '17WINKH', name: '17WINKH', status: 'ACTIVE', createdAt: '2026-05-22T06:40:11.000Z', updatedAt: '2026-07-28T02:15:09.000Z' },
+    { id: '3', code: 'OK188KH', name: 'OK188KH', status: 'ACTIVE', createdAt: '2026-06-02T08:02:55.000Z', updatedAt: '2026-08-05T04:41:30.000Z' },
+    { id: '4', code: 'SBKH',    name: 'SBKH',    status: 'ACTIVE', createdAt: '2026-06-15T09:12:00.000Z', updatedAt: '2026-08-03T07:03:12.000Z' },
   ];
 
   // pixels：品牌 × 轮转槽位（含缺口与 BANNED，用于 Health 网格演示）
   const PIXELS = [
-    { id: '1', pixelId: '3967571086707308', name: 'INZ9 MAIN',    brandId: '1', role: 'MAIN',    status: 'ACTIVE' },
-    { id: '2', pixelId: '2098178417422643', name: 'INZ9 BK1',     brandId: '1', role: 'BACKUP1', status: 'ACTIVE' },
-    { id: '3', pixelId: '2089143635365842', name: 'INZ9 BK2',     brandId: '1', role: 'BACKUP2', status: 'BANNED' },
-    { id: '4', pixelId: '1894682871205960', name: '17WINKH MAIN', brandId: '2', role: 'MAIN',    status: 'ACTIVE' },
-    { id: '5', pixelId: '1541072834181233', name: '17WINKH BK1',  brandId: '2', role: 'BACKUP1', status: 'ACTIVE' },
-    { id: '6', pixelId: '1522481359629782', name: 'OK188KH MAIN', brandId: '3', role: 'MAIN',    status: 'ACTIVE' },
-    { id: '7', pixelId: '1453765586510715', name: 'OK188KH BK1',  brandId: '3', role: 'BACKUP1', status: 'ACTIVE' },
-    { id: '8', pixelId: '1398447364748544', name: 'OK188KH BK2',  brandId: '3', role: 'BACKUP2', status: 'ACTIVE' },
-    { id: '9', pixelId: '978513741233618',  name: 'SBKH MAIN',    brandId: '4', role: 'MAIN',    status: 'ACTIVE' },
-    { id: '10', pixelId: '787560624437384', name: 'SBKH BK2',     brandId: '4', role: 'BACKUP2', status: 'DISABLED' },
+    { id: '1', pixelId: '3967571086707308', name: 'INZ9 MAIN',    brandId: '1', bmId: '1', role: 'MAIN',    status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '2', pixelId: '2098178417422643', name: 'INZ9 BK1',     brandId: '1', bmId: '2', role: 'BACKUP1', status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '3', pixelId: '2089143635365842', name: 'INZ9 BK2',     brandId: '1', bmId: '3', role: 'BACKUP2', status: 'BANNED',   lastHealthResult: 'FAILED' },
+    { id: '4', pixelId: '1894682871205960', name: '17WINKH MAIN', brandId: '2', bmId: '1', role: 'MAIN',    status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '5', pixelId: '1541072834181233', name: '17WINKH BK1',  brandId: '2', bmId: '2', role: 'BACKUP1', status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '6', pixelId: '1522481359629782', name: 'OK188KH MAIN', brandId: '3', bmId: '1', role: 'MAIN',    status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '7', pixelId: '1453765586510715', name: 'OK188KH BK1',  brandId: '3', bmId: '2', role: 'BACKUP1', status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '8', pixelId: '1398447364748544', name: 'OK188KH BK2',  brandId: '3', bmId: '3', role: 'BACKUP2', status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '9', pixelId: '978513741233618',  name: 'SBKH MAIN',    brandId: '4', bmId: '1', role: 'MAIN',    status: 'ACTIVE',   lastHealthResult: 'OK' },
+    { id: '10', pixelId: '787560624437384', name: 'SBKH BK2',     brandId: '4', bmId: '3', role: 'BACKUP2', status: 'DISABLED', lastHealthResult: null },
   ];
 
   const BMS = [
-    { id: '1', bmId: '279332367',        name: 'Modiva (Pixel MAIN)',      bmType: 'PIXEL',           role: 'MAIN',    status: 'ACTIVE' },
-    { id: '2', bmId: '27737120635942298', name: 'JAGI BIJOUX (Pixel BK1)', bmType: 'PIXEL',           role: 'BACKUP1', status: 'ACTIVE' },
-    { id: '3', bmId: '27935644296025182', name: 'Jennifer.estudio (BK2)',  bmType: 'PIXEL',           role: 'BACKUP2', status: 'BANNED' },
-    { id: '4', bmId: '2385330728609220',  name: 'Adstify Graph API',       bmType: 'GRAPH_API',       role: null,      status: 'ACTIVE' },
-    { id: '5', bmId: '992331220507779',   name: 'Adstify Custom Audience', bmType: 'CUSTOM_AUDIENCE', role: null,      status: 'ACTIVE' },
+    { id: '1', bmId: '279332367',        name: 'Modiva (Pixel MAIN)',      bmType: 'PIXEL',           brandId: null, role: 'MAIN',    status: 'ACTIVE', healthCheckedAt: null, lastHealthResult: 'OK' },
+    { id: '2', bmId: '27737120635942298', name: 'JAGI BIJOUX (Pixel BK1)', bmType: 'PIXEL',           brandId: null, role: 'BACKUP1', status: 'ACTIVE', healthCheckedAt: null, lastHealthResult: 'OK' },
+    { id: '3', bmId: '27935644296025182', name: 'Jennifer.estudio (BK2)',  bmType: 'PIXEL',           brandId: null, role: 'BACKUP2', status: 'BANNED', healthCheckedAt: null, lastHealthResult: 'FAILED' },
+    { id: '4', bmId: '2385330728609220',  name: 'Adstify Graph API',       bmType: 'GRAPH_API',       brandId: null, role: null,      status: 'ACTIVE', healthCheckedAt: null, lastHealthResult: 'OK' },
+    { id: '5', bmId: '992331220507779',   name: 'Adstify Custom Audience', bmType: 'CUSTOM_AUDIENCE', brandId: null, role: null,      status: 'ACTIVE', healthCheckedAt: null, lastHealthResult: 'FAILED' },
   ];
 
+  /* 06 手册 §3.5：广告账户经 brandLinks（brand_ad_accounts 多对多）挂品牌，
+   * v70 曾用简化的 brands 数组 —— v71 改为手册原形状。sourceBmId 指配置库 BM 主键。 */
   const AD_ACCOUNTS = [
-    { id: '1', adAccountId: '1998765220809792', name: 'INZ9-ACC-01',  status: 'ACTIVE',   brands: ['INZ9'] },
-    { id: '2', adAccountId: '1381086713963776', name: 'WIKH-ACC-02',  status: 'ACTIVE',   brands: ['17WINKH'] },
-    { id: '3', adAccountId: '980775378318327',  name: 'OK188-ACC-01', status: 'ACTIVE',   brands: ['OK188KH'] },
-    { id: '4', adAccountId: '992331220507779',  name: 'SBKH-ACC-03',  status: 'ACTIVE',   brands: ['SBKH'] },
-    { id: '5', adAccountId: '884213600771125',  name: 'INZ9-ACC-00',  status: 'BANNED',   brands: ['INZ9'] },
-    { id: '6', adAccountId: '771025448896031',  name: 'WIKH-ACC-01',  status: 'DISABLED', brands: ['17WINKH'] },
-    { id: '7', adAccountId: '663311708852219',  name: 'USC-MIX-01',   status: 'DISABLED', brands: ['OK188KH', 'SBKH'] },
+    { id: '1', adAccountId: '1998765220809792', name: 'INZ9-ACC-01',  sourceBmId: '4', status: 'ACTIVE',   _brandIds: ['1'] },
+    { id: '2', adAccountId: '1381086713963776', name: 'WIKH-ACC-02',  sourceBmId: '4', status: 'ACTIVE',   _brandIds: ['2'] },
+    { id: '3', adAccountId: '980775378318327',  name: 'OK188-ACC-01', sourceBmId: '4', status: 'ACTIVE',   _brandIds: ['3'] },
+    { id: '4', adAccountId: '992331220507779',  name: 'SBKH-ACC-03',  sourceBmId: '4', status: 'ACTIVE',   _brandIds: ['4'] },
+    { id: '5', adAccountId: '884213600771125',  name: 'INZ9-ACC-00',  sourceBmId: '4', status: 'BANNED',   _brandIds: ['1'] },
+    { id: '6', adAccountId: '771025448896031',  name: 'WIKH-ACC-01',  sourceBmId: null, status: 'DISABLED', _brandIds: ['2'] },
+    { id: '7', adAccountId: '663311708852219',  name: 'USC-MIX-01',   sourceBmId: null, status: 'DISABLED', _brandIds: ['3', '4'] },
   ];
 
   const APPS = [
-    { id: '1', appId: '77103312269', appName: 'Adstify Events',  mode: 'PUBLISHED',   status: 'ACTIVE' },
-    { id: '2', appId: '77103391410', appName: 'Adstify Backup',  mode: 'DEVELOPMENT', status: 'ACTIVE' },
+    { id: '1', appId: '77103312269', appName: 'Adstify Events',  appSecret: 'a1f83d0c9e2b447d8f5a6c1b0d9e8f7a', mode: 'PUBLISHED',   status: 'ACTIVE' },
+    { id: '2', appId: '77103391410', appName: 'Adstify Backup',  appSecret: 'b2e94e1daf3c558e906b7d2c1eaf908b', mode: 'DEVELOPMENT', status: 'ACTIVE' },
   ];
 
   /* --- 闭环演示：素材注册表（真实版来自 Supabase creatives，ref code 即 join 键） --- */
@@ -172,11 +178,12 @@ window.MIS_MOCK = (function () {
     });
   });
 
-  /* --- health / rotation --- */
+  /* --- health / rotation ---
+   * checkResult 枚举照 schema：OK / FAILED（v70 mock 曾误写 PASSED，v71 修正） */
   const HEALTH = [];
   days.slice(-7).forEach((date, i) => {
-    HEALTH.push({ id: String(9000 + i * 3), entityType: 'TOKEN', entityId: '3', checkResult: 'PASSED', errorDetail: null, checkedAt: date + 'T00:03:02.000Z' });
-    HEALTH.push({ id: String(9001 + i * 3), entityType: 'PIXEL', entityId: '3', checkResult: i >= 5 ? 'FAILED' : 'PASSED', errorDetail: i >= 5 ? 'Pixel is unavailable (code 100)' : null, checkedAt: date + 'T00:03:10.000Z' });
+    HEALTH.push({ id: String(9000 + i * 3), entityType: 'TOKEN', entityId: '3', checkResult: 'OK', errorDetail: null, checkedAt: date + 'T00:03:02.000Z' });
+    HEALTH.push({ id: String(9001 + i * 3), entityType: 'PIXEL', entityId: '3', checkResult: i >= 5 ? 'FAILED' : 'OK', errorDetail: i >= 5 ? 'Pixel is unavailable (code 100)' : null, checkedAt: date + 'T00:03:10.000Z' });
     HEALTH.push({ id: String(9002 + i * 3), entityType: 'BM', entityId: '3', checkResult: 'FAILED', errorDetail: 'Request failed with status code 403', checkedAt: date + 'T00:03:18.000Z' });
   });
   const ROTATION = [
@@ -186,21 +193,91 @@ window.MIS_MOCK = (function () {
     { id: '44', entityType: 'AD_ACCOUNT', entityId: '5', brandId: '1', oldRole: null, newRole: null, oldStatus: 'ACTIVE', newStatus: 'BANNED', reason: '广告账户封禁', operator: 'admin', createdAt: days[3] + 'T02:22:00.000Z' },
   ];
 
+  /* ---------- 关联装配（列表/详情共用，手册的 listInclude 语义） ---------- */
+  const byId = (arr, id) => arr.find(x => String(x.id) === String(id)) || null;
+  function pub(o) {           // 去掉 mock 内部字段（_ 前缀）
+    const r = {};
+    Object.keys(o).forEach(k => { if (k[0] !== '_') r[k] = o[k]; });
+    return r;
+  }
+  function linkBrand(b) {
+    return Object.assign(pub(b), {
+      _count: {
+        businessManagers: BMS.filter(m => String(m.brandId) === String(b.id)).length,
+        pixels: PIXELS.filter(p => String(p.brandId) === String(b.id)).length,
+        adAccountLinks: AD_ACCOUNTS.filter(a => (a._brandIds || []).includes(String(b.id))).length,
+      },
+    });
+  }
+  function linkBm(m) {
+    return Object.assign(pub(m), { brand: m.brandId ? pub(byId(BRANDS, m.brandId) || {}) : null });
+  }
+  function linkPixel(p) {
+    const shares = (window.MIS_MOCK_ADMIN ? MIS_MOCK_ADMIN.sharesOfPixel(p.id) : []);
+    return Object.assign(pub(p), {
+      brand: p.brandId ? pub(byId(BRANDS, p.brandId) || {}) : null,
+      businessManager: p.bmId ? pub(byId(BMS, p.bmId) || {}) : null,
+      _count: { pixelShares: shares.length },
+    });
+  }
+  function linkAccount(a) {
+    return Object.assign(pub(a), {
+      brandLinks: (a._brandIds || []).map((bid, i) => ({
+        id: a.id + '0' + i, brandId: bid, adAccountId: a.id,
+        createdAt: a.createdAt || '2026-06-01T00:00:00.000Z', updatedAt: a.updatedAt || '2026-06-01T00:00:00.000Z',
+        brand: pub(byId(BRANDS, bid) || {}),
+      })),
+      sourceBm: a.sourceBmId ? pub(byId(BMS, a.sourceBmId) || {}) : null,
+    });
+  }
+  function linkApp(ap) {
+    const tokens = (window.MIS_MOCK_ADMIN ? MIS_MOCK_ADMIN.tokensOfApp(ap.id) : []);
+    return Object.assign(pub(ap), { _count: { systemUserTokens: tokens.length } });
+  }
+
   /* ---------- 路由 ---------- */
   function listResp(items) { return { items, meta: { page: 1, limit: 100, total: items.length } }; }
   function parseQ(path) {
     const i = path.indexOf('?');
     return { base: i < 0 ? path : path.slice(0, i), q: new URLSearchParams(i < 0 ? '' : path.slice(i + 1)) };
   }
+  function statusFilter(items, q, field) {
+    const v = q.get(field || 'status');
+    return (v && v !== 'ALL') ? items.filter(x => x[field || 'status'] === v) : items;
+  }
 
+  /* v71：管理页 mock 扩展挂在 mis-meta-admin-mock.js（MIS_MOCK_ADMIN.route），
+   * 这里先问扩展，扩展不认识的路径再走本文件的基础路由。 */
   function route(path, opts) {
     const { base, q } = parseQ(path);
 
-    if (base === '/api/brands') return listResp(BRANDS.map(b => Object.assign({ status: 'ACTIVE' }, b)));
-    if (base === '/api/pixels') return listResp(PIXELS);
-    if (base === '/api/business-managers') return listResp(BMS);
-    if (base === '/api/ad-accounts') return listResp(AD_ACCOUNTS);
-    if (base === '/api/developer-apps') return listResp(APPS);
+    if (window.MIS_MOCK_ADMIN) {
+      const r = MIS_MOCK_ADMIN.route(base, q, opts || {});
+      if (r !== undefined) return r;
+    }
+
+    if (base === '/api/brands') return listResp(statusFilter(BRANDS, q).map(linkBrand));
+    if (base === '/api/pixels') {
+      let items = statusFilter(PIXELS, q);
+      const bid = q.get('brand_id'), role = q.get('role');
+      if (bid && bid !== 'ALL') items = items.filter(p => String(p.brandId) === String(bid));
+      if (role && role !== 'ALL') items = items.filter(p => p.role === role);
+      return listResp(items.map(linkPixel));
+    }
+    if (base === '/api/business-managers') {
+      let items = statusFilter(BMS, q);
+      const t = q.get('bm_type'), bid = q.get('brand_id');
+      if (t && t !== 'ALL') items = items.filter(m => m.bmType === t);
+      if (bid && bid !== 'ALL') items = items.filter(m => String(m.brandId) === String(bid));
+      return listResp(items.map(linkBm));
+    }
+    if (base === '/api/ad-accounts') {
+      let items = statusFilter(AD_ACCOUNTS, q);
+      const bid = q.get('brand_id');
+      if (bid && bid !== 'ALL') items = items.filter(a => (a._brandIds || []).includes(String(bid)));
+      return listResp(items.map(linkAccount));
+    }
+    if (base === '/api/developer-apps') return listResp(statusFilter(APPS, q).map(linkApp));
 
     if (base === '/api/health') {
       const items = HEALTH.slice().sort((a, b) => b.checkedAt.localeCompare(a.checkedAt));
@@ -259,5 +336,10 @@ window.MIS_MOCK = (function () {
     throw new Error('mock 未实现该路径: ' + base);
   }
 
-  return { route, _days: days };
+  /* 暴露内部数据给管理页 mock 扩展（同一份数据，写操作全联动） */
+  return {
+    route, _days: days,
+    _data: { BRANDS, PIXELS, BMS, AD_ACCOUNTS, APPS, HEALTH, ROTATION, SPEND_ROWS },
+    _link: { brand: linkBrand, bm: linkBm, pixel: linkPixel, account: linkAccount, app: linkApp, pub, byId, listResp },
+  };
 })();

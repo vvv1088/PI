@@ -1,5 +1,18 @@
 # Changelog — Marketing Intelligent System
 
+## [v71] — 2026-08-11 · 系统 2 全页面搬家(16 个新视图,mock 模式)
+
+- **系统 2(Meta Ads 统一管理)剩余页面全部 1:1 复刻进 MIS**(V 点单:"把他原有的页面和 UI 以我 coding 的方式加进来")。对照源码逐页搬,三个新导航组:
+  - **Meta Config**(7 页):Brands / Business Managers / Pixels / Ad Accounts / Developer Apps / Tokens / Pixel Shares —— 配置驱动的通用资源引擎(列表+筛选+分页+新建/编辑弹窗+Disable 软删)+ 详情子视图(Basic Info + 关联 tabs + 特殊面板:CAPI 事件开关、BM 的 FB 个人号 1+2、广告账户品牌关联);Pixel Shares 为品牌 MAIN pixel × 广告账户的三态矩阵(Share / Revoke / Re-share)。
+  - **Meta Ops**(5 页):Overview(系统 2 首页仪表盘)/ Rotation(BM 轮转 + Pixel 轮转执行,mock 在内存演练手册 §5 完整语义:封禁清 role → 递补 → 写 rotation_log → 生成 SOP 实例并回链)/ SOP Tasks(分组进度 + 步骤 Complete/Skip + 模板管理,模板文案照 sop-seeds.ts 原文,补齐原版下拉缺的 3 类 trigger)/ Users (Meta)(权限矩阵 + Superadmin)/ Action Logs (Meta)(审计流水,mock 写操作实时追加)。
+  - **Meta Analytics**(4 页):Account Overview / Ad Gallery / Brand Comparison / Asset Lifecycle;内置轻量 SVG line/bar 图表(无外部依赖,配色照系统 2 chart-cards)。
+- **既有 Health 视图升级到原版全貌**:补 3 张 KPI 卡、品牌×槽位网格从 pixel-only 扩为 BM/Pixel/Token 三行、日志加 entity_type / result 筛选。
+- **修正两处 v70 mock 与 06 手册的偏差**(铁律 2):health `checkResult` 枚举 PASSED→**OK**;ad-accounts 简化的 `brands` 数组改为手册原形状 **`brandLinks`**(含 brand 对象)+ `sourceBm`。
+- **架构**:新代码全在 4 个新文件 —— `mis-meta-admin-mock.js`(mock 扩展:CRUD 写操作/子接口/轮转/SOP/users/action-logs/analytics,响应形状严格照 06 手册,写操作落内存并联动审计)、`mis-resources.js`(资源引擎 + Config/System 页)、`mis-operations.js`(Dashboard/Rotation/SOP/审计页)、`mis-analytics.js`(分析 4 页 + SVG 图表)。`index.html` 只加 3 个导航组、16 个空挂载 section、4 个 script 标签;`mis-meta-api.js` 加 mock 扩展钩子并补齐基础实体的手册形状。live 切换仍只改 `MIS_META` 三行,所有新页面同一开关。
+- 发版方式:v71 起 **8 文件**一起上传 cPanel(index.html + 7 个 mis-*.js)。
+- 验证:39/39 视图无头冒烟零报错(18 旧 + 5 v70 + 16 新,含 Brands 详情 tabs 与图表 SVG 渲染两项交互抽查);本环境本次可安装 playwright,`tools/smoke-test.js` 升级为全视图覆盖并参数化路径。
+- 说明:系统 2 的 login / 403 页不搬(MIS 有自己的登录);Spending Report 已在 v70 作为 Performance → Spending 搬入,不重复。
+
 ## [v70] — 2026-08-11 · Performance + Assets 五视图(系统 2 融合第一步)
 
 - **新增两组共 5 个视图**:Performance(Closed-Loop Report 闭环报表 / Spending 花费明细)与 Assets(Health 账户资产健康 / Rotation Log 换绑记录 / Asset Status 资产状态)。数据经 `metaApi()` 走系统 2(Meta Ads Unified Management)只读接口,**当前为 mock 模式**——接口形状严格按系统 2 `06-API接口手册`,等 Jayden 部署 CORS+token patch 后改 `mis-meta-api.js` 三行即切 live。

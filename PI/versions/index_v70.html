@@ -419,41 +419,6 @@
     </div>
   </div>
 
-  <!-- v71: 系统 2 全页面搬家（逻辑在 mis-resources.js / mis-operations.js / mis-analytics.js） -->
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Config <span class="car">▾</span></div>
-    <div class="grp-items">
-      <div class="nitem" data-v="mm-brands" onclick="go('mm-brands',this)">Brands</div>
-      <div class="nitem" data-v="mm-bms" onclick="go('mm-bms',this)">Business Managers</div>
-      <div class="nitem" data-v="mm-pixels" onclick="go('mm-pixels',this)">Pixels</div>
-      <div class="nitem" data-v="mm-accounts" onclick="go('mm-accounts',this)">Ad Accounts</div>
-      <div class="nitem" data-v="mm-apps" onclick="go('mm-apps',this)">Developer Apps</div>
-      <div class="nitem" data-v="mm-tokens" onclick="go('mm-tokens',this)">Tokens</div>
-      <div class="nitem" data-v="mm-shares" onclick="go('mm-shares',this)">Pixel Shares</div>
-    </div>
-  </div>
-
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Ops <span class="car">▾</span></div>
-    <div class="grp-items">
-      <div class="nitem" data-v="mm-dash" onclick="go('mm-dash',this)">Overview</div>
-      <div class="nitem" data-v="mm-rotation" onclick="go('mm-rotation',this)">Rotation</div>
-      <div class="nitem" data-v="mm-sop" onclick="go('mm-sop',this)">SOP Tasks</div>
-      <div class="nitem" data-v="mm-users" onclick="go('mm-users',this)">Users (Meta)</div>
-      <div class="nitem" data-v="mm-actionlogs" onclick="go('mm-actionlogs',this)">Action Logs (Meta)</div>
-    </div>
-  </div>
-
-  <div class="grp">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Analytics <span class="car">▾</span></div>
-    <div class="grp-items">
-      <div class="nitem" data-v="an-accounts" onclick="go('an-accounts',this)">Account Overview</div>
-      <div class="nitem" data-v="an-ads" onclick="go('an-ads',this)">Ad Gallery</div>
-      <div class="nitem" data-v="an-brands" onclick="go('an-brands',this)">Brand Comparison</div>
-      <div class="nitem" data-v="an-lifecycle" onclick="go('an-lifecycle',this)">Asset Lifecycle</div>
-    </div>
-  </div>
-
   <div class="grp" id="adminGrp" style="display:none">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
     <div class="grp-items">
@@ -922,24 +887,6 @@
 <section class="view" id="v-as-health"></section>
 <section class="view" id="v-as-rotation"></section>
 <section class="view" id="v-as-overview"></section>
-
-<!-- v71: 系统 2 全页面搬家挂载点（内容由 mis-resources.js / mis-operations.js / mis-analytics.js 注入） -->
-<section class="view" id="v-mm-brands"></section>
-<section class="view" id="v-mm-bms"></section>
-<section class="view" id="v-mm-pixels"></section>
-<section class="view" id="v-mm-accounts"></section>
-<section class="view" id="v-mm-apps"></section>
-<section class="view" id="v-mm-tokens"></section>
-<section class="view" id="v-mm-shares"></section>
-<section class="view" id="v-mm-dash"></section>
-<section class="view" id="v-mm-rotation"></section>
-<section class="view" id="v-mm-sop"></section>
-<section class="view" id="v-mm-users"></section>
-<section class="view" id="v-mm-actionlogs"></section>
-<section class="view" id="v-an-accounts"></section>
-<section class="view" id="v-an-ads"></section>
-<section class="view" id="v-an-brands"></section>
-<section class="view" id="v-an-lifecycle"></section>
 
 </main>
 </div>
@@ -3092,11 +3039,7 @@ try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();up
 </script>
 <!-- v70: 融合系统 2 —— 数据层 + PERFORMANCE + ASSETS（新代码一律在新文件，不进本文件） -->
 <script src="mis-meta-api.js"></script>
-<script src="mis-meta-admin-mock.js"></script>
 <script src="mis-performance.js"></script>
 <script src="mis-assets.js"></script>
-<script src="mis-resources.js"></script>
-<script src="mis-operations.js"></script>
-<script src="mis-analytics.js"></script>
 </body>
 </html>
