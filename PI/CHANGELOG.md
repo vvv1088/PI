@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v70] — 2026-08-11 · Performance + Assets 五视图(系统 2 融合第一步)
+
+- **新增两组共 5 个视图**:Performance(Closed-Loop Report 闭环报表 / Spending 花费明细)与 Assets(Health 账户资产健康 / Rotation Log 换绑记录 / Asset Status 资产状态)。数据经 `metaApi()` 走系统 2(Meta Ads Unified Management)只读接口,**当前为 mock 模式**——接口形状严格按系统 2 `06-API接口手册`,等 Jayden 部署 CORS+token patch 后改 `mis-meta-api.js` 三行即切 live。
+- **架构**:新代码全部在三个新文件 `mis-meta-api.js`(配置/请求/mock)、`mis-performance.js`、`mis-assets.js`;`index.html` 只加导航组、5 个空挂载 `<section>` 和 3 个 `<script>` 标签(对 v69 纯增量,零改动旧代码)。模块经 `MIS_MODULES.register()` 包装 `go()` 懒加载。
+- **发版方式变更**:从单文件改为 4 文件一起上传 cPanel(index.html + 3 个 mis-*.js)。
+- 验证:22/22 视图无头冒烟零报错(17 旧 + 5 新);工作区自带 playwright 冒烟脚本因环境无 playwright 未跑,用 chromium 无头等效替代。
+- 交接资料归档在仓库 `MIS_integration/`(背景决策/分阶段方案/给 Jayden 的清单/P2 映射表/patch)。
+
 ## [v69] — 2026-08-11 · 新登录页(V 设计)
 
 - **登录门整体替换**为 V 的新设计:暗色 hero 场景 + 6 只吉祥物跟随鼠标 3D 转头 + 眼球高光点动效,表单(Username/Password/显隐密码/Sign In/反馈条)。
@@ -7,8 +15,6 @@
 - **接线**:`doLogin()` 改读新表单(id username/password),错误/状态走 `#feedback`;表单 submit + Enter 均触发;登录逻辑(Supabase Auth/profile 校验/audit)不变。动效在门隐藏后停止渲染。
 - **隔离**:新页 CSS 全部 `#loginGate` 前缀 + 变量落地,不污染仪表盘样式;旧 lg* 样式/lgKey 清除。
 - 验证:17 视图无头冒烟零报错 + 登录门渲染 ✓。
-
-## [后端] — 2026-08-10 · 提醒管道大修 + 「发送计划」三连催
 
 ## [后端] — 2026-08-10 · 提醒管道大修 + 「发送计划」三连催
 

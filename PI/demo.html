@@ -476,6 +476,24 @@ window.supabase={createClient:function(){return __mockClient;}};
     </div>
   </div>
 
+  <!-- v70: PERFORMANCE / ASSETS 导航（逻辑在 mis-performance.js / mis-assets.js） -->
+  <div class="grp">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Performance <span class="car">▾</span></div>
+    <div class="grp-items">
+      <div class="nitem" data-v="perf-loop" onclick="go('perf-loop',this)">Closed-Loop Report</div>
+      <div class="nitem" data-v="perf-spending" onclick="go('perf-spending',this)">Spending</div>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Assets <span class="car">▾</span></div>
+    <div class="grp-items">
+      <div class="nitem" data-v="as-health" onclick="go('as-health',this)">Health</div>
+      <div class="nitem" data-v="as-rotation" onclick="go('as-rotation',this)">Rotation Log</div>
+      <div class="nitem" data-v="as-overview" onclick="go('as-overview',this)">Asset Status</div>
+    </div>
+  </div>
+
   <div class="grp" id="adminGrp" style="display:none">
     <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Administration <span class="car">▾</span></div>
     <div class="grp-items">
@@ -937,6 +955,13 @@ window.supabase={createClient:function(){return __mockClient;}};
   <div class="head"><div><h1>Activity Log</h1><div class="sub">Who did what — every add / edit / delete on a section is logged automatically.</div></div></div>
   <div id="auditBody"></div>
 </section>
+
+<!-- v70: PERFORMANCE / ASSETS 视图挂载点（内容由 mis-performance.js / mis-assets.js 注入） -->
+<section class="view" id="v-perf-loop"></section>
+<section class="view" id="v-perf-spending"></section>
+<section class="view" id="v-as-health"></section>
+<section class="view" id="v-as-rotation"></section>
+<section class="view" id="v-as-overview"></section>
 
 </main>
 </div>
@@ -3087,5 +3112,9 @@ try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();up
   requestAnimationFrame(()=>schedule(innerWidth*.5,innerHeight*.45));
 })();
 </script>
+<!-- v70: 融合系统 2 —— 数据层 + PERFORMANCE + ASSETS（新代码一律在新文件，不进本文件） -->
+<script src="mis-meta-api.js"></script>
+<script src="mis-performance.js"></script>
+<script src="mis-assets.js"></script>
 </body>
 </html>

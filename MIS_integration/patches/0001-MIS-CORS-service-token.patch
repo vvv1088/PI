@@ -1,0 +1,347 @@
+From 12e35363522ce926894d9d79cdccd6569160fe79 Mon Sep 17 00:00:00 2001
+From: vvv <vvv1088.seo@gmail.com>
+Date: Tue, 11 Aug 2026 08:49:03 +0000
+Subject: [PATCH] =?UTF-8?q?=E6=96=B0=E5=A2=9E=20MIS=20=E8=B7=A8=E5=9F=9F?=
+ =?UTF-8?q?=E5=8F=AA=E8=AF=BB=E6=8E=A5=E5=85=A5=EF=BC=9ACORS=20=E7=99=BD?=
+ =?UTF-8?q?=E5=90=8D=E5=8D=95=20+=20service=20token=EF=BC=88=E5=BE=85?=
+ =?UTF-8?q?=E9=83=A8=E7=BD=B2=EF=BC=8C=E9=9C=80=E6=96=B0=E5=A2=9E=E7=8E=AF?=
+ =?UTF-8?q?=E5=A2=83=E5=8F=98=E9=87=8F=EF=BC=89?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+背景/根因：MIS dashboard（cPanel 静态站，https://ci.boostmarketing.site）需要跨域调用
+本系统只读接口取事实数据（资产状态/花费报表）。现有认证是 cookie（sameSite: lax），
+跨站 XHR 不携带 cookie，且 /api 不返回 CORS 头——MIS 从自己的域名调用必然失败。
+
+改法（全部集中在 middleware 层，35 个接口零改动）：
+- 新增 src/lib/mis-access.ts：CORS 白名单（精确匹配、无通配符）；Bearer service token
+  校验（常数时间比较）→ 合成只读 SessionPayload；权限面全 view，tokens/users/action-logs
+  为 none（这几处会明文吐机密，见 14-已知问题 §2）；方法限制仅 GET，
+  MIS_ALLOW_REMARK_PUT=1 时额外放行 PUT /api/analytics/spending/remark。
+- src/middleware.ts：OPTIONS 预检放行（先于鉴权，预检不带凭据）；白名单来源的 /api
+  响应统一补 CORS 头；cookie 会话缺失时尝试 Bearer token；cookie 路径行为与原版一致。
+- .env.example：新增 MIS_ALLOWED_ORIGIN / MIS_API_TOKEN / MIS_ALLOW_REMARK_PUT 说明。
+
+安全边界：三个环境变量不设 = 功能整体关闭，行为与旧版一致；token 短于 32 位视为未配置；
+页面路由对 token 身份一律拒绝；/api/auth、/api/tokens、/api/users、/api/action-logs
+对 token 身份硬拒绝（与权限 none 双保险）。
+
+验证：npx tsc --noEmit 零报错；npm run build 通过（middleware 正常打包 35.8 kB）。
+跨域行为本地无法验证（需生产域名+HTTPS），部署后请实测四步：
+  1. curl -H "Origin: https://ci.boostmarketing.site" -H "Authorization: Bearer <token>" \
+     "https://meta-ads.ohmediaa.com/api/brands?limit=1" → 200 且响应含 Access-Control-Allow-Origin
+  2. 同请求改 POST → 403 "service token is read-only"
+  3. 带 token GET /api/tokens → 403
+  4. 浏览器正常登录旧 UI 走一遍 → 行为不变（回归确认）
+
+部署提醒：无 migration、无数据风险、无需备份；需在生产为 meta-ads-manager 新增
+MIS_ALLOWED_ORIGIN 与 MIS_API_TOKEN（openssl rand -hex 32 生成）两个环境变量后
+重建/重启容器。token 请通过安全渠道交接给 MIS 侧，不要走聊天明文。
+
+遗留：MIS_ALLOW_REMARK_PUT 默认 0（关闭）。是否开放报表备注编辑给 MIS，
+由负责人按对接清单 E 节「唯一的写例外」决定，开放时置 1 即可，无需改代码。
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015Cu4ZhDnm6Hn9p9U3GNRTk
+---
+ .env.example                                  |   8 +
+ ...30\346\233\264\350\256\260\345\275\225.md" |  16 ++
+ src/lib/mis-access.ts                         | 141 ++++++++++++++++++
+ src/middleware.ts                             |  61 ++++++--
+ 4 files changed, 217 insertions(+), 9 deletions(-)
+ create mode 100644 src/lib/mis-access.ts
+
+diff --git a/.env.example b/.env.example
+index c48d7f3..21aafea 100644
+--- a/.env.example
++++ b/.env.example
+@@ -3,3 +3,11 @@ DATABASE_URL="mysql://root:change-me@mysql:3306/meta_ads_admin"
+ ADMIN_USERNAME=admin
+ ADMIN_PASSWORD=admin123
+ SESSION_SECRET=replace-with-32-char-hex
++
++# ── MIS 跨域只读接入（三个都不设 = 功能关闭，行为与旧版完全一致）──
++# 允许跨域的 MIS 域名（精确匹配；联调需临时来源时用逗号追加）
++MIS_ALLOWED_ORIGIN=https://ci.boostmarketing.site
++# MIS 专用 service token，≥48 位随机字符串（生成：openssl rand -hex 32）
++MIS_API_TOKEN=replace-with-48-char-random
++# 设为 1 时额外放行 PUT /api/analytics/spending/remark（报表备注编辑，默认关）
++MIS_ALLOW_REMARK_PUT=0
+diff --git "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md" "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+index 194dbba..54a1281 100644
+--- "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
++++ "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+@@ -259,3 +259,19 @@ n8n workflow **`Meta Ads - Daily Watchdog`**（`x30YZLEid2ihuEnd`），已激活
+ > 原本只有 2 个有防护；`CA_INZ9_Scheduled` 33 个里 23 个无防护；
+ > `Health Check - Daily` 6 个 DB 节点全部无防护。现在靠 Error Workflow 兜底告警，
+ > 但**节点级的容错仍然稀薄**，是后续值得做的一项。
++
++---
++
++## 2026-08-11　新增 MIS 跨域只读接入（本地已完成，待部署）
++
++背景：MIS dashboard（`https://ci.boostmarketing.site`，cPanel 静态站）作为统一前端，
++需要跨域调用本系统只读接口取事实数据。现有 cookie 认证（`sameSite: lax`）跨站不携带、
++`/api` 无 CORS 头，跨域调用必然失败。
++
++| | |
++|---|---|
++| **改法** | 新增 `src/lib/mis-access.ts`（CORS 白名单 + Bearer service token → 合成只读 session）；`src/middleware.ts` 接入（OPTIONS 预检、响应补 CORS 头、cookie 缺失时尝试 token）；`.env.example` 补三个新变量说明 |
++| **安全边界** | 环境变量不设 = 功能整体关闭，行为与旧版一致；token 身份仅 GET、仅 `/api/*`；`/api/tokens`、`/api/users`、`/api/action-logs`、`/api/auth` 一律拒绝（前两者会明文吐机密，见 14 §2）；`MIS_ALLOW_REMARK_PUT=1` 才放行报表备注 PUT |
++| **部署要求** | 无 migration、无数据风险；生产需新增 `MIS_ALLOWED_ORIGIN` 与 `MIS_API_TOKEN`（`openssl rand -hex 32`）后重建/重启 `meta-ads-manager` |
++| **验证程度** | 本地 `tsc --noEmit` 零报错、`npm run build` 通过；**跨域行为未在生产验证**——部署后验证步骤见 commit message |
++
+diff --git a/src/lib/mis-access.ts b/src/lib/mis-access.ts
+new file mode 100644
+index 0000000..4d6abf1
+--- /dev/null
++++ b/src/lib/mis-access.ts
+@@ -0,0 +1,141 @@
++/**
++ * MIS（Marketing Intelligence System）跨域只读接入。
++ *
++ * 背景：MIS dashboard（静态单文件，部署在 cPanel）需要跨域调用本系统的
++ * 只读接口取事实数据（资产状态 / 花费报表等）。本模块提供：
++ *   1. CORS 白名单判定与响应头（仅放行 MIS 域名，不用通配符）
++ *   2. Bearer service token 校验 → 合成一个只读的 SessionPayload
++ *
++ * 与 permission-rules.ts 同样是纯数据/纯函数模块，不引入任何
++ * server-only 依赖（bcrypt/prisma），可安全用于 Edge middleware。
++ *
++ * 环境变量（三个都不设 = 本功能整体关闭，行为与改造前完全一致）：
++ *   MIS_ALLOWED_ORIGIN   允许跨域的来源，如 https://ci.boostmarketing.site
++ *                        多个来源用逗号分隔（预留联调用）
++ *   MIS_API_TOKEN        MIS 专用 service token（建议 ≥48 位随机字符串）
++ *   MIS_ALLOW_REMARK_PUT 设为 "1" 时，额外放行 PUT /api/analytics/spending/remark
++ *                        （花费报表人工备注；默认关闭，见对接清单 E 节「唯一的写例外」）
++ */
++import type { PermissionMap, SessionPayload } from "@/lib/session";
++
++/** token 身份在 action_logs / 排查时显示的名字 */
++export const MIS_SERVICE_NAME = "mis-service";
++/** 合成 session 的 uid（users 表里不存在的保留值，仅用于标识） */
++export const MIS_SERVICE_UID = "mis-service";
++
++/**
++ * MIS token 的权限面（全部 view）。
++ * 刻意排除（连 view 都不给）：
++ *   tokens      —— GET /api/tokens 明文返回 access token（已知问题 14 §2）
++ *   users       —— 用户管理与 MIS 无关
++ *   action-logs —— 明文渲染 token / app secret（已知问题 14 §2）
++ */
++export const MIS_READONLY_PERMS: PermissionMap = {
++  brands: "view",
++  "business-managers": "view",
++  pixels: "view",
++  "ad-accounts": "view",
++  "developer-apps": "view",
++  tokens: "none",
++  "pixel-shares": "view",
++  rotation: "view",
++  health: "view",
++  sop: "view",
++  users: "none",
++  "action-logs": "none",
++  "analytics-accounts": "view",
++  "analytics-ads": "view",
++  "analytics-brands": "view",
++  "analytics-spending": "view",
++  "analytics-lifecycle": "view",
++};
++
++/** 无论权限如何，token 身份一律拒绝的路径前缀（纵深防御，与上面的 none 双保险） */
++export const MIS_DENIED_API_PREFIXES = [
++  "/api/auth",
++  "/api/tokens",
++  "/api/users",
++  "/api/action-logs",
++];
++
++const REMARK_PUT_PATH = "/api/analytics/spending/remark";
++
++function allowedOrigins(): string[] {
++  const raw = process.env.MIS_ALLOWED_ORIGIN;
++  if (!raw) return [];
++  return raw
++    .split(",")
++    .map((s) => s.trim().replace(/\/+$/, ""))
++    .filter(Boolean);
++}
++
++/** 请求的 Origin 是否在白名单内（精确匹配，无通配符） */
++export function isMisOriginAllowed(origin: string | null): boolean {
++  if (!origin) return false;
++  return allowedOrigins().includes(origin.replace(/\/+$/, ""));
++}
++
++/** 生成 CORS 响应头。仅在 isMisOriginAllowed 通过后调用。 */
++export function misCorsHeaders(origin: string): Record<string, string> {
++  return {
++    "Access-Control-Allow-Origin": origin,
++    "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
++    "Access-Control-Allow-Headers": "Authorization, Content-Type",
++    "Access-Control-Max-Age": "86400",
++    Vary: "Origin",
++  };
++}
++
++function timingSafeEqualStr(a: string, b: string): boolean {
++  const enc = new TextEncoder();
++  const ab = enc.encode(a);
++  const bb = enc.encode(b);
++  // 长度不同直接失败（长度本身不是秘密）
++  if (ab.length !== bb.length) return false;
++  let diff = 0;
++  for (let i = 0; i < ab.length; i += 1) diff |= ab[i] ^ bb[i];
++  return diff === 0;
++}
++
++/**
++ * 校验 Authorization: Bearer <token>。
++ * 通过 → 返回合成的只读 SessionPayload；未配置 MIS_API_TOKEN 或不匹配 → null。
++ */
++export function verifyMisToken(authorization: string | null): SessionPayload | null {
++  const expected = process.env.MIS_API_TOKEN;
++  if (!expected || expected.length < 32) return null; // 未配置或弱 token = 功能关闭
++  if (!authorization || !authorization.startsWith("Bearer ")) return null;
++  const provided = authorization.slice("Bearer ".length).trim();
++  if (!provided || !timingSafeEqualStr(provided, expected)) return null;
++  const now = Date.now();
++  return {
++    uid: MIS_SERVICE_UID,
++    name: MIS_SERVICE_NAME,
++    perms: MIS_READONLY_PERMS,
++    iat: now,
++    exp: now + 1000 * 60 * 5, // 每个请求独立校验，exp 仅为满足类型
++  };
++}
++
++/**
++ * token 身份的方法/路径限制：
++ *   - 只允许 /api/* （页面路由一律拒绝）
++ *   - 只允许 GET；MIS_ALLOW_REMARK_PUT=1 时额外允许 PUT /api/analytics/spending/remark
++ *   - MIS_DENIED_API_PREFIXES 一律拒绝
++ * 返回 null = 放行；返回字符串 = 拒绝原因（写进 403 响应，便于联调排查）。
++ */
++export function misRequestViolation(method: string, pathname: string): string | null {
++  if (!pathname.startsWith("/api/")) return "service token only allows /api/* routes";
++  if (MIS_DENIED_API_PREFIXES.some((p) => pathname.startsWith(p))) {
++    return "this route is not available to the MIS service token";
++  }
++  if (method === "GET") return null;
++  if (
++    method === "PUT" &&
++    pathname === REMARK_PUT_PATH &&
++    process.env.MIS_ALLOW_REMARK_PUT === "1"
++  ) {
++    return null;
++  }
++  return "service token is read-only";
++}
+diff --git a/src/middleware.ts b/src/middleware.ts
+index 046185f..4acdf9c 100644
+--- a/src/middleware.ts
++++ b/src/middleware.ts
+@@ -5,28 +5,69 @@ import {
+   PATH_PERMISSION_RULES,
+   levelOf,
+ } from "@/lib/permission-rules";
++import {
++  isMisOriginAllowed,
++  misCorsHeaders,
++  misRequestViolation,
++  verifyMisToken,
++} from "@/lib/mis-access";
+ 
+ const PUBLIC_PATHS = ["/login", "/api/auth/login", "/403"];
+ 
+ export async function middleware(request: NextRequest) {
+   const { pathname } = request.nextUrl;
+ 
++  // ── MIS 跨域接入（见 src/lib/mis-access.ts；未配置环境变量时整段不生效） ──
++  const origin = request.headers.get("origin");
++  const corsOk = pathname.startsWith("/api") && isMisOriginAllowed(origin);
++
++  // 预检请求：不带凭据，必须在鉴权之前放行
++  if (request.method === "OPTIONS" && corsOk) {
++    return new NextResponse(null, { status: 204, headers: misCorsHeaders(origin as string) });
++  }
++
++  /** 给响应补上 CORS 头（仅白名单来源的 /api 请求） */
++  const withCors = (res: NextResponse): NextResponse => {
++    if (corsOk) {
++      for (const [k, v] of Object.entries(misCorsHeaders(origin as string))) {
++        res.headers.set(k, v);
++      }
++    }
++    return res;
++  };
++
+   if (
+     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
+     pathname.startsWith("/_next") ||
+     pathname.startsWith("/favicon")
+   ) {
+-    return NextResponse.next();
++    return withCors(NextResponse.next());
+   }
+ 
+   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+-  const session = await verifySession(token);
++  let session = await verifySession(token);
++
++  // cookie 没有会话时，尝试 MIS service token（只读，见 mis-access.ts）
++  if (!session) {
++    const misSession = verifyMisToken(request.headers.get("authorization"));
++    if (misSession) {
++      const violation = misRequestViolation(request.method, pathname);
++      if (violation) {
++        return withCors(
++          NextResponse.json({ success: false, error: violation }, { status: 403 }),
++        );
++      }
++      session = misSession;
++    }
++  }
+ 
+   if (!session) {
+     if (pathname.startsWith("/api")) {
+-      return NextResponse.json(
+-        { success: false, error: "Unauthorized" },
+-        { status: 401 },
++      return withCors(
++        NextResponse.json(
++          { success: false, error: "Unauthorized" },
++          { status: 401 },
++        ),
+       );
+     }
+     const loginUrl = request.nextUrl.clone();
+@@ -40,9 +81,11 @@ export async function middleware(request: NextRequest) {
+   const rule = rules.find((r) => r.test(pathname));
+   if (rule && levelOf(session.perms, rule.key) === "none") {
+     if (pathname.startsWith("/api")) {
+-      return NextResponse.json(
+-        { success: false, error: "Forbidden" },
+-        { status: 403 },
++      return withCors(
++        NextResponse.json(
++          { success: false, error: "Forbidden" },
++          { status: 403 },
++        ),
+       );
+     }
+     const forbiddenUrl = request.nextUrl.clone();
+@@ -51,7 +94,7 @@ export async function middleware(request: NextRequest) {
+     return NextResponse.redirect(forbiddenUrl);
+   }
+ 
+-  return NextResponse.next();
++  return withCors(NextResponse.next());
+ }
+ 
+ export const config = {
+-- 
+2.43.0
+
