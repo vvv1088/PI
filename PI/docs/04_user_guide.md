@@ -1,7 +1,7 @@
 # Marketing Intelligence System — 使用指南（User Guide）
 
 > 给所有人看的白话版：每个页面干嘛、按钮点下去会发生什么、怎么用。
-> 不需要懂技术。最后更新：2026-07-08
+> 不需要懂技术。最后更新：2026-08-11
 
 ---
 
@@ -93,6 +93,9 @@
 | 元素 / 操作 | 说明 |
 |---|---|
 | Setup / Edit | 没建首版显示 Setup，建过显示 Edit；同样 Draft（可改）/ Save（锁定） |
+| 🧪 标记 | 列表里在测的维度前有 🧪，一眼看出每条素材这次测什么；Variant 显示在对应列下方 |
+| 列 | Format / Hook / Visual Style / Offer / Game Type 五个维度全有列（Spend/FDC/CPA 已移除，效果看以后的分析页） |
+| 排序 | 同一假设的素材永远连在一起（组内 V1→V2…），最近有动静的假设排上面 |
 | **Schedule 列** | 自动继承所属假设的排期，显示倒数（还有 N 天开测 / 测试中剩 N 天 / 待判定） |
 | **■ 结束运行** | 收掉一段投放，可选标记已下线 |
 | **＋ 补记周花费** | 跑多周的每周补一笔，Budget「已投放」按周精确汇总 |
@@ -170,6 +173,7 @@ USC 品牌消息进 `#ops-marketing-usc-mis`，INZ9 进 `#ops-marketing-inz9-mis
 | 发现新对手想盯它 | Watchlist「加竞品」；或它已在 Pending List 就点「确认」 |
 | 只看某类广告 | Ads Library 叠加筛选（市场/游戏类型/格式…） |
 | 把一个想法变成测试 | Idea Pool「立假设」→ 选品牌填表 → 进「素材管理 & 标签」配素材、修红条、Save |
+| 测同风格下不同游戏/名人 | 对比页勾 1 个维度 → 取值选一样 → 每行 Variant 填游戏名/人名（互不相同） |
 | 填这个月预算 | Budget Allocation → 自己品牌的行 → 点自己该填的格 → 金额+理由 → 保存 |
 | 发下月计划到 Slack | Monthly Overview → 检查自己品牌卡就绪 → 确认发送 |
 | 测试跑完下结论 | Hypotheses 打开该假设 → 判定 → 填结论+学到什么 |
@@ -187,5 +191,7 @@ USC 品牌消息进 `#ops-marketing-usc-mis`，INZ9 进 `#ops-marketing-inz9-mis
 | Slack 周报很短 | 那是精简版；完整的在 Weekly Summary 页 |
 | AI 想法每周一才来几条 | 设计如此（精选、不刷屏），不是漏了 |
 | 素材表红条不让 Save | 裁判在保护你——修掉它指出的不一致就能锁定 |
+| Variant 被自动改了写法 | 系统在统一大小写/采用已有写法，防止同一个东西多种写法 |
+| 换了取值后 Variant 空了 | 取值变了，旧的 Variant 描述的是旧内容，系统清掉让你重写 |
 | Budget 格子点不动 | 不是你该填的格（分工见 Budget Permission），或该行已「已定」锁定（找 ZQ 重开） |
 | 确认发送按钮灰的 | 只有该品牌的 Marketing 负责人能发 |
