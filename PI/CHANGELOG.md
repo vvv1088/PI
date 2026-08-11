@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligent System
 
+## [后端] — 2026-08-10 · 提醒管道大修 + 「发送计划」三连催
+
+- **修复 Daily Reminders 全量丢失 bug**:n8n「MIS Daily Reminders」的 Split Messages 只读第一个 item,导致上线以来所有每日提醒(含 7/20 的 4 条 1st Reminder)一条未发。修复后 #test-test 实测 24 条全部送达,已恢复正式频道路由。
+- 7/26–31 工作流因 n8n 配额耗尽未跑(吞掉 7/30 的 3rd Reminder);8/1 配额重置自愈。**月底配额复发风险待处理。**
+- **`mis_reminders` 新增「发送计划」三连催**(V 定):每月 25/27/30 号,下月计划还没「确认发送」的品牌 @mkt 负责人(1st/2nd/Final Reminder);原 30 号单发的 3rd Reminder 升级为此系列。20 号(申请)/25 号(核批)不变。
+- 澄清:此前怀疑月度分支缺失是误判(执行记录被截断);函数原逻辑正确。
+
 > 版本纪律(新):**当前版本永远 = `PI/index.html`**;每次改动前先快照旧版到 `PI/versions/index_vN.html`,改完写一条 changelog。
 > 不再用"工作目录里散落多个 index_vN"的旧做法 —— 那是之前版本混乱的根源。
 
