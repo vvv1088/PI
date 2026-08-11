@@ -2398,6 +2398,8 @@ async function loadBaselines(){
   }catch(e){console.error('loadBaselines:',e);}
   // HVR 占位基准:RPC 不产 7-Day High-Value Rate,先放占位让功能跑通(待 cohort 取数 + 高门槛 figure 后替换)
   if(data&&data['OK188KH']&&!data['OK188KH']['7-Day High-Value Rate'])data['OK188KH']['7-Day High-Value Rate']={base:8,cost:null,unit:'%',placeholder:true};
+  // v80:基线闭环供数(休眠,MIS_META.useLiveBaselines 开启后逐指标覆盖;设计见 docs/06)
+  try{if(window.MISBaselines)data=await MISBaselines.overlay(data);}catch(e){}
 }
 let ads=[],operators=[],reports=[],candidates=[],brands=[],galRows=[],hookCh=null,styleCh=null;
 let reportWeeks=[],reportTabIdx=0;
@@ -3212,6 +3214,7 @@ try{renderPool();renderHypo();renderCreatives();renderDict();refreshOverdue();up
 <script src="mis-meta-api.js"></script>
 <script src="mis-meta-admin-mock.js"></script>
 <script src="mis-naming.js"></script>
+<script src="mis-baselines.js"></script>
 <script src="mis-performance.js"></script>
 <script src="mis-assets.js"></script>
 <script src="mis-resources.js"></script>

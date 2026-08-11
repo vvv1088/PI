@@ -49,13 +49,14 @@
 改 `mis-ui/mis-meta-api.js` 顶部：`mode:'live'` + `token:'<service token>'`（+ 若他开了备注写入则 `allowRemarkEdit:true`）。
 BO 数据（FD/D7）现走占位路由 `/api/mis/bo-daily`（mock 内），真通道等对接清单 D 节拍板后在同一处补 live 实现——闭环页代码不用动。
 
-## 当前进度快照（2026-08-11）
+## 当前进度快照（2026-08-12,v80）
 
-- ✅ 对接清单已发 Jayden（`docs/02`，7 项一次拿齐），**等他回复** —— P0/P1 的唯一外部依赖
-- ✅ 接入改造 patch 已出（`patches/`，tsc/build 已过），等他审核部署
-- ✅ v70 五视图 mock 版完成并冒烟通过；交互预览已给 v 看过
-- ⏳ 第三批待办：权限映射设计（系统 2 的 9 账号→MIS 角色）、拆文件+最简构建方案（P2 前必须）、baselines 替换设计（New Hypothesis 基线改由 PERFORMANCE 供数）
-- ⏳ v70 尚未合回 PI 正式仓库 / 未上 cPanel
+- ✅ 系统 2 全部页面已 1:1 搬入 MIS(v71)并完成收编/合组(v72);详见 `交接状态-2026-08-12.md`
+- ✅ 命名工程全链落地(v73–v76):brand_aliases/短码/发号列已进 Supabase,市场统一 USC/MY/SG,建素材自动发号
+- ✅ Users 统一 + Activity Log 合并(v77);实体连接 L1–L6 + 三层归因(v78);live 只读闸门(v79)
+- ✅ patch 0001(CORS+token)/0002(S1 脱敏)/0003(轮转加固)在 `patches/`,tsc+build 双过,等 Jayden
+- 📄 等 V 拍板:docs/04 拆文件、05 权限映射、06 baselines;cPanel v80 包等上传
+- ⛔ 阻塞不变:Jayden 未回 docs/02;第五类(另一条线)本工作区不处理(V 定)
 
 ## 别踩的坑（从系统 2 的血泪史继承）
 

@@ -14,6 +14,7 @@ window.MIS_META = {
   token: '',                                   // MIS service token（Bearer）
   allowRemarkEdit: false,                      // 与后端 MIS_ALLOW_REMARK_PUT 同步
   allowMetaWrite: false,                       // v79:live 写总开关(P1 token 只读;P2 开写时置 true)
+  useLiveBaselines: false,                     // v80:基线闭环供数开关(BO live 后再开;docs/06)
 };
 
 /* v79:Meta 侧写操作统一闸门 —— mock 随便玩;live 必须 allowMetaWrite */

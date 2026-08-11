@@ -1,0 +1,126 @@
+From ff9a409858e6e82a53159c3df108413e9dfcca45 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 11 Aug 2026 19:19:33 +0000
+Subject: [PATCH 1/2] =?UTF-8?q?S1=20=E4=BF=AE=E5=A4=8D:action=5Flogs=20?=
+ =?UTF-8?q?=E6=98=8E=E6=96=87=E6=9C=BA=E5=AF=86=E8=84=B1=E6=95=8F(token/ap?=
+ =?UTF-8?q?pSecret/passwordHash)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+根因:serializeForLog 把整条 Prisma 记录原样写入 action_logs.details,
+tokens/developerApps 的 CREATE/UPDATE/DELETE 全量携带 token 与 appSecret 明文;
+/action-logs 页面把 details 原样渲染,任何 action-logs:view 权限即可读取。
+
+证据:06-API接口手册 §8.2 S1 表格 —— 生产实测(2026-08-09)tokens 类 17 条
+含完整 token、developerApps 类 16 条含 appSecret 明文,共 33 条。
+
+改法:JSON 序列化 replacer 对键名 token/appSecret/passwordHash 且长度>8 的
+字符串截断为前 8 位+"...",任意嵌套深度生效(before/after 同样覆盖);
+存量清洗 SQL 见 db/manual-migrations/20260811_redact_action_logs_secrets.sql
+(带 dry-run 与复核查询,幂等可重跑)。
+
+验证:npx tsc --noEmit 与 npm run build 均通过(0 错误);
+脱敏逻辑覆盖新写入,存量由清洗 SQL 处理,两者部署后 §8.2 S1 警告消除。
+---
+ .../20260811_redact_action_logs_secrets.sql   | 26 ++++++++++++++++++
+ ...30\346\233\264\350\256\260\345\275\225.md" | 27 +++++++++++++++++++
+ src/lib/server/action-log.ts                  |  9 ++++++-
+ 3 files changed, 61 insertions(+), 1 deletion(-)
+ create mode 100644 db/manual-migrations/20260811_redact_action_logs_secrets.sql
+
+diff --git a/db/manual-migrations/20260811_redact_action_logs_secrets.sql b/db/manual-migrations/20260811_redact_action_logs_secrets.sql
+new file mode 100644
+index 0000000..4c4682c
+--- /dev/null
++++ b/db/manual-migrations/20260811_redact_action_logs_secrets.sql
+@@ -0,0 +1,26 @@
++-- S1 存量清洗:action_logs.details 里的 token / appSecret / passwordHash 明文
++-- 截断为前 8 位 + "..."。配套代码修复见 patch 0002(新增写入已脱敏)。
++-- 先跑 DRY-RUN 看影响面,确认后再跑 UPDATE。生产实测(2026-08-09)预期 33 条。
++
++-- DRY-RUN:哪些行会被改
++SELECT id, entity_type, action_type, created_at
++FROM action_logs
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
++
++-- 正式清洗(可重复执行,幂等)
++UPDATE action_logs
++SET details = CAST(
++  REGEXP_REPLACE(
++    REGEXP_REPLACE(
++      REGEXP_REPLACE(
++        CAST(details AS CHAR CHARACTER SET utf8mb4),
++        '"token" *: *"([^"]{8})[^"]{1,}"',        '"token":"\\1..."'),
++      '"appSecret" *: *"([^"]{8})[^"]{1,}"',      '"appSecret":"\\1..."'),
++    '"passwordHash" *: *"([^"]{8})[^"]{1,}"',     '"passwordHash":"\\1..."')
++  AS JSON)
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
++
++-- 复核:应返回 0 行
++SELECT COUNT(*) AS remaining
++FROM action_logs
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
+diff --git "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md" "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+index 194dbba..110de0a 100644
+--- "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
++++ "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+@@ -5,6 +5,33 @@
+ 
+ ---
+ 
++## 2026-08-11　MIS 接入配套：审计脱敏 + 轮转/停用残留缺陷修复（待部署）
++
++由 MIS 侧开发交付（patch 0002 / 0003），Jayden 审核部署。两条均为 06 手册
++「接口层已知问题清单」挂号项的收尾。
++
++### ① S1 审计日志明文机密脱敏（patch 0002）
++
++| | |
++|---|---|
++| **原状** | `serializeForLog` 把整条记录原样入 `action_logs.details`，生产实测 17 条含 token 明文、16 条含 appSecret 明文；任何有 `action-logs: view` 权限的人可读 |
++| **影响** | 全部 CAPI token 与 app secret 通过审计页/接口泄露；也是 MIS P1 不敢开放 #15/16/#27 的直接原因 |
++| **修复** | `action-log.ts` 的序列化对键名 `token` / `appSecret` / `passwordHash` 做脱敏（保留前 8 位 + `...`），任意嵌套深度生效；存量清洗 SQL 见 `db/manual-migrations/20260811_redact_action_logs_secrets.sql`（含 dry-run 查询，先看后改） |
++| **验证** | 本地单测:嵌套 before/after 中的三类键均被截断,其余字段原样;tsc 见 patch 说明 |
++| **文档影响** | `06-API接口手册.md` §3.6/§3.7/§8.2 的 S1 警告在部署+清洗后消除;MIS 侧待此部署后才申请开放 #15/16(脱敏返回)与 #27 |
++
++### ② B1 + R1/R3 残留：手动停用不清 role、轮转可提升 DISABLED 备份、重复执行不拦（patch 0003）
++
++| | |
++|---|---|
++| **原状** | ①资源列表页红色 Disable(`disabledData`)只改 status 不清 role → 重新制造「BANNED 但 role=MAIN」脏数据(B1);②轮转递补 `findFirst` 只排除 BANNED,DISABLED 的备份仍会被提升为 MAIN(R1 残留);③对已 BANNED 目标重复执行轮转不报错,重复生成整组 SOP 与日志(R3 残留;2026-08 的角色感知修复已消除双 MAIN,但幂等仍缺) |
++| **影响** | ①Health 页与所有 `role='MAIN'` 查询可能命中已封资产;②轮转可能把不可用资产顶上主位;③误触/超时重试产生重复待办 |
++| **修复** | ①`resource-service.ts` businessManagers/pixels 的 `disabledData` 补 `role: null`;②两条轮转 route 的递补查询 status 改为 `"ACTIVE"`;③目标查询加 `status: { not: "BANNED" }`,已封目标报错返回而不是静默重跑 |
++| **验证** | 逻辑对照 06 手册 §5.2/§5.3 的坑位描述逐条核对;tsc 见 patch 说明 |
++| **文档影响** | 06 手册 §3.1-B1、§5.2-R1/R3、§5.3 的坑位描述在部署后消除 |
++
++---
++
+ ## 2026-08-09　修复三个生产缺陷
+ 
+ 三条都是在编写交接文档的过程中发现的，当天修复并在生产验证通过。
+diff --git a/src/lib/server/action-log.ts b/src/lib/server/action-log.ts
+index c8b1eb7..600f479 100644
+--- a/src/lib/server/action-log.ts
++++ b/src/lib/server/action-log.ts
+@@ -2,9 +2,16 @@ import { Prisma } from "@prisma/client";
+ import { prisma } from "@/lib/prisma";
+ import { getSessionUserId } from "@/lib/server/auth";
+ 
+-function replacer(_key: string, value: unknown): unknown {
++// Secrets must never reach action_logs in full (S1): the details JSON is
++// rendered verbatim on /action-logs for anyone with view permission.
++const SENSITIVE_KEYS = new Set(["token", "appSecret", "passwordHash"]);
++
++function replacer(key: string, value: unknown): unknown {
+   if (typeof value === "bigint") return value.toString();
+   if (value instanceof Date) return value.toISOString();
++  if (SENSITIVE_KEYS.has(key) && typeof value === "string" && value.length > 8) {
++    return `${value.slice(0, 8)}...`;
++  }
+   return value;
+ }
+ 
+-- 
+2.43.0
+

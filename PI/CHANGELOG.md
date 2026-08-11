@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v80] — 2026-08-12 · 三份设计文档 + baselines 休眠实现 + 线 B 两个 patch
+
+- **三份设计文档等 V 拍板**(MIS_integration/docs/):04 拆文件与构建方案(推荐零依赖拼接构建);05 权限映射设计(role_meta_permissions 表 + Roles 抽屉 Meta 区 + live 桥接与 X-MIS-User 审计头);06 baselines 替换设计(闭环同源公式表 + 切换/下线机制;REG 需 D 节补 reg_count)。
+- **`mis-baselines.js` 休眠实现**:近 4 完整周 spending×BO 聚合出 FDC/FDAMT/AFDA(+CPA),`MIS_META.useLiveBaselines`(默认 false)开启后逐指标覆盖 RPC 基线、缺口保留 —— BO live 前不建议开。
+- **线 B patch(系统 2 侧,tsc+build 双过)**:0002 S1 审计脱敏(serializeForLog 对 token/appSecret/passwordHash 截前 8 位;附存量清洗 SQL 带 dry-run)、0003 B1/R1/R3 加固(Disable 清 role;递补只取 ACTIVE;轮转幂等拦截)。变更记录已按那边规范先行。发现:交接包代码比 06 手册新,R2 已修,patch 只补真实残留。
+- 交接文档翻新:`交接状态-2026-08-12.md`(取代 08-11 版)+ CLAUDE.md 进度快照;cPanel 发版包更新为 **v80 版 10 文件**(PI/release/)。
+- 验证:35 视图 + 交互 + 9 项引擎检查零报错(index+demo)。
+
 ## [v79] — 2026-08-11 · 字典短码显示 + Our Ads 改名 + live 只读闸门 + 引擎回归检查
 
 - **Dictionary 显示广告名短码**:Format / Ad Setting 词条的 code 下方显示「短码 IM/VD/…」(命名契约可见化;数据 v75 已落库)。

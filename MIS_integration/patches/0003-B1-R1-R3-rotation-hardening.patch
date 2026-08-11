@@ -1,0 +1,119 @@
+From 2c8a500a2bb47c3cd380b8500098ecbe433d36aa Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 11 Aug 2026 19:19:34 +0000
+Subject: [PATCH 2/2] =?UTF-8?q?B1+R1/R3=20=E6=94=B6=E5=B0=BE:=E5=81=9C?=
+ =?UTF-8?q?=E7=94=A8=E6=B8=85=20role=E3=80=81=E9=80=92=E8=A1=A5=E5=8F=AA?=
+ =?UTF-8?q?=E5=8F=96=20ACTIVE=E3=80=81=E8=BD=AE=E8=BD=AC=E5=B9=82=E7=AD=89?=
+ =?UTF-8?q?=E6=8B=A6=E6=88=AA?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+根因:①resource-service 的 disabledData 只改 status 不清 role,列表页红色
+Disable 会重新制造「BANNED 但 role=MAIN」脏数据(手册 §3.1 B1);
+②轮转递补 findFirst 只排除 BANNED,DISABLED 的备份仍会被提升(§5.2 R1 残留);
+③对已 BANNED 目标重复执行轮转不报错,静默重跑并重复生成整组 SOP 与
+rotation_log(§5.2 R3 残留;2026-08 的角色感知修复已消除双 MAIN,幂等仍缺)。
+
+证据:06-API接口手册 §3.1「已知缺陷 B1」、§5.5「遗留项 2/3」逐条对照;
+resource-service.ts 的 businessManagers/pixels disabledData 与两条
+rotation route 的 findFirst 条件为现行代码实况。
+
+改法:①两处 disabledData 补 role:null;②递补查询 status 条件收紧为
+"ACTIVE";③目标查询加 status:{not:"BANNED"},已封目标返回明确错误。
+
+验证:npx tsc --noEmit 与 npm run build 均通过(0 错误);
+按 §5.2/§5.3 坑位表逐条核对:B1/R1/R3 路径全部闭合,R2 维持已修状态。
+---
+ src/app/api/rotation/execute-pixel/route.ts |  8 +++++---
+ src/app/api/rotation/execute/route.ts       | 10 +++++++---
+ src/lib/server/resource-service.ts          |  6 ++++--
+ 3 files changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/src/app/api/rotation/execute-pixel/route.ts b/src/app/api/rotation/execute-pixel/route.ts
+index 9e83a31..20e9684 100644
+--- a/src/app/api/rotation/execute-pixel/route.ts
++++ b/src/app/api/rotation/execute-pixel/route.ts
+@@ -30,10 +30,11 @@ export async function POST(req: NextRequest) {
+     const checklists = await ensurePixelRotationChecklist();
+ 
+     const result = await prisma.$transaction(async (tx) => {
++      // R3: same idempotency guard as the BM route.
+       const target = await tx.pixel.findFirst({
+-        where: { id: pixelId, brandId },
++        where: { id: pixelId, brandId, status: { not: "BANNED" } },
+       });
+-      if (!target) throw new Error("Pixel not found for selected brand");
++      if (!target) throw new Error("Pixel not found for selected brand or already banned");
+ 
+       // Banned pixel must vacate its rotation slot (role = null),
+       // otherwise it shadows the promoted MAIN in role lookups.
+@@ -69,8 +70,9 @@ export async function POST(req: NextRequest) {
+             : [];
+ 
+       for (const { from, to } of promotions) {
++        // R1: only healthy backups may take a slot.
+         const pixel = await tx.pixel.findFirst({
+-          where: { brandId, role: from, status: { not: "BANNED" } },
++          where: { brandId, role: from, status: "ACTIVE" },
+         });
+         if (!pixel) continue;
+ 
+diff --git a/src/app/api/rotation/execute/route.ts b/src/app/api/rotation/execute/route.ts
+index 34fe1d2..f943892 100644
+--- a/src/app/api/rotation/execute/route.ts
++++ b/src/app/api/rotation/execute/route.ts
+@@ -30,10 +30,12 @@ export async function POST(req: NextRequest) {
+     const checklists = await ensureBmRotationChecklist();
+ 
+     const result = await prisma.$transaction(async (tx) => {
++      // R3: re-running on an already-banned BM must fail loudly, not silently
++      // re-ban and mint a duplicate SOP batch.
+       const target = await tx.businessManager.findFirst({
+-        where: { id: bmId, bmType: "PIXEL" },
++        where: { id: bmId, bmType: "PIXEL", status: { not: "BANNED" } },
+       });
+-      if (!target) throw new Error("Pixel BM not found");
++      if (!target) throw new Error("Pixel BM not found or already banned");
+ 
+       // Banned BM and its pixels must vacate their rotation slots (role = null),
+       // otherwise they shadow the promoted MAIN in role lookups.
+@@ -73,8 +75,10 @@ export async function POST(req: NextRequest) {
+             : [];
+ 
+       for (const { from, to } of promotions) {
++        // R1: only healthy backups may take a slot — a DISABLED backup promoted
++        // to MAIN is as broken as the banned one it replaces.
+         const bm = await tx.businessManager.findFirst({
+-          where: { bmType: "PIXEL", role: from, status: { not: "BANNED" } },
++          where: { bmType: "PIXEL", role: from, status: "ACTIVE" },
+         });
+         if (!bm) continue;
+ 
+diff --git a/src/lib/server/resource-service.ts b/src/lib/server/resource-service.ts
+index 93a7be9..4be6a7b 100644
+--- a/src/lib/server/resource-service.ts
++++ b/src/lib/server/resource-service.ts
+@@ -116,7 +116,8 @@ export const RESOURCE_MAP: Record<ResourceKey, ResourceConfig> = {
+         role: body.role || null,
+         status: body.status,
+       }),
+-    disabledData: { status: "BANNED" },
++    // B1: vacate the rotation slot too — status alone recreates "BANNED but MAIN" rows
++    disabledData: { status: "BANNED", role: null },
+     rotationEntity: "BM",
+     healthEntityType: "BM",
+   },
+@@ -158,7 +159,8 @@ export const RESOURCE_MAP: Record<ResourceKey, ResourceConfig> = {
+         role: body.role,
+         status: body.status,
+       }),
+-    disabledData: { status: "DISABLED" },
++    // B1: same as businessManagers — never leave a role on a disabled pixel
++    disabledData: { status: "DISABLED", role: null },
+     rotationEntity: "PIXEL",
+     healthEntityType: "PIXEL",
+   },
+-- 
+2.43.0
+
