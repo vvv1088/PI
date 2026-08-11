@@ -1,5 +1,11 @@
 # Changelog — Marketing Intelligent System
 
+## [v74] — 2026-08-11 · 新页面表格对齐修复(V 报)
+
+- **根因**:MIS 的表格样式挂在 `thead th` 选择器上,v70/v71 新页面的表格没包 `<thead>`,表头全部落回浏览器默认样式(居中、无内边距),与左对齐的内容错位。
+- **修法**:mis-resources.js 注入一条覆盖全部新视图(perf-*/as-health/mm-*/an-*/audit Meta tab)的 th/td 规则,与原生 `thead th` 完全同款(左对齐、大写小字号、灰底、内边距);数字列的行内 right 对齐不受影响。
+- 验证:36 视图冒烟零报错;Overview / Brands 等截图目检对齐。
+
 ## [v73] — 2026-08-11 · 广告命名引擎(素材实体连接·第 1 期)
 
 - **新文件 `mis-naming.js`**:命名契约 `<market>_<brand>_<setting>_<format>_<ref>` 的生成/解析/发号引擎(全部对照表 V 已逐项确认):

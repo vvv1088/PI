@@ -18,6 +18,13 @@
   /* ================= 样式（只作用于本模块的 mmr- 前缀类） ================= */
   const css = document.createElement('style');
   css.textContent = `
+  /* v74:v70/v71 新页面的表格没包 thead,表头落回浏览器默认(居中无边距)导致与内容错位。
+     此规则给所有新视图的 th 补上与 MIS 原生 thead th 一致的样式(左对齐;数字列的行内 right 不受影响)。 */
+  #v-perf-loop th,#v-perf-spending th,#v-as-health th,[id^="v-mm-"] th,[id^="v-an-"] th,#auditMetaBody th{
+    font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3,#8a8a94);font-weight:600;
+    text-align:left;padding:8px 12px;background:var(--bg2,#f6f7f9);border-bottom:1px solid var(--line,#e3e3e8);white-space:nowrap}
+  #v-perf-loop td,#v-perf-spending td,#v-as-health td,[id^="v-mm-"] td,[id^="v-an-"] td,#auditMetaBody td{
+    padding:9px 12px;border-bottom:1px solid var(--line,#e3e3e8);vertical-align:middle}
   .mmr-badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
   .mmr-g{background:#e6f6ee;color:#1a7f4e;border:1px solid #b6e5cd}
   .mmr-r{background:#fdebec;color:#c62f36;border:1px solid #f6c6c9}
