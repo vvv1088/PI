@@ -1,5 +1,11 @@
 # Changelog — Marketing Intelligent System
 
+## [v83.2] — 2026-08-12 · Activity Log 排版 + Budget Permission 用词(V 反馈)
+
+- Budget Permission:「USC Owner (Approval)」及同页 USC 字眼 → **CRM Owner**(仅该页;Budget Allocation 页的「USC 核批」字样待 V 确认是否跟着换)。
+- Activity Log:Action 列从 label 徽章改普通文字;动作码/实体名统一转普通词(SOP_TASK_DONE→Sop task done、brands→Brands,首字母一致);全表字号统一 12.5px(原 badge 11px 与文本 13px 混排)。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测(CRM 字眼/无徽章/大小写与字号统一)全过。
+
 ## [v83.1] — 2026-08-12 · Users 彻底一张表 + 权限板块标题放大(V 反馈)
 
 - **Users 页只剩一种 user**:Name / Username / Role / 操作,四列一张表。「Meta 账号/Meta 状态」两列与页面上的系统 2 区块全部撤除 —— 系统 2 账号只是过渡期水管,不上桌面;审计对人不靠它(X-MIS-User 直接带 MIS username)。

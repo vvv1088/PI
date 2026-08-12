@@ -337,12 +337,20 @@
     const view = rows.filter(r =>
       (!AU.source || r.src === AU.source) &&
       (!q || [r.user, r.act, r.obj].join(' ').toLowerCase().indexOf(q) >= 0));
+    /* v83.2(V 定):Action 用普通文字不用 label;动作/对象统一大小写与字号 ——
+     * 系统 2 的动作码(SOP_TASK_DONE)和实体名(BRAND)转成普通词,两边视觉才对得齐 */
+    const plain = s => {
+      s = String(s || '').replace(/_/g, ' ').trim();
+      if (!s) return s;
+      if (/^[A-Z0-9 #]+$/.test(s)) s = s.charAt(0) + s.slice(1).toLowerCase();   // 全大写码 → 普通词
+      return s.charAt(0).toUpperCase() + s.slice(1);                             // 首字母统一大写
+    };
     let t = `<tr><th>Time</th><th>Source</th><th>User</th><th>Action</th><th>Object</th><th>Details</th></tr>`;
     if (!view.length) t += `<tr><td colspan="6" class="empty">No activity.</td></tr>`;
     view.slice(0, 300).forEach(r => {
       t += `<tr><td style="white-space:nowrap">${esc(fmtTs(r.ts))}</td>
         <td><span class="mmr-badge ${r.src === 'MIS' ? 'mmr-b' : 'mmr-n'}">${r.src}</span></td>
-        <td>${esc(r.user)}</td><td>${badge(r.act)}</td><td>${esc(r.obj)}</td>
+        <td>${esc(r.user)}</td><td>${esc(plain(r.act))}</td><td>${esc(plain(r.obj))}</td>
         <td>${r.detail ? `<details style="max-width:420px"><summary style="cursor:pointer;font-size:12px;color:var(--mut,#888)">View</summary>
           <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:8px;font-size:11px;margin-top:6px">${esc(JSON.stringify(r.detail, null, 2))}</pre></details>` : '-'}</td></tr>`;
     });
@@ -364,7 +372,9 @@
   css.textContent = `
   .mmo-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .mmo-2col2{display:grid;grid-template-columns:420px 1fr;gap:14px}
-  @media(max-width:960px){.mmo-2col,.mmo-2col2{grid-template-columns:1fr}}`;
+  @media(max-width:960px){.mmo-2col,.mmo-2col2{grid-template-columns:1fr}}
+  /* v83.2:Activity Log 全表统一字号(此前 badge 11px / 文本 13px 混排,V 反馈大小不齐) */
+  #auditBody td{font-size:12.5px}`;
   document.head.appendChild(css);
 
   window.MISOps = {
