@@ -32,33 +32,39 @@ const MIS_META_KEY_GROUPS = [
   { g: 'Analytics',     keys: ['analytics-accounts', 'analytics-ads', 'analytics-brands', 'analytics-spending', 'analytics-lifecycle'] },
 ];
 
-/* 当前用户对某 meta_key 的授权级别:admin=edit;未登录(demo)=edit;角色没配到的 key 回落 view */
-function misMetaLevel(key) {
+/* v83 四词模型:当前用户对某 meta_key 的权限对象 {view,add,edit,delete}。
+ * admin/未登录(demo)=全开;角色没配到的 key 回落只读(view)。 */
+function misMetaPerm(key) {
+  const ALL = { view: true, add: true, edit: true, delete: true };
+  const RO  = { view: true, add: false, edit: false, delete: false };
   try {
     const u = (0, eval)('typeof currentUser!=="undefined"?currentUser:null');
-    if (!u) return 'edit';
+    if (!u) return ALL;
     const rs = (0, eval)('typeof roles!=="undefined"?roles:[]');
     const role = (rs || []).find(r => r.id === u.roleId);
-    if (!role) return 'view';
-    if (role.admin) return 'edit';
-    return (role.metaPerms && role.metaPerms[key]) || 'view';
-  } catch (e) { return 'edit'; }
+    if (!role) return RO;
+    if (role.admin) return ALL;
+    return (role.metaPerms && role.metaPerms[key]) || RO;
+  } catch (e) { return ALL; }
 }
 
-/* 导航 gating:level=none 的 Meta 视图从侧栏隐藏(登录后由 loadAuthData 调用) */
+/* 导航 gating:view=✗ 的视图从侧栏隐藏(Meta key 视图 + MIS 纯浏览视图,登录后由 loadAuthData 调用) */
 function misApplyMetaNav() {
-  Object.keys(MIS_META_KEYS).forEach(v => {
-    document.querySelectorAll('.nitem[data-v="' + v + '"]').forEach(el => {
-      el.style.display = misMetaLevel(MIS_META_KEYS[v]) === 'none' ? 'none' : '';
-    });
-  });
+  const hide = (v, off) => document.querySelectorAll('.nitem[data-v="' + v + '"]').forEach(el => { el.style.display = off ? 'none' : ''; });
+  Object.keys(MIS_META_KEYS).forEach(v => hide(v, !misMetaPerm(MIS_META_KEYS[v]).view));
+  try {
+    const vp = (0, eval)('typeof VIEW_PERM_MIS!=="undefined"?VIEW_PERM_MIS:null');
+    const canF = (0, eval)('typeof can==="function"?can:null');
+    const u = (0, eval)('typeof currentUser!=="undefined"?currentUser:null');
+    if (vp && canF && u) Object.keys(vp).forEach(v => hide(v, !canF(vp[v], 'view')));
+  } catch (e) {}
 }
 
-/* v79/v81:Meta 侧写操作统一闸门 —— mock 随便玩(权限层照样管);live 必须 allowMetaWrite。
- * 可选 key:该人角色对这个 key 不是 edit 就拦(docs/05 三层防线的第 1 层)。 */
-function misMetaWritable(key) {
-  if (key && misMetaLevel(key) !== 'edit') {
-    if (typeof toast === 'function') toast('当前岗位对该 Meta 板块只读(找 Admin 调 Roles 里的 Meta 权限)');
+/* v79/v81/v83:Meta 侧写操作统一闸门 —— mock 随便玩(权限层照样管);live 必须 allowMetaWrite。
+ * 可选 key+verb('add'/'edit'/'delete',缺省 edit):该人角色没这个动词就拦(docs/05 三层防线第 1 层)。 */
+function misMetaWritable(key, verb) {
+  if (key && !misMetaPerm(key)[verb || 'edit']) {
+    if (typeof toast === 'function') toast('当前岗位对该 Meta 板块没有「' + (verb || 'edit') + '」权限(找 Admin 调 Roles)');
     return false;
   }
   if (window.MIS_META.mode === 'mock') return true;

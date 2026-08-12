@@ -11,6 +11,53 @@ const PERM_SECTIONS=[
 const READ_ONLY=['Weekly Summary','Ads Library','Operators','Funnels','Results'];
 const ACT_LABEL={add:'Add',edit:'Edit',delete:'Delete'};
 function allPerms(v){const p={};PERM_SECTIONS.forEach(s=>{p[s.k]={};s.acts.forEach(a=>p[s.k][a]=v);});return p;}
+/* ===== v83:四词统一权限模型(V 定)——view/add/edit/delete,两套系统一套标准。
+ * 一张权限表按侧栏五大板块分组;kind:'mis'→role_permissions,'meta'→role_meta_permissions;
+ * acts 之外的格子显示 —;view 所有行都有(关=整页从侧栏隐藏,UI 级控制,V 认可)。
+ * MIS 纯浏览页(reports/gallery/…)首次获得按角色隐藏的能力,存 role_permissions 新 section。 ===== */
+const PERM_MODEL=[
+ {g:'Competitor Intelligence',rows:[
+   {k:'reports',n:'Weekly Summary',kind:'mis',acts:[]},
+   {k:'gallery',n:'Ads Library',kind:'mis',acts:[]},
+   {k:'operators',n:'Operators',kind:'mis',acts:[]},
+   {k:'funnel',n:'Funnels',kind:'mis',acts:[]},
+   {k:'pending',n:'Pending List',kind:'mis',acts:['edit','delete']},
+   {k:'watchlist',n:'Watchlist',kind:'mis',acts:['add','edit','delete']}]},
+ {g:'Planning Intelligence',rows:[
+   {k:'budget',n:'Budget Allocation',kind:'mis',acts:['add','edit','delete']},
+   {k:'idea',n:'Idea Pool',kind:'mis',acts:['add','edit','delete']},
+   {k:'hypo',n:'Hypotheses',kind:'mis',acts:['add','edit','delete']},
+   {k:'creative',n:'Creatives',kind:'mis',acts:['add','edit','delete']},
+   {k:'mplan',n:'Monthly Overview',kind:'mis',acts:[]},
+   {k:'dict',n:'Dictionary',kind:'mis',acts:['add','edit']}]},
+ {g:'Meta Assets',rows:[
+   {k:'meta-overview',n:'Overview',kind:'mis',acts:[]},
+   {k:'health',n:'Health',kind:'meta',acts:[]},
+   {k:'rotation',n:'Rotation',kind:'meta',acts:['edit']},
+   {k:'sop',n:'SOP Tasks',kind:'meta',acts:['add','edit']},
+   {k:'brands',n:'Brands',kind:'meta',acts:['add','edit','delete']},
+   {k:'business-managers',n:'Business Managers',kind:'meta',acts:['add','edit','delete']},
+   {k:'pixels',n:'Pixels',kind:'meta',acts:['add','edit','delete']},
+   {k:'ad-accounts',n:'Ad Accounts',kind:'meta',acts:['add','edit','delete']},
+   {k:'developer-apps',n:'Developer Apps',kind:'meta',acts:['add','edit','delete']},
+   {k:'tokens',n:'Tokens',kind:'meta',acts:['add','edit','delete']},
+   {k:'pixel-shares',n:'Pixel Shares',kind:'meta',acts:['edit']}]},
+ {g:'Analytics',rows:[
+   {k:'perf-loop',n:'Closed-Loop Report',kind:'mis',acts:[]},
+   {k:'analytics-spending',n:'Spending',kind:'meta',acts:['edit']},
+   {k:'results',n:'Results',kind:'mis',acts:[]},
+   {k:'analytics-accounts',n:'Account Overview',kind:'meta',acts:[]},
+   {k:'analytics-ads',n:'Our Ads',kind:'meta',acts:[]},
+   {k:'analytics-brands',n:'Brand Comparison',kind:'meta',acts:[]},
+   {k:'analytics-lifecycle',n:'Asset Lifecycle',kind:'meta',acts:[]}]},
+ {g:'Administration',rows:[
+   {k:'users',n:'Users(Meta 账号)',kind:'meta',acts:['add','edit','delete']},
+   {k:'action-logs',n:'Activity Log(Meta 侧)',kind:'meta',acts:[]}]},
+];
+/* 视图 id → 权限行(导航按 view 隐藏用;meta key 的视图映射在 mis-meta-api.js MIS_META_KEYS) */
+const VIEW_PERM_MIS={reports:'reports',gallery:'gallery',operators:'operators',funnel:'funnel',
+  candidates:'pending',watch:'watchlist',budget:'budget',pool:'idea',hypo:'hypo',creatives:'creative',
+  mplan:'mplan',results:'results',dict:'dict','perf-loop':'perf-loop','mm-dash':'meta-overview'};
 let roles=[];            /* hydrated from Supabase on login */
 let users=[];            /* hydrated from Supabase on login */
 let currentUser=null, auditLog=[];
@@ -26,10 +73,11 @@ async function loadAuthData(){
   const rpRows=rps.data||[],rmpRows=(rmp&&rmp.data)||[];
   roles=(rs.data||[]).map(r=>{
     const perms={};
-    rpRows.filter(x=>x.role_id===r.id).forEach(x=>{perms[x.section]={add:x.can_add,edit:x.can_edit,delete:x.can_delete};});
+    // v83:view 缺列/缺行时默认 true(存量行为不变);add/edit/delete 缺省 false
+    rpRows.filter(x=>x.role_id===r.id).forEach(x=>{perms[x.section]={view:x.can_view!==false,add:!!x.can_add,edit:!!x.can_edit,delete:!!x.can_delete};});
     PERM_SECTIONS.forEach(s=>{perms[s.k]=perms[s.k]||{};});
     const metaPerms={};
-    rmpRows.filter(x=>x.role_id===r.id).forEach(x=>{metaPerms[x.meta_key]=x.level;});
+    rmpRows.filter(x=>x.role_id===r.id).forEach(x=>{metaPerms[x.meta_key]={view:x.can_view!==false,add:!!x.can_add,edit:!!x.can_edit,delete:!!x.can_delete};});
     return {id:r.id,key:r.key,name:r.name,admin:!!r.is_admin,perms:perms,metaPerms:metaPerms};
   });
   users=(ps.data||[]).map(p=>({id:p.id,username:p.username,name:p.name,roleId:p.role_id}));

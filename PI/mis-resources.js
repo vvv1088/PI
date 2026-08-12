@@ -454,8 +454,9 @@
   /* v81:资源 key → docs/05 权限 key(与系统 2 的 17 key 词汇一致) */
   const META_PERM_KEY = { brands: 'brands', bms: 'business-managers', pixels: 'pixels', accounts: 'ad-accounts', apps: 'developer-apps', tokens: 'tokens', shares: 'pixel-shares' };
   async function save(k) {
-    if (!misMetaWritable(META_PERM_KEY[k])) return;
-    const cfg = R[k], s = st8(k), vals = s._formVals;
+    const s = st8(k);
+    if (!misMetaWritable(META_PERM_KEY[k], s.editing ? 'edit' : 'add')) return;
+    const cfg = R[k], vals = s._formVals;
     const miss = (cfg.fields || []).find(f => f.required && fieldVisible(f, vals) && !vals[f.name]);
     if (miss) { toast(miss.label + ' is required'); return; }
     const body = {};
@@ -467,7 +468,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function del(k, id) {
-    if (!misMetaWritable(META_PERM_KEY[k])) return;
+    if (!misMetaWritable(META_PERM_KEY[k], 'delete')) return;
     if (!confirm('Confirm this status change?')) return;
     try { await metaApi(R[k].api + '/' + id, { method: 'DELETE' }); toast('Updated'); await loadList(k); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
@@ -599,7 +600,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function fbDisable(bmId, id) {
-    if (!misMetaWritable('business-managers')) return;
+    if (!misMetaWritable('business-managers', 'delete')) return;
     try {
       await metaApi(`/api/business-managers/${bmId}/fb-accounts`, { method: 'DELETE', body: { id } });
       toast('Updated'); fbPanel(document.getElementById('mmrTabBody-bms'), bmId);
@@ -710,53 +711,34 @@
   const lexRoles = () => { try { const v = (0, eval)('roles'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
   const lexDb = () => { try { return (0, eval)('typeof db!=="undefined"?db:null'); } catch (e) { return null; } };
 
-  /* v77(V 定:两套 user 统一)—— 渲染进 v-users 的 #usersMetaBody:
-   * 每个 MIS 用户一行,可映射一个系统 2 账号(存 Supabase meta_user_map),
-   * 行内直接看/编辑该账号的 Meta 权限;未映射的系统 2 账号列在下方。 */
+  /* v77→v83(Users 一人一行):不再自己画映射表 —— 取数(系统 2 账号 + meta_user_map)
+   * 喂给 window._metaUnified,让 index 的 renderUsers() 把 Meta 账号画成用户行的一列;
+   * 本函数只负责 #usersMetaBody 里「未映射系统 2 账号」的折叠条。 */
   async function loadUnifiedUsers() {
-    const el = document.getElementById('usersMetaBody');
-    if (!el) return;
     let metaUsers = [];
     try { metaUsers = (await metaApi('/api/users?limit=200')).items || []; } catch (e) {}
     MU.rows = metaUsers;
-    const misUsers = lexUsers(), roles = lexRoles();
     const db = lexDb();
     let map = [];
     if (db && typeof db.from === 'function') {
       try { const r = await db.from('meta_user_map').select('*'); map = (r && r.data) || []; } catch (e) {}
     }
-    const mapOf = uid => { const m = map.find(x => String(x.mis_user_id) === String(uid)); return m ? m.meta_username : ''; };
+    window._metaUnified = { metaUsers, map };
+    try { const f = lexFn('renderUsers'); if (f) f(); } catch (e) {}
+    const el = document.getElementById('usersMetaBody');
+    if (!el) return;
     const mappedSet = new Set(map.map(m => m.meta_username));
-    const roleName = rid => { const r = roles.find(x => String(x.id) === String(rid)); return r ? r.name : '—'; };
-    const metaCell = un => {
-      const mu = metaUsers.find(x => x.username === un);
-      if (!mu) return '<span class="sub" style="display:inline">—</span>';
-      const idx = metaUsers.indexOf(mu);
-      return `${mu.permissions === null ? badge('Superadmin') : 'Custom'} ${badge(mu.status)}
-        <button class="btn ghost sm" onclick="MISRes.userEdit(${idx})">权限</button>`;
-    };
-    let t = `<tr><th>MIS 用户</th><th>MIS 角色</th><th>系统 2 账号</th><th>Meta 权限</th></tr>`;
-    if (!misUsers.length) t += `<tr><td colspan="4" class="empty">MIS 用户未加载（需登录）。</td></tr>`;
-    misUsers.forEach(u => {
-      const cur = mapOf(u.id);
-      t += `<tr><td><b>${esc(u.name)}</b> <span class="sub" style="display:inline">${esc(u.username)}</span></td>
-        <td>${esc(roleName(u.roleId))}</td>
-        <td><select onchange="MISRes.mapMeta('${esc(String(u.id))}',this.value)">
-          <option value="">— 未映射 —</option>
-          ${metaUsers.map(m => `<option value="${esc(m.username)}"${cur === m.username ? ' selected' : ''}${(mappedSet.has(m.username) && cur !== m.username) ? ' disabled' : ''}>${esc(m.displayName)} (${esc(m.username)})</option>`).join('')}</select></td>
-        <td>${cur ? metaCell(cur) : '<span class="sub" style="display:inline">—</span>'}</td></tr>`;
-    });
     const orphans = metaUsers.filter(m => !mappedSet.has(m.username));
     el.innerHTML = `
-      <div class="card" style="padding:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <b style="font-size:12.5px">系统 2(Meta)账号映射 — 一人一个身份</b>
-          <span><button class="btn ghost sm" onclick="MISRes.loadUnifiedUsers()">↻ 刷新</button>
-          <button class="btn ghost sm" onclick="MISRes.userNew()">＋ 新建 Meta 账号</button></span></div>
-        <div class="sub" style="display:block;margin:4px 0 10px">把系统 2 的账号挂到对应的 MIS 用户上;映射后此人在两边就是同一个身份,审计可对人。Meta 权限点行内「权限」编辑(live 后经系统 2 接口写回)。</div>
-        <div class="tablewrap"><table>${t}</table></div>
-        ${orphans.length ? `<div class="sub" style="display:block;margin-top:10px">未映射的系统 2 账号:${orphans.map(m => `${esc(m.displayName)} (${esc(m.username)})${m.status === 'INACTIVE' ? ' · 已停用' : ''}`).join('、')}</div>` : ''}
-      </div>`;
+      <details class="card" style="padding:10px 14px;margin-top:12px">
+        <summary style="cursor:pointer;font-size:12.5px"><b>系统 2 账号 · 未映射(${orphans.length})</b>
+          <span class="sub" style="display:inline;margin-left:8px">live 拉到真名单后,在上表该用户的「Meta 账号」列认领;认领完这里自然清空</span></summary>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${orphans.length ? orphans.map(m => `<span class="mmr-badge mmr-${m.status === 'ACTIVE' ? 'b' : 'n'}">${esc(m.displayName)} (${esc(m.username)})${m.status === 'INACTIVE' ? ' · 已停用' : ''}</span>`).join(' ') : '<span class="sub" style="display:inline">全部已认领 ✓</span>'}
+          <button class="btn ghost sm" onclick="MISRes.loadUnifiedUsers()">↻ 刷新</button>
+          <button class="btn ghost sm" onclick="MISRes.userNew()">＋ 新建 Meta 账号</button>
+        </div>
+      </details>`;
   }
   async function mapMeta(misUserId, metaUsername) {
     const db = lexDb();
@@ -817,7 +799,7 @@
     if (el) el.style.display = on ? 'none' : '';
   }
   async function userSave() {
-    if (!misMetaWritable('users')) return;
+    if (!misMetaWritable('users', MU.form.id ? 'edit' : 'add')) return;
     const f = MU.form;
     const perms = {};
     document.querySelectorAll('#muPerms [data-perm]').forEach(s => { perms[s.getAttribute('data-perm')] = s.value; });
@@ -836,41 +818,15 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function userDisable(id) {
-    if (!misMetaWritable('users')) return;
+    if (!misMetaWritable('users', 'delete')) return;
     if (!confirm('Disable this user?')) return;
     try { await metaApi('/api/users/' + id, { method: 'DELETE' }); toast('Disabled'); loadUnifiedUsers(); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
   }
 
-  /* ================= v81:Roles 抽屉的 Meta 权限区(docs/05) ================= */
-  /* 17 key × edit/view/none;分组照系统 2 users-manager;写库走 role_meta_permissions */
-  function roleMetaSection(r) {
-    r.metaPerms = r.metaPerms || {};
-    let h = '<h3 style="margin:16px 0 6px">Meta 权限(系统 2 的 17 个板块)</h3>';
-    h += '<div class="remark" style="margin-bottom:6px">edit=可写 · view=只读(藏写按钮) · none=整页隐藏;Admin 角色自动全通,不看此表。</div>';
-    h += '<table class="permtable"><tbody>';
-    (window.MIS_META_KEY_GROUPS || MIS_META_KEY_GROUPS).forEach(g => {
-      h += '<tr class="grouprow"><td colspan="2">' + g.g + '</td></tr>';
-      g.keys.forEach(k => {
-        const lv = r.metaPerms[k] || 'view';
-        h += '<tr><td>' + esc(k) + '</td><td style="width:110px"><select onchange="MISRes.setRoleMetaPerm(\'' + k + '\',this.value)">' +
-          ['edit', 'view', 'none'].map(x => '<option value="' + x + '"' + (x === lv ? ' selected' : '') + '>' + x + '</option>').join('') +
-          '</select></td></tr>';
-      });
-    });
-    return h + '</tbody></table>';
-  }
-  function setRoleMetaPerm(k, v) { const r = window._editRole; if (!r) return; (r.metaPerms = r.metaPerms || {})[k] = v; }
-  async function saveRoleMetaPerms(roleId, metaPerms) {
-    const keys = (window.MIS_META_KEY_GROUPS || MIS_META_KEY_GROUPS).flatMap(g => g.keys);
-    const rows = keys.map(k => ({ role_id: roleId, meta_key: k, level: (metaPerms && metaPerms[k]) || 'view' }));
-    const db = (0, eval)('typeof db!=="undefined"?db:null');
-    if (!db) return;
-    const { error } = await db.from('role_meta_permissions').upsert(rows, { onConflict: 'role_id,meta_key' });
-    if (error) throw error;
-  }
-
   /* ================= 对外 + 注册 ================= */
+  /* (v83:Roles 抽屉的 Meta 权限区已并入 index 的统一四词权限表 PERM_MODEL,
+   *  role_meta_permissions 的读写随 loadAuthData/saveRole 走,这里不再单管) */
   async function open(k) { await loadLookups(k); st8(k).detailId = null; await loadList(k); }
 
   /* v78(L2/L4):全局跳转 —— 任何页面的品牌名/假设号都能走到它的另一面 */
@@ -904,7 +860,6 @@
     capiToggle, fbSave, fbClear, fbEdit, fbDisable, accLink, accUnlink,
     loadShares, shareBrand: v => { SH.brandId = v; loadShares(); }, shareAct,
     loadUnifiedUsers, mapMeta, userNew, userEdit, userSave, userSuper, userDisable,
-    roleMetaSection, setRoleMetaPerm, saveRoleMetaPerms,
   };
 
   MIS_MODULES.register('mm-brands', () => open('brands'));

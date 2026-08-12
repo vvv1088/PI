@@ -1,5 +1,14 @@
 # Changelog — Marketing Intelligent System
 
+## [v83] — 2026-08-12 · 四词权限模型统一 + Users 一人一行(V 定)
+
+- **权限统一成一套词汇:view / add / edit / delete,两个系统同一标准**(V 提三词,数据核查发现 add≠edit 正被 Team/PO 角色使用——"只许投稿不许改稿",故保留 add 成四词,V 认可)。
+- **Roles 抽屉 = 一张权限表**,按侧栏五大板块分组(PERM_MODEL,28 行):MIS 栏目照旧打勾 + 首次获得 view(关=整页从该岗位侧栏消失,UI 级控制,V 认可);Meta 17 key 从三级下拉展开为四勾,edit/delete 首次分离。旧的"Meta 权限"独立区块删除。
+- **数据迁移**:role_permissions 加 can_view(存量默认 ✓);role_meta_permissions 三级 level 无损展开为四布尔后退役 level 列。给 Jayden 的 17 key 词汇不变,桥接时四布尔反推三级,零影响。
+- **Users 一人一行**:MIS 用户表并入 Meta 账号列(映射下拉+权限/状态徽章),旧"系统 2 账号映射区"退役;未映射的系统 2 账号收进底部折叠条,live 后逐个认领。
+- 写入口按动词细化:资源新建=add、删除/停用=delete(此前一律 edit)。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测 7 项(四词矩阵 5 列×5 组×28 行/toggle 往返/Users 六列/未映射折叠条/view 隐藏/缺省语义/meta 只读)全过。
+
 ## [v82] — 2026-08-12 · 五大板块整并(V 定)
 
 - 导航从 6 组收敛为 5 组:**Performance + Meta Analytics + PI 的 Results 合并为一个 Analytics 组**(所有分析/报告类集中:Closed-Loop Report、Spending、Results、Account Overview、Our Ads、Brand Comparison、Asset Lifecycle)。页面本体与视图 id 不动,只挪导航;权限 gating(per-key none 隐藏)不受影响。

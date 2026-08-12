@@ -281,7 +281,7 @@
   }
   function tplClear() { Object.assign(TF, { id: '', triggerType: 'BM_ROTATION', stepOrder: 1, title: '', description: '', isManual: 'true' }); loadSop(); }
   async function tplSave() {
-    if (!misMetaWritable('sop')) return;
+    if (!misMetaWritable('sop', TF.id ? 'edit' : 'add')) return;
     const body = {
       id: document.getElementById('tfId').value || undefined,
       triggerType: document.getElementById('tfType').value,
