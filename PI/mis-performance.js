@@ -120,24 +120,28 @@
       kpi('$' + misMoney(tFdAmt), 'FD 金额') + kpi(tFd ? '$' + misMoney(tSpend / tFd) : '—', 'CPA') +
       kpi('$' + misMoney(tD7), 'D7 金额') + kpi(tSpend ? ((tFdAmt + tD7) / tSpend).toFixed(2) + 'x' : '—', '(FD+D7)/Spend');
 
-    // 表格
-    let html = `<tr><th>Hypothesis</th><th>素材</th><th>Ref</th><th style="text-align:right">Spend</th>
-      <th style="text-align:right">FD</th><th style="text-align:right">CPA</th>
-      <th style="text-align:right">FD 金额</th><th style="text-align:right">D7 金额</th></tr>`;
+    /* v84.1(V 反馈:Hypothesis/素材/Reference 三列排版乱):
+     * 假设行只放 假设号·品牌·陈述(陈述截断不挤列);素材行缩进列干净分两段:
+     * 素材列=编号+名字(截断),Reference 列=登记基名(nowrap,列宽固定),数字列宽度锁死 */
+    const clip = (txt, w) => `<span class="sub" style="display:inline-block;max-width:${w}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom" title="${esc(txt)}">${esc(txt)}</span>`;
+    let html = `<tr><th style="width:22px"></th><th>素材 Creative</th><th style="width:240px">Reference</th>
+      <th style="width:96px;text-align:right">Spend</th>
+      <th style="width:64px;text-align:right">FD</th><th style="width:84px;text-align:right">CPA</th>
+      <th style="width:96px;text-align:right">FD 金额</th><th style="width:96px;text-align:right">D7 金额</th></tr>`;
     const gs = Object.values(groups).sort((a, b) => b.rows.reduce((s, r) => s + r.spend, 0) - a.rows.reduce((s, r) => s + r.spend, 0));
     if (!gs.length) html += `<tr><td colspan="8" class="empty">该品牌暂无带 ref code 的在投素材</td></tr>`;
     gs.forEach(g => {
       const gSpend = g.rows.reduce((s, r) => s + r.spend, 0), gFd = g.rows.reduce((s, r) => s + r.fd, 0);
-      html += `<tr style="background:rgba(125,125,125,.06)"><td colspan="3"><b class="mmr-link" onclick="goHyp('${esc(g.hyp)}')">${esc(g.hyp)}</b> · <span class="mmr-link" onclick="goBrand('${esc(g.brand)}')">${esc(g.brand)}</span>
-        <span class="sub" style="display:inline">${esc(g.statement)}</span></td>
+      html += `<tr style="background:rgba(125,125,125,.06)"><td colspan="3" style="white-space:nowrap"><b class="mmr-link" onclick="goHyp('${esc(g.hyp)}')">${esc(g.hyp)}</b> · <span class="mmr-link" onclick="goBrand('${esc(g.brand)}')">${esc(g.brand)}</span>
+        ${clip(g.statement, 360)}</td>
         <td style="text-align:right"><b>$${misMoney(gSpend)}</b></td>
         <td style="text-align:right"><b>${misInt(gFd)}</b></td>
         <td style="text-align:right"><b>${gFd ? '$' + misMoney(gSpend / gFd) : '—'}</b></td>
         <td style="text-align:right"><b>$${misMoney(g.rows.reduce((s, r) => s + r.fdAmt, 0))}</b></td>
         <td style="text-align:right"><b>$${misMoney(g.rows.reduce((s, r) => s + r.d7, 0))}</b></td></tr>`;
       g.rows.sort((a, b) => b.spend - a.spend).forEach(r => {
-        html += `<tr><td></td><td>${esc(r.c.gen)} <span class="sub" style="display:inline">${esc(r.c.label)}</span></td>
-          <td>${r.c.ref ? `<span class="code">${esc(r.c.ref)}</span>` : (r.c.ads ? `<span class="mmr-badge mmr-n" title="旧广告按登记全名归因:${esc(r.c.ads)}">登记名</span>` : '—')}</td>
+        html += `<tr><td></td><td style="white-space:nowrap"><b>${esc(r.c.gen)}</b> ${clip(r.c.label, 200)}</td>
+          <td style="white-space:nowrap">${r.c.ref ? `<span class="code" style="font-size:11px">${esc(r.c.ref)}</span>` : (r.c.ads ? `<span class="mmr-badge mmr-n" title="旧广告按登记全名归因:${esc(r.c.ads)}">登记名</span>` : '—')}</td>
           <td style="text-align:right">$${misMoney(r.spend)}</td>
           <td style="text-align:right">${misInt(r.fd)}</td>
           <td style="text-align:right">${r.cpa != null ? '$' + misMoney(r.cpa) : '—'}</td>
@@ -180,13 +184,13 @@
   }
 
   /* ================= Spending 明细 ================= */
-  let spState = { page: 1 };
+  let spState = { page: 1, size: '50' };
   async function loadSpending(page) {
     if (page) spState.page = page;
     const from = document.getElementById('spFrom').value, to = document.getElementById('spTo').value;
     const line = document.getElementById('spLine').value || 'ALL';
     const search = document.getElementById('spSearch').value.trim();
-    const qs = new URLSearchParams({ page: String(spState.page), pageSize: '50' });
+    const qs = new URLSearchParams({ page: String(spState.page), pageSize: spState.size });
     if (from) qs.set('from', from); if (to) qs.set('to', to);
     if (line && line !== 'ALL') qs.set('line', line);
     if (search) qs.set('search', search);
@@ -205,33 +209,43 @@
       (nullRows.length ? kpi(`<span style="color:#b26a00">${nullRows.length}</span>`, 'NULL') : '');
 
     const canEditRemark = window.MIS_META.mode === 'mock' || window.MIS_META.allowRemarkEdit;
-    let html = `<tr><th>Date</th><th>Ad Name</th><th>Line</th><th style="text-align:right">Spending</th><th>Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
+    /* v84.1(V 定):Ad Name 列收缩到内容宽(width:1%+nowrap),Line 就贴着名字;
+     * Spending 与 Remark 之间用 padding 拉开正常间距 */
+    let html = `<tr><th style="width:92px">Date</th><th style="width:1%;white-space:nowrap">Ad Name</th><th style="width:130px">Line</th>
+      <th style="width:110px;text-align:right">Spending</th><th style="padding-left:28px">Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
     if (!d.rows.length) html += `<tr><td colspan="5" class="empty">无数据</td></tr>`;
     d.rows.forEach((r, i) => {
       const b = brandOf(r.ad_name);
       const lineCell = b ? esc(b) : '<span style="color:#b26a00;font-weight:600">NULL</span>';
+      const rv = String(r.remark || '').toUpperCase();
       let remarkCell = '';
-      if (!b) {   // 只有 NULL 行需要 remark:test(测试广告) / ignore(不用管)
+      if (!b) {   // 只有 NULL 行需要 remark:TEST(测试广告) / IGNORE(不用管)
         remarkCell = canEditRemark
           ? `<select onchange="MISPerf.saveRemark('${esc(r.date)}',this)" data-ad="${esc(r.ad_name)}">
-               <option value=""${!r.remark ? ' selected' : ''}>—</option>
-               <option value="test"${r.remark === 'test' ? ' selected' : ''}>test</option>
-               <option value="ignore"${r.remark === 'ignore' ? ' selected' : ''}>ignore</option></select>`
-          : esc(r.remark || '');
+               <option value=""${!rv ? ' selected' : ''}>—</option>
+               <option value="TEST"${rv === 'TEST' ? ' selected' : ''}>TEST</option>
+               <option value="IGNORE"${rv === 'IGNORE' ? ' selected' : ''}>IGNORE</option></select>`
+          : esc(rv);
         if (r.remark_by) remarkCell += ` <span class="sub" style="display:inline">@${esc(r.remark_by)}</span>`;
       }
-      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}</td><td>${lineCell}</td>
+      html += `<tr><td style="white-space:nowrap">${esc(r.date)}</td><td style="white-space:nowrap">${esc(r.ad_name)}</td><td>${lineCell}</td>
         <td style="text-align:right">$${misMoney(r.spending)}</td>
-        <td>${remarkCell}</td></tr>`;
+        <td style="padding-left:28px">${remarkCell}</td></tr>`;
     });
     document.getElementById('spTable').innerHTML = html;
 
+    /* v84.1(V 定):分页改「每页行数」选择器(50/100/200/Show all),不再是 1/2 翻页码 */
     const tp = d.totalPages || 1;
-    document.getElementById('spPager').innerHTML =
-      `<button class="btn ghost sm" ${spState.page <= 1 ? 'disabled' : ''} onclick="MISPerf.loadSpending(${spState.page - 1})">←</button>
-       <span style="margin:0 8px">${spState.page} / ${tp}</span>
-       <button class="btn ghost sm" ${spState.page >= tp ? 'disabled' : ''} onclick="MISPerf.loadSpending(${spState.page + 1})">→</button>`;
+    const sizeSel = `Rows <select onchange="MISPerf.spSize(this.value)" style="margin:0 8px 0 4px">
+        ${['50', '100', '200'].map(s => `<option value="${s}"${spState.size === s ? ' selected' : ''}>${s}</option>`).join('')}
+        <option value="all"${spState.size === 'all' ? ' selected' : ''}>Show all</option></select>`;
+    document.getElementById('spPager').innerHTML = spState.size === 'all'
+      ? `${sizeSel}<span class="sub" style="display:inline">${misInt(d.total)} rows</span>`
+      : `${sizeSel}<button class="btn ghost sm" ${spState.page <= 1 ? 'disabled' : ''} onclick="MISPerf.loadSpending(${spState.page - 1})">←</button>
+         <span style="margin:0 8px">${spState.page} / ${tp}</span>
+         <button class="btn ghost sm" ${spState.page >= tp ? 'disabled' : ''} onclick="MISPerf.loadSpending(${spState.page + 1})">→</button>`;
   }
+  function spSize(v) { spState.size = v; loadSpending(1); }
 
   async function saveRemark(date, inputEl) {
     const ad = inputEl.getAttribute('data-ad'), remark = inputEl.value.trim();
@@ -259,7 +273,7 @@
 
   /* ================= 注册 ================= */
   mount();
-  window.MISPerf = { loadLoop, loadSpending, saveRemark, exportCsv };
+  window.MISPerf = { loadLoop, loadSpending, saveRemark, exportCsv, spSize };
   MIS_MODULES.register('perf-loop', loadLoop);
   MIS_MODULES.register('perf-spending', () => loadSpending(1));
 })();

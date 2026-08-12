@@ -1,5 +1,13 @@
 # Changelog — Marketing Intelligent System
 
+## [v84.1] — 2026-08-12 · Spending 排版/分页 + 闭环报表排版(V 反馈)
+
+- Remark 下拉改全大写 **TEST / IGNORE**(存量小写值读侧归一)。
+- Spending 列距:Ad Name 列收缩到内容宽(Line 紧贴名字),Spending 与 Remark 之间加 28px 间距。
+- 分页改 **Rows 选择器:50 / 100 / 200 / Show all**(接口原生支持这四档);非 all 时保留 ←/→ 翻页,all 显示总行数。
+- Closed-Loop Report 排版:表头改「素材 Creative / Reference」+缩进列;假设陈述与素材名超长截断(悬停看全文),Reference 列 240px nowrap,数字列宽锁死 —— 三列不再互相挤。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测(TEST/IGNORE 大写/Rows 四档/Show all 93 行/闭环列宽与截断)全过。
+
 ## [v84] — 2026-08-12 · Activity Log Source=五大板块 + Analytics 精简三页 + Spending 改版(V 定)
 
 - **Activity Log Source 列改五大板块**(CI/PI/Meta Assets/Analytics/Admin;下拉同步),不再按 MIS/Meta 系统二分;出处系统只在 Details 浮层留一行「Logged by」。
