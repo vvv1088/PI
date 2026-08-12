@@ -55,7 +55,7 @@ BO 数据（FD/D7）现走占位路由 `/api/mis/bo-daily`（mock 内），真�
 - ✅ **命名契约 v2 终版落地(v81a,V 拍板)**:7 段 `市场_品牌_设定_格式_维度_内容_编号`,见 `docs/07-命名契约v2.md`;全维度短码已落库(V 待过目)
 - ✅ **权限映射施工完(v81b)**:role_meta_permissions(17 key,PE=PO 默认值)+ Roles 抽屉 Meta 区 + per-key gating + X-MIS-User
 - ✅ **拆文件方案 A 落地(v81c)**:src/ 五块 + tools/build.js,index.html=构建产物(铁律 1 已更新)
-- ✅ patch 0001–**0005** 在 `patches/`(0004=审计对人;0005=P2 写通道环境变量总开关,取代分批部署),tsc+build 双过,等 Jayden 按序应用
+- ✅ patch 0001–**0005** 在 `patches/`(0004=审计对人;0005=P2 双 token 写通道,开写零二次对接),tsc+build 双过,等 Jayden 按序应用
 - 📄 等 V:短码草稿过目;cPanel v81 包上传;patch 转交
 - ⛔ 阻塞不变:Jayden 未回 docs/02;第五类(另一条线)本工作区不处理(V 定)
 

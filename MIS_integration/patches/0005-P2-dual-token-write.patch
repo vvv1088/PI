@@ -1,0 +1,215 @@
+From 5a23ec4d5b91fd24aa8b72dad9440c69a96b9a45 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 12 Aug 2026 08:43:16 +0000
+Subject: [PATCH] =?UTF-8?q?P2=20=E5=86=99=E9=80=9A=E9=81=93=E4=B8=80?=
+ =?UTF-8?q?=E6=AC=A1=E5=88=B0=E4=BD=8D=EF=BC=9A=E5=8F=8C=20token=20?=
+ =?UTF-8?q?=E8=AE=BE=E8=AE=A1=EF=BC=88=E5=86=99=20token=20=E4=B8=8D?=
+ =?UTF-8?q?=E8=AE=BE=20=3D=20=E5=8F=AA=E8=AF=BB=EF=BC=8C=E9=9B=B6=E4=BA=8C?=
+ =?UTF-8?q?=E6=AC=A1=E5=AF=B9=E6=8E=A5=EF=BC=89?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+根因：原 P2 方案要写接口分批开放（1–2 周一次小部署），对接成本高;
+即便改环境变量开关，开写那天仍要占用一次运维动作。
+改法：读/写两把钥匙，部署这一次全部发好——
+1. mis-access.ts：新增 MIS_API_WRITE_TOKEN(可选,≥48 位且必须≠只读 token);
+   isMisWriteToken() 常数时间比较;持写 token 的请求在 MIS_WRITE_API_PREFIXES
+   白名单(brands/business-managers/pixels/ad-accounts/developer-apps/
+   pixel-shares/rotation/sop,前缀匹配,含 capi-events/fb-accounts/acct-brands
+   子路由)内放行 POST/PUT/DELETE,权限面对应 key 升 edit;
+   CORS Allow-Methods 补 POST/DELETE。
+2. middleware.ts：misRequestViolation 传入 isMisWriteToken(authorization)。
+3. .env.example：MIS_API_WRITE_TOKEN 说明。
+安全边界：不设写 token = 行为与只读版完全一致;写 token 与只读 token 相同时
+视为未配置(防配置失误把只读钥匙变万能);tokens/users/action-logs/auth
+无论持哪把钥匙永远拒绝(MIS_DENIED_API_PREFIXES 优先);写操作审计对人走
+X-MIS-User(前一 commit)。写 token 由 MIS 侧离线保管,开写前不进前端文件。
+验证：npx tsc --noEmit 零错误;npm run build 通过。
+部署：随本批一次部署+一次发两个 token;此后开写完全是 MIS 侧动作
+(把前端 token 换成写 token 重新发版),本系统零改动零重启。
+---
+ .env.example          |  3 ++
+ src/lib/mis-access.ts | 88 +++++++++++++++++++++++++++++++++++++++----
+ src/middleware.ts     |  8 ++--
+ 3 files changed, 88 insertions(+), 11 deletions(-)
+
+diff --git a/.env.example b/.env.example
+index 21aafea..bbb868e 100644
+--- a/.env.example
++++ b/.env.example
+@@ -11,3 +11,6 @@ MIS_ALLOWED_ORIGIN=https://ci.boostmarketing.site
+ MIS_API_TOKEN=replace-with-48-char-random
+ # 设为 1 时额外放行 PUT /api/analytics/spending/remark（报表备注编辑，默认关）
+ MIS_ALLOW_REMARK_PUT=0
++# P2 写通道第二把钥匙(可选;≥48 位随机、必须与 MIS_API_TOKEN 不同):持它才可写白名单内接口
++# (资产CRUD/轮转/SOP;tokens/users/action-logs 永远拒绝)。不设 = 全系统只读。
++MIS_API_WRITE_TOKEN=replace-with-another-48-char-random
+diff --git a/src/lib/mis-access.ts b/src/lib/mis-access.ts
+index b385dfc..b2f59f8 100644
+--- a/src/lib/mis-access.ts
++++ b/src/lib/mis-access.ts
+@@ -15,6 +15,13 @@
+  *   MIS_API_TOKEN        MIS 专用 service token（建议 ≥48 位随机字符串）
+  *   MIS_ALLOW_REMARK_PUT 设为 "1" 时，额外放行 PUT /api/analytics/spending/remark
+  *                        （花费报表人工备注；默认关闭，见对接清单 E 节「唯一的写例外」）
++ *   MIS_API_WRITE_TOKEN  P2 写通道的第二把钥匙（可选；与只读 token 一样 ≥48 位随机、
++ *                        且必须与 MIS_API_TOKEN 不同）。持它的请求可在
++ *                        MIS_WRITE_API_PREFIXES 白名单内 POST/PUT/DELETE，权限 key 升 edit。
++ *                        设计意图：部署这一次就把两把钥匙都发好；写 token 先由 MIS 侧
++ *                        离线保管、不进前端。到开写阶段 MIS 自己换用写 token 重新发版
++ *                        即可——本系统侧零改动、零重启、零二次排期。
++ *                        tokens / users / action-logs / auth 无论持哪把钥匙永远拒绝。
+  */
+ import type { PermissionMap, SessionPayload } from "@/lib/session";
+ 
+@@ -60,6 +67,52 @@ export const MIS_DENIED_API_PREFIXES = [
+ 
+ const REMARK_PUT_PATH = "/api/analytics/spending/remark";
+ 
++/**
++ * P2 写通道白名单（MIS_ALLOW_WRITE=1 时生效）。前缀匹配，覆盖 MIS 前端全部写入口：
++ * 资产 CRUD（brands 前缀含 capi-events 子路由、business-managers 前缀含 fb-accounts、
++ * ad-accounts 前缀含 acct-brands）、pixel 共享、轮转 execute/execute-pixel、SOP 模板与实例。
++ * 注意 MIS_DENIED_API_PREFIXES 优先级更高：tokens/users/action-logs 永远进不了白名单。
++ */
++export const MIS_WRITE_API_PREFIXES = [
++  "/api/brands",
++  "/api/business-managers",
++  "/api/pixels",
++  "/api/ad-accounts",
++  "/api/developer-apps",
++  "/api/pixel-shares",
++  "/api/rotation",
++  "/api/sop",
++];
++
++/** 写 token 身份下升为 edit 的权限 key（与写白名单一一对应；health 保持 view） */
++const MIS_WRITE_EDIT_KEYS = [
++  "brands",
++  "business-managers",
++  "pixels",
++  "ad-accounts",
++  "developer-apps",
++  "pixel-shares",
++  "rotation",
++  "sop",
++] as const;
++
++function writeTokenConfigured(): string | null {
++  const w = process.env.MIS_API_WRITE_TOKEN;
++  const r = process.env.MIS_API_TOKEN;
++  // 未配置 / 弱 token / 与只读 token 相同（配置失误会让只读钥匙悄悄变万能）→ 视为无写 token
++  if (!w || w.length < 32 || w === r) return null;
++  return w;
++}
++
++/** 请求带的是不是写 token（middleware 判定写方法时用） */
++export function isMisWriteToken(authorization: string | null): boolean {
++  const expected = writeTokenConfigured();
++  if (!expected) return false;
++  if (!authorization || !authorization.startsWith("Bearer ")) return false;
++  const provided = authorization.slice("Bearer ".length).trim();
++  return !!provided && timingSafeEqualStr(provided, expected);
++}
++
+ function allowedOrigins(): string[] {
+   const raw = process.env.MIS_ALLOWED_ORIGIN;
+   if (!raw) return [];
+@@ -79,7 +132,7 @@ export function isMisOriginAllowed(origin: string | null): boolean {
+ export function misCorsHeaders(origin: string): Record<string, string> {
+   return {
+     "Access-Control-Allow-Origin": origin,
+-    "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
++    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-MIS-User",
+     "Access-Control-Max-Age": "86400",
+     Vary: "Origin",
+@@ -102,16 +155,24 @@ function timingSafeEqualStr(a: string, b: string): boolean {
+  * 通过 → 返回合成的只读 SessionPayload；未配置 MIS_API_TOKEN 或不匹配 → null。
+  */
+ export function verifyMisToken(authorization: string | null): SessionPayload | null {
+-  const expected = process.env.MIS_API_TOKEN;
+-  if (!expected || expected.length < 32) return null; // 未配置或弱 token = 功能关闭
+-  if (!authorization || !authorization.startsWith("Bearer ")) return null;
+-  const provided = authorization.slice("Bearer ".length).trim();
+-  if (!provided || !timingSafeEqualStr(provided, expected)) return null;
++  const isWrite = isMisWriteToken(authorization);
++  if (!isWrite) {
++    const expected = process.env.MIS_API_TOKEN;
++    if (!expected || expected.length < 32) return null; // 未配置或弱 token = 功能关闭
++    if (!authorization || !authorization.startsWith("Bearer ")) return null;
++    const provided = authorization.slice("Bearer ".length).trim();
++    if (!provided || !timingSafeEqualStr(provided, expected)) return null;
++  }
+   const now = Date.now();
++  let perms: PermissionMap = MIS_READONLY_PERMS;
++  if (isWrite) {
++    perms = { ...MIS_READONLY_PERMS };
++    for (const k of MIS_WRITE_EDIT_KEYS) perms[k] = "edit";
++  }
+   return {
+     uid: MIS_SERVICE_UID,
+     name: MIS_SERVICE_NAME,
+-    perms: MIS_READONLY_PERMS,
++    perms,
+     iat: now,
+     exp: now + 1000 * 60 * 5, // 每个请求独立校验，exp 仅为满足类型
+   };
+@@ -124,7 +185,11 @@ export function verifyMisToken(authorization: string | null): SessionPayload | n
+  *   - MIS_DENIED_API_PREFIXES 一律拒绝
+  * 返回 null = 放行；返回字符串 = 拒绝原因（写进 403 响应，便于联调排查）。
+  */
+-export function misRequestViolation(method: string, pathname: string): string | null {
++export function misRequestViolation(
++  method: string,
++  pathname: string,
++  canWrite = false,
++): string | null {
+   if (!pathname.startsWith("/api/")) return "service token only allows /api/* routes";
+   if (MIS_DENIED_API_PREFIXES.some((p) => pathname.startsWith(p))) {
+     return "this route is not available to the MIS service token";
+@@ -137,5 +202,12 @@ export function misRequestViolation(method: string, pathname: string): string |
+   ) {
+     return null;
+   }
++  if (
++    canWrite &&
++    (method === "POST" || method === "PUT" || method === "DELETE") &&
++    MIS_WRITE_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))
++  ) {
++    return null;
++  }
+   return "service token is read-only";
+ }
+diff --git a/src/middleware.ts b/src/middleware.ts
+index 4acdf9c..243035c 100644
+--- a/src/middleware.ts
++++ b/src/middleware.ts
+@@ -8,6 +8,7 @@ import {
+ import {
+   isMisOriginAllowed,
+   misCorsHeaders,
++  isMisWriteToken,
+   misRequestViolation,
+   verifyMisToken,
+ } from "@/lib/mis-access";
+@@ -47,11 +48,12 @@ export async function middleware(request: NextRequest) {
+   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+   let session = await verifySession(token);
+ 
+-  // cookie 没有会话时，尝试 MIS service token（只读，见 mis-access.ts）
++  // cookie 没有会话时，尝试 MIS service token（读/写两把钥匙，见 mis-access.ts）
+   if (!session) {
+-    const misSession = verifyMisToken(request.headers.get("authorization"));
++    const misAuth = request.headers.get("authorization");
++    const misSession = verifyMisToken(misAuth);
+     if (misSession) {
+-      const violation = misRequestViolation(request.method, pathname);
++      const violation = misRequestViolation(request.method, pathname, isMisWriteToken(misAuth));
+       if (violation) {
+         return withCors(
+           NextResponse.json({ success: false, error: violation }, { status: 403 }),
+-- 
+2.43.0
+
