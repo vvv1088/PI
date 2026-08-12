@@ -103,7 +103,7 @@ HYPS = [
 ]
 
 def cr(gen, hyp_code, hyp_label, label, fmt, hook, vs, offer, gt, aud, age, status, versions=None, runs=None, pl=None, pd=None):
-    return {"gen_code":gen,"ads_code":(gen.replace("HYP","USC") if status!="待上线" else None),"hyp_code":hyp_code,
+    return {"gen_code":gen,"ads_code":None,"hyp_code":hyp_code,
             "hyp_label":hyp_label,"label":label,"thumb":None,"format":fmt,"hook":hook,"visual_style":vs,
             "offer":offer,"game_type":gt,"audience":aud,"age":age,"status":status,
             "spend":None,"fdc":None,"cpa":None,"stc":None,"plan_launch":pl,"plan_test_days":pd,
@@ -225,6 +225,27 @@ BUDGETS = [
  bud("Jun 2026","OK188KH",requested=28000,requested_by="joey",requested_reason="上月",requested_at=ts("2026-06-02"),
      allocated=28000,allocated_by="anna",allocated_at=ts("2026-06-03")),
 ]
+
+# v84.3: 上线过的素材按命名契约 v2 回填 ads_code(与 mis-naming.js 同一套规则)
+BR_SHORT={"OK188KH":"OK18","17WINKH":"WIKH","SBKH":"SBKH","INZ9":"INZ9"}
+MKT={"OK188KH":"USC","17WINKH":"USC","SBKH":"USC","INZ9":"MY"}
+FMT_SC={"VIDEO":"VD","IMAGE":"IM","CAROUSEL":"CR","DCO":"DC"}
+DIM_SEG={"format":"FM","hook":"HK","visual_style":"VS","offer":"OF","game_type":"GT","audience":"PS","age":"AG"}
+_sc={(r["tab"],r["code"]):r.get("short_code") for r in DICT}
+DIM_TAB={"format":"Format","hook":"Hook","visual_style":"Visual Style","offer":"Offer","game_type":"Game Type","audience":"Persona","age":"Age Range"}
+_hyp_by={h["code"]:h for h in HYPS}
+_serial={}
+for c in CREATIVES:
+    if c["status"]=="待上线": continue
+    h=_hyp_by.get(c["hyp_code"]) or {}
+    dims=[k for k in (h.get("test_dim") or "").split(",") if k.strip()]
+    dim=next((k for k in dims if c.get(k)),None) or next((k for k in ["hook","offer","game_type","visual_style","audience","age"] if c.get(k)),None)
+    if not dim: continue
+    seg=DIM_SEG[dim]; content=_sc.get((DIM_TAB[dim],c[dim])) or "GN"
+    br=BR_SHORT.get(h.get("brand"),"OK18"); mkt=MKT.get(h.get("brand"),"USC")
+    key=(br,content); _serial[key]=_serial.get(key,0)+1
+    c["ads_code"]="%s_%s_SA_%s_%s_%s_%03d"%(mkt,br,FMT_SC.get(c["format"],"IM"),seg,content,_serial[key])
+    c["ref_code"]=c["ads_code"]
 
 STORE = {
  "roles":ROLES,"role_permissions":PERMS,"profiles":PROFILES,"dict_entries":DICT,

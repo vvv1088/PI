@@ -6,7 +6,8 @@
   "descr": "年轻段",
   "usage": "—",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "1824"
  },
  {
   "tab": "Age Range",
@@ -15,7 +16,8 @@
   "descr": "主力段",
   "usage": "—",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "2534"
  },
  {
   "tab": "Age Range",
@@ -24,7 +26,8 @@
   "descr": "成熟段",
   "usage": "—",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "3544"
  },
  {
   "tab": "Age Range",
@@ -33,7 +36,8 @@
   "descr": "高龄段",
   "usage": "—",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "45P"
  },
  {
   "tab": "Age Range",
@@ -42,7 +46,8 @@
   "descr": "不限年龄(Broad 默认)",
   "usage": "—",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "ALL"
  },
  {
   "tab": "Capacity",
@@ -213,7 +218,8 @@
   "descr": "单支视频素材",
   "usage": "Apify 口径",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "VD"
  },
  {
   "tab": "Format",
@@ -222,7 +228,8 @@
   "descr": "单张静态图",
   "usage": "Apify 口径",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "IM"
  },
  {
   "tab": "Format",
@@ -231,7 +238,8 @@
   "descr": "用户手动左右滑",
   "usage": "Apify 口径",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "CR"
  },
  {
   "tab": "Format",
@@ -240,7 +248,8 @@
   "descr": "上传多素材/文案,Meta 算法自动组合;大量使用通常代表投放成熟、撒网型",
   "usage": "Apify 口径",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "DC"
  },
  {
   "tab": "Game Type",
@@ -249,7 +258,8 @@
   "descr": "slot / 电子游戏机台",
   "usage": "—",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "SLT"
  },
  {
   "tab": "Game Type",
@@ -258,7 +268,8 @@
   "descr": "真人荷官 / 真人桌台(百家乐、轮盘…)",
   "usage": "—",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "LIVE"
  },
  {
   "tab": "Game Type",
@@ -267,7 +278,8 @@
   "descr": "体育博彩 / 赛事投注",
   "usage": "—",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "SPT"
  },
  {
   "tab": "Game Type",
@@ -276,7 +288,8 @@
   "descr": "彩票、4D、数字类",
   "usage": "—",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "LTY"
  },
  {
   "tab": "Game Type",
@@ -285,7 +298,8 @@
   "descr": "捕鱼类街机",
   "usage": "—",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "FSH"
  },
  {
   "tab": "Game Type",
@@ -294,7 +308,8 @@
   "descr": "斗鸡 / 斗兽类(部分东南亚市场)",
   "usage": "—",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "CKF"
  },
  {
   "tab": "Hook",
@@ -303,7 +318,8 @@
   "descr": "提款成功截图 / 实拍到账",
   "usage": "假设 12 · 竞品 84",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "WD"
  },
  {
   "tab": "Hook",
@@ -312,7 +328,8 @@
   "descr": "X 分钟到账",
   "usage": "假设 2 · 竞品 45",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "FP"
  },
  {
   "tab": "Hook",
@@ -321,7 +338,8 @@
   "descr": "不跑路 / 提款保证",
   "usage": "假设 6 · 竞品 73",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "TS"
  },
  {
   "tab": "Hook",
@@ -330,7 +348,8 @@
   "descr": "持牌合规",
   "usage": "假设 2 · 竞品 19",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "LC"
  },
  {
   "tab": "Hook",
@@ -339,7 +358,8 @@
   "descr": "大额中奖 / 爆分画面",
   "usage": "假设 8 · 竞品 122",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "BW"
  },
  {
   "tab": "Hook",
@@ -348,7 +368,8 @@
   "descr": "玩家好评 / 评论",
   "usage": "假设 1 · 竞品 41",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "TM"
  },
  {
   "tab": "Hook",
@@ -357,7 +378,8 @@
   "descr": "名人形象 / 代言",
   "usage": "假设 1 · 竞品 31",
   "active": true,
-  "sort": 6
+  "sort": 6,
+  "short_code": "CB"
  },
  {
   "tab": "Hook",
@@ -366,7 +388,8 @@
   "descr": "直接展示 bonus 数字",
   "usage": "假设 5 · 竞品 156",
   "active": true,
-  "sort": 7
+  "sort": 7,
+  "short_code": "PD"
  },
  {
   "tab": "Hook",
@@ -375,7 +398,8 @@
   "descr": "红利高",
   "usage": "假设 3 · 竞品 88",
   "active": true,
-  "sort": 8
+  "sort": 8,
+  "short_code": "PV"
  },
  {
   "tab": "Hook",
@@ -384,7 +408,8 @@
   "descr": "游戏多 / 平台全",
   "usage": "假设 0 · 竞品 28",
   "active": true,
-  "sort": 9
+  "sort": 9,
+  "short_code": "GV"
  },
  {
   "tab": "Hook",
@@ -393,7 +418,8 @@
   "descr": "赔率优势",
   "usage": "假设 0 · 竞品 15",
   "active": true,
-  "sort": 10
+  "sort": 10,
+  "short_code": "HO"
  },
  {
   "tab": "Hook",
@@ -402,7 +428,8 @@
   "descr": "AI 预测 / 贴士 / 必中(多见于体育)",
   "usage": "假设 0 · 竞品 0",
   "active": true,
-  "sort": 11
+  "sort": 11,
+  "short_code": "PR"
  },
  {
   "tab": "Hook",
@@ -411,7 +438,8 @@
   "descr": "客服聊天记录截图",
   "usage": "假设 4 · 竞品 22",
   "active": true,
-  "sort": 12
+  "sort": 12,
+  "short_code": "CS"
  },
  {
   "tab": "Hook",
@@ -420,7 +448,8 @@
   "descr": "24h 客服",
   "usage": "假设 1 · 竞品 12",
   "active": true,
-  "sort": 13
+  "sort": 13,
+  "short_code": "SV"
  },
  {
   "tab": "Hook",
@@ -429,7 +458,8 @@
   "descr": "先讲怕被骗,再给安全感",
   "usage": "假设 3 · 竞品 18",
   "active": true,
-  "sort": 14
+  "sort": 14,
+  "short_code": "PN"
  },
  {
   "tab": "Hook",
@@ -438,7 +468,8 @@
   "descr": "黑平台 vs 正规平台教育",
   "usage": "假设 2 · 竞品 9",
   "active": true,
-  "sort": 15
+  "sort": 15,
+  "short_code": "EC"
  },
  {
   "tab": "Hook",
@@ -447,7 +478,8 @@
   "descr": "限时 / 手慢无 / 倒计时",
   "usage": "假设 0 · 竞品 0",
   "active": true,
-  "sort": 16
+  "sort": 16,
+  "short_code": "UG"
  },
  {
   "tab": "Hook",
@@ -456,7 +488,8 @@
   "descr": "招财 / 好运 / 转运 / 旺",
   "usage": "假设 0 · 竞品 0",
   "active": true,
-  "sort": 17
+  "sort": 17,
+  "short_code": "LK"
  },
  {
   "tab": "Idea Source",
@@ -582,7 +615,8 @@
   "descr": "首存赠送",
   "usage": "—",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "FB"
  },
  {
   "tab": "Offer",
@@ -591,7 +625,8 @@
   "descr": "按存款档位给",
   "usage": "—",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "TB"
  },
  {
   "tab": "Offer",
@@ -600,7 +635,8 @@
   "descr": "亏损返还 / 保障",
   "usage": "—",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "IN"
  },
  {
   "tab": "Offer",
@@ -609,7 +645,8 @@
   "descr": "注册即送",
   "usage": "—",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "FR"
  },
  {
   "tab": "Offer",
@@ -618,7 +655,8 @@
   "descr": "复存赠送",
   "usage": "—",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "RD"
  },
  {
   "tab": "Offer",
@@ -627,7 +665,8 @@
   "descr": "等级特权",
   "usage": "—",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "VIP"
  },
  {
   "tab": "Offer",
@@ -636,7 +675,8 @@
   "descr": "按流水返现(cashback)",
   "usage": "—",
   "active": true,
-  "sort": 6
+  "sort": 6,
+  "short_code": "RB"
  },
  {
   "tab": "Persona",
@@ -645,7 +685,8 @@
   "descr": "被卡过款 / 怕被骗,先求证再首充",
   "usage": "—",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "P1"
  },
  {
   "tab": "Persona",
@@ -654,7 +695,8 @@
   "descr": "看执照与合规,决策慢但留存稳",
   "usage": "—",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "P2"
  },
  {
   "tab": "Persona",
@@ -663,7 +705,8 @@
   "descr": "视觉驱动,快决策,爱新鲜感",
   "usage": "—",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "P3"
  },
  {
   "tab": "Persona",
@@ -672,7 +715,8 @@
   "descr": "逐优惠而来,对 bonus 高度敏感,忠诚度低",
   "usage": "—",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "P4"
  },
  {
   "tab": "Persona",
@@ -681,7 +725,8 @@
   "descr": "跟赛事节奏走,看赔率与盘口(体育品牌主力)",
   "usage": "—",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "P5"
  },
  {
   "tab": "Persona",
@@ -690,7 +735,8 @@
   "descr": "大额存款,重提款额度与专属服务",
   "usage": "—",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "P6"
  },
  {
   "tab": "Persona",
@@ -699,7 +745,8 @@
   "descr": "玩过且流失,需要新理由回来(retargeting 主力)",
   "usage": "—",
   "active": true,
-  "sort": 6
+  "sort": 6,
+  "short_code": "P7"
  },
  {
   "tab": "Persona",
@@ -708,7 +755,8 @@
   "descr": "素材测试默认,不预设人群",
   "usage": "—",
   "active": true,
-  "sort": 7
+  "sort": 7,
+  "short_code": "P0"
  },
  {
   "tab": "Test Type",
@@ -798,7 +846,8 @@
   "descr": "主播 / 代言 / 路人口播",
   "usage": "竞品 96",
   "active": true,
-  "sort": 0
+  "sort": 0,
+  "short_code": "RP"
  },
  {
   "tab": "Visual Style",
@@ -807,7 +856,8 @@
   "descr": "非官方质感",
   "usage": "竞品 64",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "UGC"
  },
  {
   "tab": "Visual Style",
@@ -816,7 +866,8 @@
   "descr": "老虎机 / 牌桌",
   "usage": "竞品 110",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "GS"
  },
  {
   "tab": "Visual Style",
@@ -825,7 +876,8 @@
   "descr": "中奖 / 高分展示",
   "usage": "竞品 87",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "WS"
  },
  {
   "tab": "Visual Style",
@@ -834,7 +886,8 @@
   "descr": "动画 / 动效",
   "usage": "竞品 33",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "AN"
  },
  {
   "tab": "Visual Style",
@@ -843,7 +896,8 @@
   "descr": "海报式规整",
   "usage": "竞品 71",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "OD"
  },
  {
   "tab": "Visual Style",
@@ -852,7 +906,8 @@
   "descr": "AI 生成人物(KH 竞品重度使用)",
   "usage": "竞品 67",
   "active": true,
-  "sort": 6
+  "sort": 6,
+  "short_code": "AI"
  },
  {
   "tab": "Watchlist Source",
@@ -942,7 +997,8 @@
   "descr": "转化/成交目标(现行默认)",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 1
+  "sort": 1,
+  "short_code": "SA"
  },
  {
   "tab": "Ad Setting",
@@ -951,7 +1007,8 @@
   "descr": "品牌认知目标",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 2
+  "sort": 2,
+  "short_code": "AW"
  },
  {
   "tab": "Ad Setting",
@@ -960,7 +1017,8 @@
   "descr": "流量目标",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 3
+  "sort": 3,
+  "short_code": "TF"
  },
  {
   "tab": "Ad Setting",
@@ -969,7 +1027,8 @@
   "descr": "互动目标",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 4
+  "sort": 4,
+  "short_code": "EN"
  },
  {
   "tab": "Ad Setting",
@@ -978,7 +1037,8 @@
   "descr": "线索目标",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 5
+  "sort": 5,
+  "short_code": "LD"
  },
  {
   "tab": "Ad Setting",
@@ -987,6 +1047,7 @@
   "descr": "应用推广目标",
   "usage": "广告名第 3 段",
   "active": true,
-  "sort": 6
+  "sort": 6,
+  "short_code": "AP"
  }
 ]

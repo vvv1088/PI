@@ -806,7 +806,7 @@
   </div>
   <div class="tabs" id="dictTabs"></div>
   <table>
-    <thead><tr><th style="width:170px">Code</th><th style="width:160px">中文名</th><th>定义 / 说明</th><th style="width:140px">使用次数</th><th style="width:100px">操作</th></tr></thead>
+    <thead><tr><th style="width:170px">Code</th><th style="width:160px">中文名</th><th>定义 / 说明</th><th style="width:100px">操作</th></tr></thead>
     <tbody id="dictBody"></tbody>
   </table>
   <p class="note" id="dictNote" style="margin-top:10px"></p>
@@ -2155,7 +2155,7 @@ function renderCreatives(){
   rows.sort((a,b)=>{const ha=hypKey(a),hb=hypKey(b);if(ha!==hb)return (grpRec[ha]||0)-(grpRec[hb]||0);return vnum(a)-vnum(b);});
   document.getElementById('creativeBody').innerHTML=rows.map(c=>`
    <tr class="click" onclick="openCreative(${creatives.indexOf(c)})">
-    <td><div class="asset-cell">${thumbBox(c.empty?'empty':c.th,crImgOf(c),c.label,56)}<div style="min-width:0"><span class="code">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">pending</span>'}</span></div></div></td>
+    <td><div class="asset-cell">${thumbBox(c.empty?'empty':c.th,crImgOf(c),c.label,56)}<div style="min-width:0"><span class="code" style="font-size:11px">${c.ads?esc(c.ads):'<span style="color:var(--ink3)">未生成 · 打开素材 ⚙ 生成</span>'}</span></div></div></td>
     <td>${linkHyp(c)}</td>
     <td style="padding-right:24px">${schedCell(hypSchedOf(c))}</td>
     <td><span class="qt">${crTM(c,'format')}<b>${esc(c.fmt||'—')}</b></span>${crVar(c,'format')}</td>
@@ -2203,7 +2203,7 @@ function renderDict(){
   const hasSc=(DICT[dictTab]||[]).some(r=>r.sc);   // v79:Format / Ad Setting 显示广告名短码
   document.getElementById('dictBody').innerHTML=(DICT[dictTab]||[]).map((r,i)=>`
    <tr class="${r.on?'':'inactive'}">
-    <td class="code"><b style="color:var(--ink)">${esc(r.c)}</b>${hasSc?`<div class="sub" style="display:block;font-size:10.5px" title="广告名短码(命名契约)">短码 ${esc(r.sc||'—')}</div>`:''}</td><td>${esc(r.n)}</td><td>${esc(r.d)}</td><td class="code">${esc(r.u)}</td>
+    <td class="code"><b style="color:var(--ink)">${esc(r.c)}</b>${hasSc?`<div class="sub" style="display:block;font-size:10.5px" title="广告名短码(命名契约 v2:进 ads code 的就是这个)">短码 ${esc(r.sc||'—')}</div>`:''}</td><td>${esc(r.n)}</td><td>${esc(r.d)}</td>
     <td>${noToggle?'<span class="code">—</span>':`<button class="btn ${r.on?'danger':'ghost'} sm" data-perm="dict:edit" onclick="toggleDict('${dictTab}',${i})">${r.on?'停用':'启用'}</button>`}</td>
    </tr>`).join('');
   document.getElementById('dictNote').textContent=DICT_NOTES[dictTab]||DICT_NOTES['default'];

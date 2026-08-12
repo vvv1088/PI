@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligence System
 
+## [v84.3] — 2026-08-12 · 素材格显示真 ads code + 字典去使用次数/补短码(V 定)
+
+- Creatives 页 ASSET·ADS CODE 格:显示登记的**新式 7 段 ads code**;未生成显示灰字「未生成 · 打开素材 ⚙ 生成」。demo 种子同步改为按命名契约 v2 生成(旧 USC-001-V1 假样式清除)。
+- Dictionary:「使用次数」列删除(V 定);demo 字典 61 个词条补 short_code —— Ad Setting 显示 SA/AW/TF/EN/LD/AP,Hook/Visual/Offer/Game Type/Persona/Age 全维度短码可见(live 库 v81 已落,demo 至此对齐)。
+- 假设号结论(讨论定案):HYP-### 保持不变 —— 与 ads code 无冲突(横杠 vs 下划线、词汇不相交),内部编号不需要携带信息;"-V1 vs V2" 双关不处理(V 定)。
+- 验证:35 视图零报错;实测素材格新式码/未生成提示/字典四列/Ad Setting 短码。
+
 ## [v84.2] — 2026-08-12 · 系统名纠正 + 启动导航全收起(V 反馈)
 
 - 系统名:Marketing **Intelligent** System → Marketing **Intelligence** System(标题栏 + 侧栏 brand)。
