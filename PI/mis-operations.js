@@ -305,7 +305,7 @@
   }
 
   /* ================= Activity Log(v77:两边审计统一成一张流水,V 定) ================= */
-  const AU = { source: '', q: '' };
+  const AU = { source: '', user: '', act: '', q: '', details: [] };
   const lex = name => { try { const v = (0, eval)(name); return v; } catch (e) { return undefined; } };
   async function renderMergedAudit() {
     const el = document.getElementById('auditBody');
@@ -345,26 +345,54 @@
       if (/^[A-Z0-9 #]+$/.test(s)) s = s.charAt(0) + s.slice(1).toLowerCase();   // 全大写码 → 普通词
       return s.charAt(0).toUpperCase() + s.slice(1);                             // 首字母统一大写
     };
+    /* v83.3(V 定):三个下拉 filter(Source/User/Action,英文)+ 关键词;Details 弹浮层不动版面 */
+    rows.forEach(r => { r.actDisp = plain(r.act); });
+    const distinct = key => [...new Set(rows.map(r => r[key]).filter(Boolean))].sort();
+    const userOpts = distinct('user'), actOpts = distinct('actDisp');
+    const view2 = view.filter(r => (!AU.user || r.user === AU.user) && (!AU.act || r.actDisp === AU.act));
+    AU.details = [];
     let t = `<tr><th>Time</th><th>Source</th><th>User</th><th>Action</th><th>Object</th><th>Details</th></tr>`;
-    if (!view.length) t += `<tr><td colspan="6" class="empty">No activity.</td></tr>`;
-    view.slice(0, 300).forEach(r => {
+    if (!view2.length) t += `<tr><td colspan="6" class="empty">No activity.</td></tr>`;
+    view2.slice(0, 300).forEach(r => {
+      let dcell = '-';
+      if (r.detail) { AU.details.push(r.detail); dcell = `<button class="btn ghost sm" onclick="MISOps.showDetail(${AU.details.length - 1})">View</button>`; }
       t += `<tr><td style="white-space:nowrap">${esc(fmtTs(r.ts))}</td>
         <td><span class="mmr-badge ${r.src === 'MIS' ? 'mmr-b' : 'mmr-n'}">${r.src}</span></td>
-        <td>${esc(r.user)}</td><td>${esc(plain(r.act))}</td><td>${esc(plain(r.obj))}</td>
-        <td>${r.detail ? `<details style="max-width:420px"><summary style="cursor:pointer;font-size:12px;color:var(--mut,#888)">View</summary>
-          <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:8px;font-size:11px;margin-top:6px">${esc(JSON.stringify(r.detail, null, 2))}</pre></details>` : '-'}</td></tr>`;
+        <td>${esc(r.user)}</td><td>${esc(r.actDisp)}</td><td>${esc(plain(r.obj))}</td>
+        <td>${dcell}</td></tr>`;
     });
+    const sel = (key, cur, all, opts) => `<select onchange="MISOps.auF('${key}',this.value)">
+        <option value=""${cur === '' ? ' selected' : ''}>${all}</option>
+        ${opts.map(o => `<option value="${esc(o)}"${cur === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     el.innerHTML = `
       <div class="filters" style="margin-bottom:12px">
-        <select onchange="MISOps.auF('source',this.value)">
-          <option value=""${AU.source === '' ? ' selected' : ''}>全部来源</option>
-          <option value="MIS"${AU.source === 'MIS' ? ' selected' : ''}>MIS</option>
-          <option value="Meta"${AU.source === 'Meta' ? ' selected' : ''}>Meta（系统 2）</option></select>
-        <input type="text" placeholder="搜用户 / 动作 / 对象…" value="${esc(AU.q)}" style="width:200px"
+        ${sel('source', AU.source, 'All Sources', ['MIS', 'Meta'])}
+        ${sel('user', AU.user, 'All Users', userOpts)}
+        ${sel('act', AU.act, 'All Actions', actOpts)}
+        <input type="text" placeholder="Search…" value="${esc(AU.q)}" style="width:170px"
           onkeydown="if(event.key==='Enter')MISOps.auF('q',this.value)">
-        <button class="btn ghost sm" onclick="MISOps.renderMergedAudit()">↻ 刷新</button>
-        <span class="sub" style="display:inline;align-self:center">共 ${view.length} 条（MIS ${rows.filter(r => r.src === 'MIS').length} + Meta ${rows.filter(r => r.src === 'Meta').length}）</span></div>
+        <button class="btn ghost sm" onclick="MISOps.renderMergedAudit()">↻ Refresh</button>
+        <span class="sub" style="display:inline;align-self:center">${view2.length} entries (MIS ${rows.filter(r => r.src === 'MIS').length} · Meta ${rows.filter(r => r.src === 'Meta').length})</span></div>
       <div class="tablewrap"><table>${t}</table></div>`;
+  }
+
+  /* Details 浮层:fixed 定位,展开不改变表格/页面布局(V 反馈:原 <details> 内联展开会把页面挤走) */
+  function showDetail(i) {
+    const d = AU.details[i];
+    if (d == null) return;
+    let ov = document.getElementById('mmoDetailOv');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'mmoDetailOv'; ov.className = 'mmr-modal-ov';
+      ov.onclick = e => { if (e.target === ov) ov.classList.remove('show'); };
+      ov.innerHTML = '<div class="mmr-modal" id="mmoDetailBox"></div>';
+      document.body.appendChild(ov);
+    }
+    document.getElementById('mmoDetailBox').innerHTML = `
+      <h2 style="display:flex;justify-content:space-between;align-items:center">Log details
+        <button class="btn ghost sm" onclick="document.getElementById('mmoDetailOv').classList.remove('show')">✕ Close</button></h2>
+      <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:10px;font-size:11.5px;max-height:60vh;overflow:auto">${esc(JSON.stringify(d, null, 2))}</pre>`;
+    ov.classList.add('show');
   }
 
   /* ================= 样式 + 注册 ================= */
@@ -387,6 +415,7 @@
     sopMode: m => { SP.mode = m; loadSop(); },
     sopSet, tplSave, tplClear, tplEdit,
     auF: (k, v) => { AU[k] = v; renderMergedAudit(); },
+    showDetail,
   };
 
   MIS_MODULES.register('mm-dash', loadDash);

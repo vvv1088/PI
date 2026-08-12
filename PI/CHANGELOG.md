@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligent System
 
+## [v83.3] — 2026-08-12 · Activity Log 三下拉 filter(英文)+ Details 浮层不动版面(V 反馈)
+
+- Filter 改三个英文下拉:**All Sources / All Users / All Actions**(User/Action 选项由日志现值自动生成)+ Search 关键词;Refresh/计数文案同步英文。
+- Details 的 View 从内联 <details> 展开改为 **fixed 浮层**:点开只弹详情卡,表格与页面零位移(实测表宽/页宽展开前后一致),点外面或 ✕ 关闭。
+- Source 改成 MIS 板块的提案在讨论中(见对话),本版未动 MIS/Meta 二分。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测(三下拉/用户过滤生效/浮层 fixed/零位移/可关闭)全过。
+
 ## [v83.2] — 2026-08-12 · Activity Log 排版 + Budget Permission 用词(V 反馈)
 
 - Budget Permission:「USC Owner (Approval)」及同页 USC 字眼 → **CRM Owner**(仅该页;Budget Allocation 页的「USC 核批」字样待 V 确认是否跟着换)。
