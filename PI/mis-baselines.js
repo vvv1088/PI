@@ -7,7 +7,7 @@
  *
  * 休眠开关:MIS_META.useLiveBaselines(默认 false)。
  *   开启后 loadBaselines() 用 compute() 结果逐指标覆盖 RPC 值;
- *   算不出的指标(如 REG,BO 通道暂无注册数)保留 RPC 值。
+ *   算不出的指标保留 RPC 值。V 已定(08-12):BO live 后直接切,不设并行观察期。
  * 硬前提:BO 通道 live(对接清单 D 节)—— mock 期开启只会得到演示数字。
  * ===================================================================== */
 window.MISBaselines = (function () {
@@ -23,7 +23,7 @@ window.MISBaselines = (function () {
     return [misDateISO(from), misDateISO(to)];
   }
 
-  /* 计算 {brand: {FDC:{base,cost,unit}, FDAMT:…, AFDA:…}}(REG 不产,保留 RPC) */
+  /* 计算 {brand: {FDC, FDAMT, AFDA, REG}}(V 确认 BO 现行字段已含 reg_count) */
   async function compute() {
     const [from, to] = windowDates();
     const [spend, bo] = await Promise.all([
@@ -39,8 +39,8 @@ window.MISBaselines = (function () {
     // BO 按品牌归集
     const boByBrand = {};
     bo.rows.forEach(r => {
-      const t = boByBrand[r.brand] || (boByBrand[r.brand] = { fd: 0, fdAmt: 0 });
-      t.fd += Number(r.fd_count || 0); t.fdAmt += Number(r.fd_amount || 0);
+      const t = boByBrand[r.brand] || (boByBrand[r.brand] = { fd: 0, fdAmt: 0, reg: 0 });
+      t.fd += Number(r.fd_count || 0); t.fdAmt += Number(r.fd_amount || 0); t.reg += Number(r.reg_count || 0);
     });
     const out = {};
     Object.keys(boByBrand).forEach(b => {
@@ -49,6 +49,8 @@ window.MISBaselines = (function () {
         FDC:   { base: Math.round(t.fd / 4 * 10) / 10, cost: t.fd ? Math.round(sp / t.fd * 100) / 100 : null, unit: '周均', src: 'loop' },
         FDAMT: { base: Math.round(t.fdAmt / 4 * 100) / 100, cost: null, unit: '$/周', src: 'loop' },
         AFDA:  { base: t.fd ? Math.round(t.fdAmt / t.fd * 100) / 100 : null, cost: null, unit: '$', src: 'loop' },
+        // REG 历史口径是「月注册」:4 周合计 ÷28 天 ×30 天做月化,和旧 RPC 数量级可比
+        REG:   { base: t.reg ? Math.round(t.reg / 28 * 30) : null, cost: t.reg ? Math.round(sp / t.reg * 100) / 100 : null, unit: '月化', src: 'loop' },
       };
     });
     return out;
