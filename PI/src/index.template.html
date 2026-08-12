@@ -360,7 +360,7 @@
   .permtable th:first-child{text-align:left}
   .permtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center}
   .permtable td:first-child{text-align:left}
-  .permtable .grouprow td{background:var(--bg2);font-weight:700;font-size:11px;color:var(--ink2);text-align:left;padding:5px 8px}
+  .permtable .grouprow td{background:var(--bg2);font-weight:700;font-size:13.5px;color:var(--ink);text-align:left;padding:10px 8px 8px;border-top:2px solid var(--line)}
   .permcell{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;user-select:none}
   .permcell.pyes{background:var(--green-bg);color:var(--green)}
   .permcell.pno{background:#eef0f2;color:#b6bcc4}
@@ -896,10 +896,10 @@
 </section>
 
 <section class="view" id="v-users">
-  <div class="head"><div><h1>Users</h1><div class="sub">一人一个身份:MIS 账号 + 角色,并映射其系统 2(Meta)账号与权限 — 两套 user 统一在此管理。</div></div></div>
+  <div class="head"><div><h1>Users</h1><div class="sub">一人一个身份:账号 + 角色。权限在 Roles &amp; Permissions 按岗位配。</div></div></div>
   <div id="usersBody"></div>
-  <!-- v77(V 定): 系统 2 账号映射区(渲染逻辑在 mis-resources.js) -->
-  <div id="usersMetaBody" style="margin-top:18px"></div>
+  <!-- v83.1:系统 2 账号只在 Edit user 抽屉里作为过渡期字段出现,页面不再有第二块(V 定) -->
+  <div id="usersMetaBody" style="display:none"></div>
 </section>
 
 <section class="view" id="v-audit">

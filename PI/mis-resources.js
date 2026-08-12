@@ -711,9 +711,9 @@
   const lexRoles = () => { try { const v = (0, eval)('roles'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
   const lexDb = () => { try { return (0, eval)('typeof db!=="undefined"?db:null'); } catch (e) { return null; } };
 
-  /* v77→v83(Users 一人一行):不再自己画映射表 —— 取数(系统 2 账号 + meta_user_map)
-   * 喂给 window._metaUnified,让 index 的 renderUsers() 把 Meta 账号画成用户行的一列;
-   * 本函数只负责 #usersMetaBody 里「未映射系统 2 账号」的折叠条。 */
+  /* v83.1(V 定:User 只有一种,页面上不出现第二套):本函数降级为纯取数 ——
+   * 系统 2 账号 + meta_user_map 喂给 window._metaUnified,供「Edit user」抽屉的
+   * 过渡期字段用;页面不再渲染任何系统 2 账号区块。 */
   async function loadUnifiedUsers() {
     let metaUsers = [];
     try { metaUsers = (await metaApi('/api/users?limit=200')).items || []; } catch (e) {}
@@ -724,21 +724,9 @@
       try { const r = await db.from('meta_user_map').select('*'); map = (r && r.data) || []; } catch (e) {}
     }
     window._metaUnified = { metaUsers, map };
-    try { const f = lexFn('renderUsers'); if (f) f(); } catch (e) {}
     const el = document.getElementById('usersMetaBody');
-    if (!el) return;
-    const mappedSet = new Set(map.map(m => m.meta_username));
-    const orphans = metaUsers.filter(m => !mappedSet.has(m.username));
-    el.innerHTML = `
-      <details class="card" style="padding:10px 14px;margin-top:12px">
-        <summary style="cursor:pointer;font-size:12.5px"><b>系统 2 账号 · 未映射(${orphans.length})</b>
-          <span class="sub" style="display:inline;margin-left:8px">live 拉到真名单后,在上表该用户的「Meta 账号」列认领;认领完这里自然清空</span></summary>
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${orphans.length ? orphans.map(m => `<span class="mmr-badge mmr-${m.status === 'ACTIVE' ? 'b' : 'n'}">${esc(m.displayName)} (${esc(m.username)})${m.status === 'INACTIVE' ? ' · 已停用' : ''}</span>`).join(' ') : '<span class="sub" style="display:inline">全部已认领 ✓</span>'}
-          <button class="btn ghost sm" onclick="MISRes.loadUnifiedUsers()">↻ 刷新</button>
-          <button class="btn ghost sm" onclick="MISRes.userNew()">＋ 新建 Meta 账号</button>
-        </div>
-      </details>`;
+    if (el) el.innerHTML = '';
+    try { const f = lexFn('renderUsers'); if (f) f(); } catch (e) {}
   }
   async function mapMeta(misUserId, metaUsername) {
     const db = lexDb();

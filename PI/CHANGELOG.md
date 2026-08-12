@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligent System
 
+## [v83.1] — 2026-08-12 · Users 彻底一张表 + 权限板块标题放大(V 反馈)
+
+- **Users 页只剩一种 user**:Name / Username / Role / 操作,四列一张表。「Meta 账号/Meta 状态」两列与页面上的系统 2 区块全部撤除 —— 系统 2 账号只是过渡期水管,不上桌面;审计对人不靠它(X-MIS-User 直接带 MIS username)。
+- 过渡期映射收进「Edit user」抽屉的一个选填字段(仅当拉到系统 2 账号数据时出现),live 后退役旧账号时对个号用,日常完全不见。
+- Roles & Permissions:板块标题行放大(13.5px 粗体 + 分隔线,此前 11px 比正文还小)。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测(标题字号>正文/Users 四列/页面无系统 2 残留/抽屉过渡字段)全过。
+
 ## [v83] — 2026-08-12 · 四词权限模型统一 + Users 一人一行(V 定)
 
 - **权限统一成一套词汇:view / add / edit / delete,两个系统同一标准**(V 提三词,数据核查发现 add≠edit 正被 Team/PO 角色使用——"只许投稿不许改稿",故保留 add 成四词,V 认可)。
