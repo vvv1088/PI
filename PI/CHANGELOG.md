@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligent System
 
+## [v82] — 2026-08-12 · 五大板块整并(V 定)
+
+- 导航从 6 组收敛为 5 组:**Performance + Meta Analytics + PI 的 Results 合并为一个 Analytics 组**(所有分析/报告类集中:Closed-Loop Report、Spending、Results、Account Overview、Our Ads、Brand Comparison、Asset Lifecycle)。页面本体与视图 id 不动,只挪导航;权限 gating(per-key none 隐藏)不受影响。
+- 五大板块终形:CI · PI · Meta Assets · Analytics · Administration。
+- 首次走拆文件新流程发版(改 src/index.template.html → build → 冒烟)。
+- 验证:35 视图 + 11 项引擎检查零报错。
+
 ## [v81] — 2026-08-12 · 命名契约 v2(终版 7 段)+ 权限映射施工 + 拆文件方案 A 落地
 
 V 上午拍板全部三项决策 + ads code 终版结构,当天施工完毕(a/b/c 三个 stage commit,每段独立冒烟):

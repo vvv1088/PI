@@ -398,17 +398,7 @@
       <div class="nitem" data-v="hypo" onclick="go('hypo',this)">Hypotheses</div>
       <div class="nitem" data-v="creatives" onclick="go('creatives',this)">Creatives</div>
       <div class="nitem" data-v="mplan" onclick="go('mplan',this)">Monthly Overview</div>
-      <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="dict" onclick="go('dict',this)">Dictionary</div>
-    </div>
-  </div>
-
-  <!-- v70: PERFORMANCE 导航（逻辑在 mis-performance.js） -->
-  <div class="grp closed">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Performance <span class="car">▾</span></div>
-    <div class="grp-items">
-      <div class="nitem" data-v="perf-loop" onclick="go('perf-loop',this)">Closed-Loop Report</div>
-      <div class="nitem" data-v="perf-spending" onclick="go('perf-spending',this)">Spending</div>
     </div>
   </div>
 
@@ -432,9 +422,14 @@
     </div>
   </div>
 
+  <!-- v82: 五大板块整并(V 定)——Performance + Meta Analytics + PI 的 Results
+       合并为一个 Analytics 组(所有分析/报告类集中一处;页面本体不动,只挪导航) -->
   <div class="grp closed">
-    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Meta Analytics <span class="car">▾</span></div>
+    <div class="grp-h" onclick="this.parentElement.classList.toggle('closed')">Analytics <span class="car">▾</span></div>
     <div class="grp-items">
+      <div class="nitem" data-v="perf-loop" onclick="go('perf-loop',this)">Closed-Loop Report</div>
+      <div class="nitem" data-v="perf-spending" onclick="go('perf-spending',this)">Spending</div>
+      <div class="nitem" data-v="results" onclick="go('results',this)">Results</div>
       <div class="nitem" data-v="an-accounts" onclick="go('an-accounts',this)">Account Overview</div>
       <div class="nitem" data-v="an-ads" onclick="go('an-ads',this)">Our Ads</div>
       <div class="nitem" data-v="an-brands" onclick="go('an-brands',this)">Brand Comparison</div>
