@@ -104,19 +104,25 @@ const path = require('path');
   });
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'shot-an-accounts-chart.png') });
 
-  // v79:命名引擎回归检查(纯函数 + mock 注册表,不依赖登录)
+  // v81:命名引擎回归检查(终版 7 段结构;纯函数 + mock 注册表,不依赖登录)
   results['engine@checks'] = await page.evaluate(() => {
     const N = window.MISNaming;
     const ok = [];
-    ok.push(N.buildAdName({ market: 'USC', brandCode: '17WINKH', setting: 'TRSA', format: 'IMAGE', ref: 'KH0201' }).name === 'USC_WIKH_TRSA_IM_KH0201');
-    ok.push(!!N.buildAdName({ market: 'USC', brandCode: 'SBKH99', setting: 'TRSA', format: 'IMAGE', ref: 'KH0101' }).error);   // retired 禁发
-    ok.push(!!N.buildAdName({ market: 'SG', brandCode: '17WINKH', setting: 'TRSA', format: 'IMAGE', ref: 'SG0101' }).error);   // 市场不符
-    ok.push(N.parseAdName('USC_WIKH_TRSA_IM_KH0201V2').ok === true);
+    // 生成:7 段拼装 / retired 禁发 / 市场不符
+    ok.push(N.buildAdName({ market: 'USC', brandCode: 'OK188KH', setting: 'SA', format: 'VIDEO', dimSeg: 'HK', contentSeg: 'WD', code: '001' }).name === 'USC_OK18_SA_VD_HK_WD_001');
+    ok.push(!!N.buildAdName({ market: 'USC', brandCode: 'SBKH99', setting: 'SA', format: 'IMAGE', dimSeg: 'HK', contentSeg: 'WD', code: '001' }).error);
+    ok.push(!!N.buildAdName({ market: 'SG', brandCode: '17WINKH', setting: 'SA', format: 'IMAGE', dimSeg: 'HK', contentSeg: 'WD', code: '001' }).error);
+    // 解析:v2 严格(V 后缀基名) / v1 过渡期 / 历史 6 段宽松归品牌 / 脏名不认
+    const p2 = N.parseAdName('USC_OK18_SA_VD_HK_WD_001V2');
+    ok.push(p2.ok === true && p2.style === 'v2' && p2.base === 'USC_OK18_SA_VD_HK_WD_001' && p2.ver === 2);
+    ok.push(N.parseAdName('USC_WIKH_TRSA_IM_KH0201V2').ok === true && N.parseAdName('USC_WIKH_TRSA_IM_KH0201V2').style === 'v1');
     ok.push(N.parseAdName('USC_OK18_TRSA_VD_WD1_KH06').loose === true && N.parseAdName('USC_OK18_TRSA_VD_WD1_KH06').brand === 'OK188KH');
     ok.push(N.parseAdName('TRSA_IM_AMB1_CN07').ok === false);
-    ok.push(N.resolveCreative('MYR_INZ9_TRSA_IM_MY1101').tier === 1);                       // 严格 ref
-    ok.push(N.resolveCreative('USC_WIKH_TRSA_VD_2473_KH02').tier === 2);                    // 登记全名
-    ok.push(N.resolveCreative('USC_SB99_TRSA_VD_KH9901').tier === 3);                       // 只归品牌
+    // 归因三层:v2 基名(含 V2 重投) / 登记全名 / 只归品牌
+    ok.push(N.resolveCreative('USC_WIKH_SA_IM_HK_WD_001V2').tier === 1);
+    ok.push(N.resolveCreative('MY_INZ9_SA_IM_OF_FB_001').tier === 1);
+    ok.push(N.resolveCreative('USC_WIKH_TRSA_VD_2473_KH02').tier === 2);
+    ok.push(N.resolveCreative('USC_SB99_TRSA_VD_KH9901').tier === 3);
     return { on: true, htmlLen: 99, pass: ok.filter(Boolean).length, total: ok.length };
   });
   if (results['engine@checks'].pass !== results['engine@checks'].total) fails++;

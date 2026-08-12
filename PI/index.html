@@ -1248,14 +1248,9 @@ async function tmEnsureRows(hyp,target){
   if(existing.length>=target)return false;
   const used=existing.map(c=>{const mm=(c.gen||'').match(/-V(\d+)$/);return mm?+mm[1]:0;});
   let n=used.length?Math.max(...used):0;const locked=hyp.lockedTags||{};const rows=[];
-  // v76:正式发号 —— 每条新素材领 ref code(市场前缀+假设批次+流水),批次首次分配时回写 hypotheses.ref_batch
-  let refInfo=null;
-  try{refInfo=MISNaming.officialRefs(hyp,target-existing.length);}catch(e){console.warn('发号失败(素材仍会创建):',e);}
-  for(let i=existing.length;i<target;i++){n++;const row={gen_code:hyp.id+'-V'+n,ads_code:null,ref_code:refInfo?(refInfo.refs[i-existing.length]||null):null,hyp_code:hyp.id,hyp_label:hyp.id+' · '+hyp.x,label:'素材 '+n,status:'待上线',created_by:(currentUser&&currentUser.name)||''};MATRIX_DIM_KEYS.forEach(k=>{if(!(hyp.testDims||[]).includes(k))row[k]=locked[k]||null;});rows.push(row);}
+  // v81:发号改到「⚙ 生成/保存」时(编号=品牌×内容全局流水,建行时维度值还没定,发不了);ref_batch 机制随 7 段结构退役
+  for(let i=existing.length;i<target;i++){n++;const row={gen_code:hyp.id+'-V'+n,ads_code:null,ref_code:null,hyp_code:hyp.id,hyp_label:hyp.id+' · '+hyp.x,label:'素材 '+n,status:'待上线',created_by:(currentUser&&currentUser.name)||''};MATRIX_DIM_KEYS.forEach(k=>{if(!(hyp.testDims||[]).includes(k))row[k]=locked[k]||null;});rows.push(row);}
   try{const {error}=await db.from('creatives').insert(rows);if(error)throw error;}catch(e){toast('自动加素材失败: '+rpcErr(e));return false;}
-  if(refInfo&&refInfo.batch&&hyp.refBatch!==refInfo.batch){
-    try{await db.from('hypotheses').update({ref_batch:refInfo.batch}).eq('code',hyp.id);hyp.refBatch=refInfo.batch;}catch(e){console.warn('ref_batch 回写失败:',e);}
-  }
   return true;
 }
 async function tmTrimRows(hyp,target){
@@ -1990,7 +1985,7 @@ function firstVersion(i){
         <div id="fv-imgprev">${thumbBox('','',c.label,64)}</div>
         <input type="file" id="fv-imgfile" accept="image/*" onchange="fvImgPick(this)">
       </div></div></div>
-    <div class="row"><div class="fld"><label>Ads Code（可自动生成 · 命名契约 market_brand_setting_format_ref）</label>
+    <div class="row"><div class="fld"><label>Ads Code（可自动生成 · 契约 市场_品牌_设定_格式_维度_内容_编号）</label>
       <div style="display:flex;gap:8px"><input id="fv-ads" type="text" style="flex:1" value="${(c.ads||'').replace(/"/g,'&quot;')}">
         <button type="button" class="btn ghost sm" style="flex:none" onclick="MISNaming.fvGen(${i})">⚙ 生成</button></div>
       <small id="fv-adsnote" style="color:var(--ink3)"></small></div></div>
@@ -2021,9 +2016,12 @@ async function saveFirstVersion(i,mode){
   const v1={v:1,date:today,ev:'first',status:vstatus,cause:null,chg:null,reason:null,snap:null,img:'',imgSrc:upImg,copy:copy};
   const rowStatus=mode==='save'?'上线中':'待上线';
   const adsv=((document.getElementById('fv-ads')||{}).value||'').trim()||null;
-  try{const {error}=await db.from('creatives').update({versions:[v1],status:rowStatus,ads_code:adsv,updated_at:new Date().toISOString()}).eq('gen_code',c.gen);if(error)throw error;}
+  // v81 登记制(方案一):新式 7 段名保存即登记 —— ref_code 存基名(剥 V 后缀)做归因 join 键;存量老 ref 不覆盖
+  const upd={versions:[v1],status:rowStatus,ads_code:adsv,updated_at:new Date().toISOString()};
+  if(adsv&&window.MISNaming){const p=MISNaming.parseAdName(adsv);if(p.ok&&p.style==='v2'&&!c.ref)upd.ref_code=p.base;}
+  try{const {error}=await db.from('creatives').update(upd).eq('gen_code',c.gen);if(error)throw error;}
   catch(e){alert('保存失败: '+rpcErr(e));return;}
-  c.versions=[v1];c.st=rowStatus;c.ads=adsv;
+  c.versions=[v1];c.st=rowStatus;c.ads=adsv;if(upd.ref_code)c.ref=upd.ref_code;
   logAction('creative','edit',(c.gen||'')+(mode==='save'?' 第一版':' 草稿'));
   renderCreatives();openCreative(i);toast(mode==='save'?'第一版已保存':'草稿已存');
 }

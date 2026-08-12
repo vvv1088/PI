@@ -535,7 +535,7 @@
       <div class="it"><dt>广告名缩写 short code</dt><dd><span class="code">${esc(b.short)}</span></dd></div>
       <div class="it"><dt>可投市场</dt><dd>${(b.markets || []).map(m => badge(m).replace('mmr-n', 'mmr-b')).join(' ') || '—'}</dd></div>
       <div class="it"><dt>生命周期</dt><dd>${b.status === 'active' ? badge('ACTIVE') : '<span class="mmr-badge mmr-n">已整合(retired)</span>'}</dd></div>
-      <div class="it"><dt>广告名示例</dt><dd><span class="code" style="font-size:11px">${b.status === 'active' ? esc((MISNaming.MARKETS[(b.markets || ['USC'])[0]] || {}).seg + '_' + b.short + '_TRSA_IM_KH0101') : '只解析历史,不发新码'}</span></dd></div></div>
+      <div class="it"><dt>广告名示例</dt><dd><span class="code" style="font-size:11px">${b.status === 'active' ? esc((MISNaming.MARKETS[(b.markets || ['USC'])[0]] || {}).seg + '_' + b.short + '_SA_IM_HK_WD_001') : '只解析历史,不发新码'}</span></dd></div></div>
       <p class="sub" style="display:block;margin-top:8px">主数据在 Supabase brand_aliases 表;retired 品牌只用于解析历史广告名,永不参与生成(方案 A:历史留旧名)。</p>`;
   }
 
