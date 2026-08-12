@@ -1,5 +1,12 @@
 # Changelog — Marketing Intelligent System
 
+## [v84] — 2026-08-12 · Activity Log Source=五大板块 + Analytics 精简三页 + Spending 改版(V 定)
+
+- **Activity Log Source 列改五大板块**(CI/PI/Meta Assets/Analytics/Admin;下拉同步),不再按 MIS/Meta 系统二分;出处系统只在 Details 浮层留一行「Logged by」。
+- **Analytics 只留三页**:Closed-Loop Report、Spending、Asset Lifecycle;Results/Account Overview/Our Ads/Brand Comparison 从导航与权限表下架(视图代码保留,数据线后续交 vny)。
+- **Spending 改版**:①Ad Name 不再挂 🧪 假设与「已整合」徽章,只显示名字;②**Line 列 = 从广告名 detect 的品牌**,detect 不到(命名没跟 format)显示 **NULL**;③Remark 只在 NULL 行出现,下拉二选一 **test / ignore**(能对上品牌的行无 remark);④KPI「本页命名不规范行」改名 **NULL**。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测 12 项(导航三页/板块下拉与过滤/Logged by/NULL KPI/无徽章/Line 品牌与 NULL/test-ignore 下拉/品牌行无 remark)全过。
+
 ## [v83.3] — 2026-08-12 · Activity Log 三下拉 filter(英文)+ Details 浮层不动版面(V 反馈)
 
 - Filter 改三个英文下拉:**All Sources / All Users / All Actions**(User/Action 选项由日志现值自动生成)+ Search 关键词;Refresh/计数文案同步英文。

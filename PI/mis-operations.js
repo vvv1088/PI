@@ -322,21 +322,29 @@
     try { metaRows = (await metaApi('/api/action-logs?limit=100')).items || []; } catch (e) {}
     const secNameFn = lex('typeof secName==="function"?secName:null');
     const ACT = lex('typeof ACT_LABEL!=="undefined"?ACT_LABEL:{}') || {};
+    /* v84(V 定):Source 列不再分 MIS/Meta,直接标五大板块;出处系统只在 Details 浮层里留一行 */
+    const SEC_BOARD = { watchlist: 'CI', pending: 'CI', budget: 'PI', idea: 'PI', hypo: 'PI', creative: 'PI', dict: 'PI', user: 'Admin', role: 'Admin', auth: 'Admin' };
+    const metaBoard = l => {
+      const et = String(l.entityType || '').toLowerCase(), at = String(l.actionType || '').toLowerCase();
+      if (et.includes('user') || at.includes('login')) return 'Admin';
+      if (at.includes('remark') || et.includes('spending')) return 'Analytics';
+      return 'Meta Assets';
+    };
     const rows = [];
     misRows.forEach(e => rows.push({
-      ts: e.created_at, user: e.name || e.username || '?', src: 'MIS',
+      ts: e.created_at, user: e.name || e.username || '?', src: 'MIS', board: SEC_BOARD[e.section] || 'Admin',
       act: ACT[e.action] || e.action,
       obj: (secNameFn ? secNameFn(e.section) : e.section) + (e.target ? ' · ' + e.target : ''), detail: null,
     }));
     metaRows.forEach(l => rows.push({
-      ts: l.createdAt, user: l.user ? l.user.displayName : '-', src: 'Meta',
+      ts: l.createdAt, user: l.user ? l.user.displayName : '-', src: 'Meta', board: metaBoard(l),
       act: l.actionType, obj: (l.entityType || '-') + (l.entityId ? ' #' + l.entityId : ''), detail: l.details,
     }));
     rows.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
     const q = AU.q.toLowerCase();
     const view = rows.filter(r =>
-      (!AU.source || r.src === AU.source) &&
-      (!q || [r.user, r.act, r.obj].join(' ').toLowerCase().indexOf(q) >= 0));
+      (!AU.source || r.board === AU.source) &&
+      (!q || [r.user, r.act, r.obj, r.board].join(' ').toLowerCase().indexOf(q) >= 0));
     /* v83.2(V 定):Action 用普通文字不用 label;动作/对象统一大小写与字号 ——
      * 系统 2 的动作码(SOP_TASK_DONE)和实体名(BRAND)转成普通词,两边视觉才对得齐 */
     const plain = s => {
@@ -355,9 +363,9 @@
     if (!view2.length) t += `<tr><td colspan="6" class="empty">No activity.</td></tr>`;
     view2.slice(0, 300).forEach(r => {
       let dcell = '-';
-      if (r.detail) { AU.details.push(r.detail); dcell = `<button class="btn ghost sm" onclick="MISOps.showDetail(${AU.details.length - 1})">View</button>`; }
+      if (r.detail) { AU.details.push({ src: r.src, data: r.detail }); dcell = `<button class="btn ghost sm" onclick="MISOps.showDetail(${AU.details.length - 1})">View</button>`; }
       t += `<tr><td style="white-space:nowrap">${esc(fmtTs(r.ts))}</td>
-        <td><span class="mmr-badge ${r.src === 'MIS' ? 'mmr-b' : 'mmr-n'}">${r.src}</span></td>
+        <td>${esc(r.board)}</td>
         <td>${esc(r.user)}</td><td>${esc(r.actDisp)}</td><td>${esc(plain(r.obj))}</td>
         <td>${dcell}</td></tr>`;
     });
@@ -366,20 +374,21 @@
         ${opts.map(o => `<option value="${esc(o)}"${cur === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     el.innerHTML = `
       <div class="filters" style="margin-bottom:12px">
-        ${sel('source', AU.source, 'All Sources', ['MIS', 'Meta'])}
+        ${sel('source', AU.source, 'All Sources', ['CI', 'PI', 'Meta Assets', 'Analytics', 'Admin'])}
         ${sel('user', AU.user, 'All Users', userOpts)}
         ${sel('act', AU.act, 'All Actions', actOpts)}
         <input type="text" placeholder="Search…" value="${esc(AU.q)}" style="width:170px"
           onkeydown="if(event.key==='Enter')MISOps.auF('q',this.value)">
         <button class="btn ghost sm" onclick="MISOps.renderMergedAudit()">↻ Refresh</button>
-        <span class="sub" style="display:inline;align-self:center">${view2.length} entries (MIS ${rows.filter(r => r.src === 'MIS').length} · Meta ${rows.filter(r => r.src === 'Meta').length})</span></div>
+        <span class="sub" style="display:inline;align-self:center">${view2.length} entries</span></div>
       <div class="tablewrap"><table>${t}</table></div>`;
   }
 
   /* Details 浮层:fixed 定位,展开不改变表格/页面布局(V 反馈:原 <details> 内联展开会把页面挤走) */
   function showDetail(i) {
-    const d = AU.details[i];
-    if (d == null) return;
+    const item = AU.details[i];
+    if (item == null) return;
+    const d = item.data;
     let ov = document.getElementById('mmoDetailOv');
     if (!ov) {
       ov = document.createElement('div');
@@ -391,6 +400,7 @@
     document.getElementById('mmoDetailBox').innerHTML = `
       <h2 style="display:flex;justify-content:space-between;align-items:center">Log details
         <button class="btn ghost sm" onclick="document.getElementById('mmoDetailOv').classList.remove('show')">✕ Close</button></h2>
+      <div class="sub" style="display:block;margin-bottom:6px">Logged by: ${item.src === 'MIS' ? 'MIS' : 'Meta(系统 2)'}</div>
       <pre style="white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.04);border-radius:6px;padding:10px;font-size:11.5px;max-height:60vh;overflow:auto">${esc(JSON.stringify(d, null, 2))}</pre>`;
     ov.classList.add('show');
   }

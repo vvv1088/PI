@@ -195,31 +195,34 @@
     const lineSel = document.getElementById('spLine');
     if (lineSel.options.length === 1) d.lines.forEach(l => lineSel.insertAdjacentHTML('beforeend', `<option>${esc(l)}</option>`));
 
-    /* v73:命名体检 —— 当前页行里广告名连品牌都解析不出的(命名缺市场/品牌段),显式提示 */
-    const badRows = (window.MISNaming ? d.rows.filter(r => !MISNaming.parseAdName(r.ad_name).ok) : []);
+    /* v84(V 定):Line 列 = 从广告名 detect 品牌;命名没跟 format 的解析不出 → NULL。
+     * KPI 直接叫 NULL(=本页 detect 不到品牌的行数);Remark 只给 NULL 行,二选一 test/ignore。 */
+    const brandOf = name => (window.MISNaming ? (MISNaming.parseAdName(name).brand || null) : null);
+    const nullRows = d.rows.filter(r => !brandOf(r.ad_name));
     document.getElementById('spKpis').innerHTML =
       kpi('$' + misMoney(d.grandTotal), 'Grand Total') + kpi(misInt(d.totalsByDate.length), 'Days') +
       kpi(misInt(d.totalsByLine.length), 'Lines') + kpi(misInt(d.total), 'Rows') +
-      (badRows.length ? kpi(`<span style="color:#b26a00">${badRows.length}</span>`, '本页命名不规范行') : '');
+      (nullRows.length ? kpi(`<span style="color:#b26a00">${nullRows.length}</span>`, 'NULL') : '');
 
     const canEditRemark = window.MIS_META.mode === 'mock' || window.MIS_META.allowRemarkEdit;
     let html = `<tr><th>Date</th><th>Ad Name</th><th>Line</th><th style="text-align:right">Spending</th><th>Remark${canEditRemark ? '' : '（只读）'}</th></tr>`;
     if (!d.rows.length) html += `<tr><td colspan="5" class="empty">无数据</td></tr>`;
     d.rows.forEach((r, i) => {
-      /* v77:方案 A —— 整合前品牌的历史行标「已整合」;v78(L4):行挂所测假设,点击直达 */
-      let tags = '';
-      if (window.MISNaming) {
-        const p = MISNaming.parseAdName(r.ad_name);
-        if (p.brandStatus === 'retired') tags += ` <span class="mmr-badge mmr-n" title="品牌已整合(${esc(p.brand)}),历史数据保留">已整合</span>`;
-        const a = MISNaming.resolveCreative(r.ad_name);
-        if ((a.tier === 1 || a.tier === 2) && a.hyp) tags += ` <span class="mmr-badge mmr-b" style="cursor:pointer" title="${esc(a.gen)} · ${esc(a.label)}" onclick="goHyp('${esc(a.hyp)}')">🧪 ${esc(a.hyp)}</span>`;
+      const b = brandOf(r.ad_name);
+      const lineCell = b ? esc(b) : '<span style="color:#b26a00;font-weight:600">NULL</span>';
+      let remarkCell = '';
+      if (!b) {   // 只有 NULL 行需要 remark:test(测试广告) / ignore(不用管)
+        remarkCell = canEditRemark
+          ? `<select onchange="MISPerf.saveRemark('${esc(r.date)}',this)" data-ad="${esc(r.ad_name)}">
+               <option value=""${!r.remark ? ' selected' : ''}>—</option>
+               <option value="test"${r.remark === 'test' ? ' selected' : ''}>test</option>
+               <option value="ignore"${r.remark === 'ignore' ? ' selected' : ''}>ignore</option></select>`
+          : esc(r.remark || '');
+        if (r.remark_by) remarkCell += ` <span class="sub" style="display:inline">@${esc(r.remark_by)}</span>`;
       }
-      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}${tags}</td><td>${esc(r.line || '-')}</td>
+      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.ad_name)}</td><td>${lineCell}</td>
         <td style="text-align:right">$${misMoney(r.spending)}</td>
-        <td>${canEditRemark
-          ? `<input type="text" value="${esc(r.remark || '')}" placeholder="备注…" style="width:170px"
-               onchange="MISPerf.saveRemark('${esc(r.date)}',this)" data-ad="${esc(r.ad_name)}">`
-          : esc(r.remark || '')}${r.remark_by ? ` <span class="sub" style="display:inline">@${esc(r.remark_by)}</span>` : ''}</td></tr>`;
+        <td>${remarkCell}</td></tr>`;
     });
     document.getElementById('spTable').innerHTML = html;
 

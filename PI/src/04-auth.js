@@ -45,10 +45,6 @@ const PERM_MODEL=[
  {g:'Analytics',rows:[
    {k:'perf-loop',n:'Closed-Loop Report',kind:'mis',acts:[]},
    {k:'analytics-spending',n:'Spending',kind:'meta',acts:['edit']},
-   {k:'results',n:'Results',kind:'mis',acts:[]},
-   {k:'analytics-accounts',n:'Account Overview',kind:'meta',acts:[]},
-   {k:'analytics-ads',n:'Our Ads',kind:'meta',acts:[]},
-   {k:'analytics-brands',n:'Brand Comparison',kind:'meta',acts:[]},
    {k:'analytics-lifecycle',n:'Asset Lifecycle',kind:'meta',acts:[]}]},
  {g:'Administration',rows:[
    {k:'users',n:'Users(Meta 账号)',kind:'meta',acts:['add','edit','delete']},
@@ -57,7 +53,7 @@ const PERM_MODEL=[
 /* 视图 id → 权限行(导航按 view 隐藏用;meta key 的视图映射在 mis-meta-api.js MIS_META_KEYS) */
 const VIEW_PERM_MIS={reports:'reports',gallery:'gallery',operators:'operators',funnel:'funnel',
   candidates:'pending',watch:'watchlist',budget:'budget',pool:'idea',hypo:'hypo',creatives:'creative',
-  mplan:'mplan',results:'results',dict:'dict','perf-loop':'perf-loop','mm-dash':'meta-overview'};
+  mplan:'mplan',dict:'dict','perf-loop':'perf-loop','mm-dash':'meta-overview'};
 let roles=[];            /* hydrated from Supabase on login */
 let users=[];            /* hydrated from Supabase on login */
 let currentUser=null, auditLog=[];
