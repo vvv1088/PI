@@ -33,7 +33,7 @@
 
 ## 铁律
 
-1. **MIS 的新代码一律进新文件**（`mis-*.js`），`index.html` 只准加挂载点和引用。它已经 3000 行 / 423KB，增量不进单文件。
+1. **MIS 的新代码一律进新文件**（`mis-*.js`）。**v81 起 `index.html` 是构建产物**：要动它的内容就改 `src/`（0*.js 五块 + index.template.html），然后 `node tools/build.js` 重建——直接改 index.html 会被下次构建覆盖。挂载点/引用类小改也走 src。
 2. **mock 结构不许想当然。** 每个 mock 路由的响应形状照 06-API接口手册原文写（含 bigint→字符串、时间→ISO UTC）。手册没写的字段（资产列表项）标注「待 live 联调核对」。
 3. **Supabase 与 MySQL 各管各的**：决策数据不迁 MySQL，事实数据不镜像进 Supabase。谁再提合库/镜像，翻 `docs/00` 的防反复清单。
 4. **系统 2 生产我们不碰**：不连生产库、不执行部署；要生产数据验证就把 SQL 写清楚给 Jayden 代跑。
@@ -49,13 +49,14 @@
 改 `mis-ui/mis-meta-api.js` 顶部：`mode:'live'` + `token:'<service token>'`（+ 若他开了备注写入则 `allowRemarkEdit:true`）。
 BO 数据（FD/D7）现走占位路由 `/api/mis/bo-daily`（mock 内），真通道等对接清单 D 节拍板后在同一处补 live 实现——闭环页代码不用动。
 
-## 当前进度快照（2026-08-12,v80）
+## 当前进度快照（2026-08-12,v81）
 
-- ✅ 系统 2 全部页面已 1:1 搬入 MIS(v71)并完成收编/合组(v72);详见 `交接状态-2026-08-12.md`
-- ✅ 命名工程全链落地(v73–v76):brand_aliases/短码/发号列已进 Supabase,市场统一 USC/MY/SG,建素材自动发号
-- ✅ Users 统一 + Activity Log 合并(v77);实体连接 L1–L6 + 三层归因(v78);live 只读闸门(v79)
-- ✅ patch 0001(CORS+token)/0002(S1 脱敏)/0003(轮转加固)在 `patches/`,tsc+build 双过,等 Jayden
-- 📄 等 V 拍板:docs/04 拆文件、05 权限映射、06 baselines;cPanel v80 包等上传
+- ✅ 系统 2 全部页面 1:1 搬入并收编(v71–v72);Users/Activity Log 统一(v77);实体连接+三层归因(v78);live 只读闸门(v79)
+- ✅ **命名契约 v2 终版落地(v81a,V 拍板)**:7 段 `市场_品牌_设定_格式_维度_内容_编号`,见 `docs/07-命名契约v2.md`;全维度短码已落库(V 待过目)
+- ✅ **权限映射施工完(v81b)**:role_meta_permissions(17 key,PE=PO 默认值)+ Roles 抽屉 Meta 区 + per-key gating + X-MIS-User
+- ✅ **拆文件方案 A 落地(v81c)**:src/ 五块 + tools/build.js,index.html=构建产物(铁律 1 已更新)
+- ✅ patch 0001–**0004** 在 `patches/`(0004=审计对人,依赖 0001),tsc+build 双过,等 Jayden 按序应用
+- 📄 等 V:短码草稿过目;cPanel v81 包上传;patch 转交
 - ⛔ 阻塞不变:Jayden 未回 docs/02;第五类(另一条线)本工作区不处理(V 定)
 
 ## 别踩的坑（从系统 2 的血泪史继承）

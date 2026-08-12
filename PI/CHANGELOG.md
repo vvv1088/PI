@@ -1,5 +1,15 @@
 # Changelog — Marketing Intelligent System
 
+## [v81] — 2026-08-12 · 命名契约 v2(终版 7 段)+ 权限映射施工 + 拆文件方案 A 落地
+
+V 上午拍板全部三项决策 + ads code 终版结构,当天施工完毕(a/b/c 三个 stage commit,每段独立冒烟):
+
+- **命名契约 v2**(`docs/07-命名契约v2.md`,mis-naming.js 整体重写):`市场_品牌_设定_格式_维度_内容_编号`(例 `USC_OK18_SA_VD_HK_WD_001`,优化重投 `…001V2`)。TR 定位段与语言段砍掉(V 定);设定改 2 字母(SA/AW/TF/EN/LD/AP);维度段用 V 给的 short form(FM/HK/VS/OF/GT + PS/AG/GN);内容段=字典词条短码(**全维度短码草稿已落库**,WD/SLT/LIVE 与历史用码对齐,V 可在字典页改);编号 3 位流水按**品牌×内容全局递增**(防跨假设撞名、同批连号)。唯一性=方案一登记制:保存时 ads_code+ref_code(基名)自动登记,resolveCreative 三层归因适配(v2 基名/V 后缀→登记全名→品牌)。解析三代同堂,老广告永不改名;v76 的 officialRefs/ref_batch 批次机制退役。冒烟引擎检查更新为 11 项。
+- **权限映射施工**(docs/05 拍板版):Supabase `role_meta_permissions`(17 key 照搬系统 2 × edit/view/none,RLS 同 role_permissions);默认值 Admin 全 edit、**PE=PO**(rotation/sop edit + 其余 view + tokens/users/action-logs none)、Team 角色分析 view 其余 none;Roles 抽屉新增「Meta 权限」区(MISRes.roleMetaSection);导航 none 整页隐藏(misApplyMetaNav)+ 全部 Meta 写入口 per-key 拦截(misMetaWritable(key),与 allowMetaWrite 总闸叠加);metaApi live 请求带 `X-MIS-User` 头。**patch 0004**(系统 2 侧,tsc+build 双过):action_logs.details 记 misOperator(格式校验、FK 不动)+ CORS 放行该头——审计对人,依赖 0001 先应用。
+- **拆文件方案 A 落地**(docs/04):内联 JS 拆成 `src/01-core…05-budget-boot.js` 五块 + `index.template.html`,`tools/build.js` 零依赖拼接;**产物与手工版逐字节一致**(仅 5 行 banner 注释);index.html 转为构建产物(头部有 GENERATED 标识),冒烟/gen_demo/发版流程零改动。**今后改动落 src/,改完 `node tools/build.js` 再冒烟。**
+- baselines 按 V 决定收口(v80.1):REG 用 BO 自带 reg_count 月化计算;不设并行观察期,BO live 后直接切。
+- 验证:35 视图 + 交互 + 11 项引擎检查零报错(index+demo),每个 stage 各跑一轮。
+
 ## [v80] — 2026-08-12 · 三份设计文档 + baselines 休眠实现 + 线 B 两个 patch
 
 - **三份设计文档等 V 拍板**(MIS_integration/docs/):04 拆文件与构建方案(推荐零依赖拼接构建);05 权限映射设计(role_meta_permissions 表 + Roles 抽屉 Meta 区 + live 桥接与 X-MIS-User 审计头);06 baselines 替换设计(闭环同源公式表 + 切换/下线机制;REG 需 D 节补 reg_count)。
