@@ -17,8 +17,50 @@ window.MIS_META = {
   useLiveBaselines: false,                     // v80:基线闭环供数开关(BO live 后再开;docs/06)
 };
 
-/* v79:Meta 侧写操作统一闸门 —— mock 随便玩;live 必须 allowMetaWrite */
-function misMetaWritable() {
+/* v81:docs/05 权限映射 —— Meta 视图 → 系统 2 的 17 个权限 key(照搬,live 桥接零翻译) */
+const MIS_META_KEYS = {
+  'as-health': 'health', 'mm-rotation': 'rotation', 'mm-sop': 'sop',
+  'mm-brands': 'brands', 'mm-bms': 'business-managers', 'mm-pixels': 'pixels',
+  'mm-accounts': 'ad-accounts', 'mm-apps': 'developer-apps', 'mm-tokens': 'tokens', 'mm-shares': 'pixel-shares',
+  'an-accounts': 'analytics-accounts', 'an-ads': 'analytics-ads', 'an-brands': 'analytics-brands',
+  'an-lifecycle': 'analytics-lifecycle', 'perf-spending': 'analytics-spending',
+};
+const MIS_META_KEY_GROUPS = [
+  { g: 'Configuration', keys: ['brands', 'business-managers', 'pixels', 'ad-accounts', 'developer-apps', 'tokens', 'pixel-shares'] },
+  { g: 'Operations',    keys: ['rotation', 'health', 'sop'] },
+  { g: 'System',        keys: ['users', 'action-logs'] },
+  { g: 'Analytics',     keys: ['analytics-accounts', 'analytics-ads', 'analytics-brands', 'analytics-spending', 'analytics-lifecycle'] },
+];
+
+/* 当前用户对某 meta_key 的授权级别:admin=edit;未登录(demo)=edit;角色没配到的 key 回落 view */
+function misMetaLevel(key) {
+  try {
+    const u = (0, eval)('typeof currentUser!=="undefined"?currentUser:null');
+    if (!u) return 'edit';
+    const rs = (0, eval)('typeof roles!=="undefined"?roles:[]');
+    const role = (rs || []).find(r => r.id === u.roleId);
+    if (!role) return 'view';
+    if (role.admin) return 'edit';
+    return (role.metaPerms && role.metaPerms[key]) || 'view';
+  } catch (e) { return 'edit'; }
+}
+
+/* 导航 gating:level=none 的 Meta 视图从侧栏隐藏(登录后由 loadAuthData 调用) */
+function misApplyMetaNav() {
+  Object.keys(MIS_META_KEYS).forEach(v => {
+    document.querySelectorAll('.nitem[data-v="' + v + '"]').forEach(el => {
+      el.style.display = misMetaLevel(MIS_META_KEYS[v]) === 'none' ? 'none' : '';
+    });
+  });
+}
+
+/* v79/v81:Meta 侧写操作统一闸门 —— mock 随便玩(权限层照样管);live 必须 allowMetaWrite。
+ * 可选 key:该人角色对这个 key 不是 edit 就拦(docs/05 三层防线的第 1 层)。 */
+function misMetaWritable(key) {
+  if (key && misMetaLevel(key) !== 'edit') {
+    if (typeof toast === 'function') toast('当前岗位对该 Meta 板块只读(找 Admin 调 Roles 里的 Meta 权限)');
+    return false;
+  }
   if (window.MIS_META.mode === 'mock') return true;
   if (!window.MIS_META.allowMetaWrite) {
     if (typeof toast === 'function') toast('live 接入初期 token 只读(P1),写操作待 P2 开放');
@@ -34,10 +76,14 @@ async function metaApi(path, opts) {
     await new Promise(r => setTimeout(r, 120));         // 模拟网络延迟
     return MIS_MOCK.route(path, opts);
   }
+  /* v81:审计对人(docs/05 P2)—— 带上真实操作者,系统 2 action_logs 记真人而不是服务账号(patch 0004 透传) */
+  let misUser = null;
+  try { const u = (0, eval)('typeof currentUser!=="undefined"?currentUser:null'); misUser = u && u.username; } catch (e) {}
   const res = await fetch(window.MIS_META.baseUrl + path, {
     method: opts.method || 'GET',
     headers: Object.assign(
       { Authorization: 'Bearer ' + window.MIS_META.token },
+      misUser ? { 'X-MIS-User': misUser } : {},
       opts.body ? { 'Content-Type': 'application/json' } : {}
     ),
     body: opts.body ? JSON.stringify(opts.body) : undefined,

@@ -451,8 +451,10 @@
     (cfg.fields || []).forEach(f => { if (f.visibleWhen && !fieldVisible(f, s._formVals)) s._formVals[f.name] = ''; });
     if (input.tagName === 'SELECT') renderForm(k);
   }
+  /* v81:资源 key → docs/05 权限 key(与系统 2 的 17 key 词汇一致) */
+  const META_PERM_KEY = { brands: 'brands', bms: 'business-managers', pixels: 'pixels', accounts: 'ad-accounts', apps: 'developer-apps', tokens: 'tokens', shares: 'pixel-shares' };
   async function save(k) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable(META_PERM_KEY[k])) return;
     const cfg = R[k], s = st8(k), vals = s._formVals;
     const miss = (cfg.fields || []).find(f => f.required && fieldVisible(f, vals) && !vals[f.name]);
     if (miss) { toast(miss.label + ' is required'); return; }
@@ -465,7 +467,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function del(k, id) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable(META_PERM_KEY[k])) return;
     if (!confirm('Confirm this status change?')) return;
     try { await metaApi(R[k].api + '/' + id, { method: 'DELETE' }); toast('Updated'); await loadList(k); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
@@ -549,7 +551,7 @@
         <button class="mmr-sw ${row.enabled ? 'on' : ''}" onclick="MISRes.capiToggle('${brandId}','${esc(row.eventType)}',${row.enabled ? 'false' : 'true'},this)"></button></div>`).join('');
   }
   async function capiToggle(brandId, eventType, enabled, btn) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('brands')) return;
     try {
       await metaApi(`/api/brands/${brandId}/capi-events`, { method: 'PUT', body: { eventType, enabled: enabled === 'true' || enabled === true } });
       const bodyEl = btn.closest('#mmrTabBody-brands') || btn.parentElement.parentElement;
@@ -587,7 +589,7 @@
   }
   function fbClear() { fbEdit('', '', 'MAIN', 'ACTIVE'); }
   async function fbSave(bmId) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('business-managers')) return;
     const id = document.getElementById('fbId').value;
     const bodyData = { id: id || undefined, fbAccountName: document.getElementById('fbName').value, role: document.getElementById('fbRole').value, status: document.getElementById('fbStatus').value };
     if (!bodyData.fbAccountName) { toast('FB account name is required'); return; }
@@ -597,7 +599,7 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function fbDisable(bmId, id) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('business-managers')) return;
     try {
       await metaApi(`/api/business-managers/${bmId}/fb-accounts`, { method: 'DELETE', body: { id } });
       toast('Updated'); fbPanel(document.getElementById('mmrTabBody-bms'), bmId);
@@ -625,7 +627,7 @@
         : '<p class="sub" style="display:block">No brands linked.</p>'}</div></div>`;
   }
   async function accLink(accId) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('ad-accounts')) return;
     const v = document.getElementById('accBrandSel').value;
     if (!v) { toast('Select a brand'); return; }
     try {
@@ -634,7 +636,7 @@
     } catch (e) { toast('操作失败：' + (e.message || e)); }
   }
   async function accUnlink(accId, brandId) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('ad-accounts')) return;
     if (!confirm('Unlink 是硬删除（无法撤销、不进审计日志），确认？')) return;
     try {
       await metaApi(`/api/ad-accounts/${accId}/brands`, { method: 'DELETE', body: { brandId } });
@@ -684,7 +686,7 @@
     SH._main = main; SH._shares = shares.items;
   }
   async function shareAct(accId) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('pixel-shares')) return;
     const main = SH._main;
     if (!main) return;
     const existing = SH._shares.find(s => String(s.pixelId) === String(main.id) && String(s.adAccountId) === String(accId));
@@ -815,7 +817,7 @@
     if (el) el.style.display = on ? 'none' : '';
   }
   async function userSave() {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('users')) return;
     const f = MU.form;
     const perms = {};
     document.querySelectorAll('#muPerms [data-perm]').forEach(s => { perms[s.getAttribute('data-perm')] = s.value; });
@@ -834,10 +836,38 @@
     } catch (e) { toast('保存失败：' + (e.message || e)); }
   }
   async function userDisable(id) {
-    if (!misMetaWritable()) return;
+    if (!misMetaWritable('users')) return;
     if (!confirm('Disable this user?')) return;
     try { await metaApi('/api/users/' + id, { method: 'DELETE' }); toast('Disabled'); loadUnifiedUsers(); }
     catch (e) { toast('操作失败：' + (e.message || e)); }
+  }
+
+  /* ================= v81:Roles 抽屉的 Meta 权限区(docs/05) ================= */
+  /* 17 key × edit/view/none;分组照系统 2 users-manager;写库走 role_meta_permissions */
+  function roleMetaSection(r) {
+    r.metaPerms = r.metaPerms || {};
+    let h = '<h3 style="margin:16px 0 6px">Meta 权限(系统 2 的 17 个板块)</h3>';
+    h += '<div class="remark" style="margin-bottom:6px">edit=可写 · view=只读(藏写按钮) · none=整页隐藏;Admin 角色自动全通,不看此表。</div>';
+    h += '<table class="permtable"><tbody>';
+    (window.MIS_META_KEY_GROUPS || MIS_META_KEY_GROUPS).forEach(g => {
+      h += '<tr class="grouprow"><td colspan="2">' + g.g + '</td></tr>';
+      g.keys.forEach(k => {
+        const lv = r.metaPerms[k] || 'view';
+        h += '<tr><td>' + esc(k) + '</td><td style="width:110px"><select onchange="MISRes.setRoleMetaPerm(\'' + k + '\',this.value)">' +
+          ['edit', 'view', 'none'].map(x => '<option value="' + x + '"' + (x === lv ? ' selected' : '') + '>' + x + '</option>').join('') +
+          '</select></td></tr>';
+      });
+    });
+    return h + '</tbody></table>';
+  }
+  function setRoleMetaPerm(k, v) { const r = window._editRole; if (!r) return; (r.metaPerms = r.metaPerms || {})[k] = v; }
+  async function saveRoleMetaPerms(roleId, metaPerms) {
+    const keys = (window.MIS_META_KEY_GROUPS || MIS_META_KEY_GROUPS).flatMap(g => g.keys);
+    const rows = keys.map(k => ({ role_id: roleId, meta_key: k, level: (metaPerms && metaPerms[k]) || 'view' }));
+    const db = (0, eval)('typeof db!=="undefined"?db:null');
+    if (!db) return;
+    const { error } = await db.from('role_meta_permissions').upsert(rows, { onConflict: 'role_id,meta_key' });
+    if (error) throw error;
   }
 
   /* ================= 对外 + 注册 ================= */
@@ -874,6 +904,7 @@
     capiToggle, fbSave, fbClear, fbEdit, fbDisable, accLink, accUnlink,
     loadShares, shareBrand: v => { SH.brandId = v; loadShares(); }, shareAct,
     loadUnifiedUsers, mapMeta, userNew, userEdit, userSave, userSuper, userDisable,
+    roleMetaSection, setRoleMetaPerm, saveRoleMetaPerms,
   };
 
   MIS_MODULES.register('mm-brands', () => open('brands'));

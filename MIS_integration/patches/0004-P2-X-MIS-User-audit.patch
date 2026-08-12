@@ -1,0 +1,94 @@
+From 5d524d7f00674741e4cadf5f37c3cdb33011b2f2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 12 Aug 2026 08:09:13 +0000
+Subject: [PATCH] =?UTF-8?q?MIS=20=E5=AE=A1=E8=AE=A1=E5=AF=B9=E4=BA=BA?=
+ =?UTF-8?q?=EF=BC=9AX-MIS-User=20=E5=A4=B4=E9=80=8F=E4=BC=A0=E8=BF=9B=20ac?=
+ =?UTF-8?q?tion=5Flogs.details?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+根因：MIS 前端统一走 service token 调用本系统后，所有写操作在 action_logs
+里都记成同一个服务身份，审计失去"对人"能力。
+证据：writeActionLog 的 userId 取自 session；service token 合成的 session
+只有一个身份（mis-access.ts MIS_SERVICE_NAME），P2 开写后必然全记同一人。
+改法：
+1. action-log.ts：writeActionLog 读请求头 X-MIS-User（格式校验 ^[\w.@-]{1,64}$），
+   合法则并进 details.misOperator。userId/FK 一概不动（users 表无此人）；
+   非请求上下文（定时任务）headers() 抛错则静默跳过。
+2. mis-access.ts：CORS Access-Control-Allow-Headers 追加 X-MIS-User，
+   否则浏览器预检直接拦掉该头。
+验证：npx tsc --noEmit 零错误；npm run build 通过。
+边界：头由 MIS 侧带上（依赖 patch 0001 的接入通道）；伪造头只能影响
+details 里的展示名，权限与身份仍由 token 决定，不扩大任何访问面。
+---
+ src/lib/mis-access.ts        |  2 +-
+ src/lib/server/action-log.ts | 27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/src/lib/mis-access.ts b/src/lib/mis-access.ts
+index 4d6abf1..b385dfc 100644
+--- a/src/lib/mis-access.ts
++++ b/src/lib/mis-access.ts
+@@ -80,7 +80,7 @@ export function misCorsHeaders(origin: string): Record<string, string> {
+   return {
+     "Access-Control-Allow-Origin": origin,
+     "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
+-    "Access-Control-Allow-Headers": "Authorization, Content-Type",
++    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-MIS-User",
+     "Access-Control-Max-Age": "86400",
+     Vary: "Origin",
+   };
+diff --git a/src/lib/server/action-log.ts b/src/lib/server/action-log.ts
+index 600f479..4dfcaa4 100644
+--- a/src/lib/server/action-log.ts
++++ b/src/lib/server/action-log.ts
+@@ -1,4 +1,5 @@
+ import { Prisma } from "@prisma/client";
++import { headers } from "next/headers";
+ import { prisma } from "@/lib/prisma";
+ import { getSessionUserId } from "@/lib/server/auth";
+ 
+@@ -20,6 +21,21 @@ export function serializeForLog<T>(value: T): T | null {
+   return JSON.parse(JSON.stringify(value, replacer)) as T;
+ }
+ 
++// MIS 审计对人：MIS 前端经 service token 调用写接口时，所有请求在本系统眼里都是
++// 同一个服务身份；真实操作者由 MIS 在 X-MIS-User 头里透传。这里只做一件事：
++// 头存在且格式合法（字母数字 . @ - _，≤64 位）就把它并进 details.misOperator，
++// userId / FK 一概不动 —— users 表里没有这个人，动 FK 才是破坏。
++async function misOperatorFromHeaders(): Promise<string | null> {
++  try {
++    const h = await headers();
++    const v = h.get("x-mis-user");
++    if (!v || !/^[\w.@-]{1,64}$/.test(v)) return null;
++    return v;
++  } catch {
++    return null; // 非请求上下文（定时任务等）没有 headers，静默跳过
++  }
++}
++
+ export interface ActionLogInput {
+   userId?: bigint;
+   actionType: string;
+@@ -48,6 +64,17 @@ export async function writeActionLog(input: ActionLogInput): Promise<void> {
+     if (serialized != null) details = serialized as Prisma.InputJsonValue;
+   }
+ 
++  const misOperator = await misOperatorFromHeaders();
++  if (misOperator) {
++    const base =
++      details !== Prisma.JsonNull && typeof details === "object" && !Array.isArray(details)
++        ? (details as Record<string, unknown>)
++        : details === Prisma.JsonNull
++          ? {}
++          : { value: details };
++    details = { ...base, misOperator } as Prisma.InputJsonValue;
++  }
++
+   try {
+     await prisma.actionLog.create({
+       data: {
+-- 
+2.43.0
+
