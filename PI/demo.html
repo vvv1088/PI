@@ -2219,6 +2219,29 @@ function crVar(c,k){const v=c.variants&&c.variants[k];return v?`<div style="font
 // 在测维度标记(v67):列表行内 🧪 = 这条素材这次测的维度,一眼看 overview
 function crTestDims(c){const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));return (h&&h.testDims)||[];}
 function crTM(c,k){return crTestDims(c).includes(k)?'<span title="本次测试维度">🧪</span> ':'';}
+/* v85(V 定,讨论二):素材状态两层映射 ——
+ * 第 1 层:没 publish 就是人工状态(待上线等,不变);登记的 ads code 对上系统 2 广告后,
+ *   Meta effective_status 自动映射:审核中/上线中/被拒/已暂停(三层合并,title 见层级)/有问题。
+ * 第 2 层:账户健康角标(⚠ 被封/欠款,数据等 H 节;mock 有演示)+ 爆量启发式(同账户 ≥3 拒 = 疑似账户事件)。
+ * 数据由 MISPerf.loadAdStatuses() 喂进 window._misAdStatus(进 Creatives 页自动拉)。 */
+const META_ST={PENDING_REVIEW:['审核中','live','Meta 审核排队中'],IN_PROCESS:['审核中','live','Meta 处理中(刚发布/刚修改)'],
+  ACTIVE:['上线中','scale','Meta 在投'],DISAPPROVED:['被拒','alarm','素材审核被拒'],
+  PAUSED:['已暂停','done','广告自身被暂停'],ADSET_PAUSED:['已暂停','done','广告组被暂停(传导)'],
+  CAMPAIGN_PAUSED:['已暂停','done','广告系列被暂停(传导)'],WITH_ISSUES:['有问题','live','投放受阻(WITH_ISSUES)']};
+const ACC_ST_ZH={DISABLED:'账户被封',UNSETTLED:'账户欠款'};
+function crStatusCell(c){
+  const S=window._misAdStatus;
+  const base=(c.ads&&window.MISNaming)?MISNaming.stripVer(String(c.ads).trim()):null;
+  const hit=(S&&base&&S.map[base])||null;
+  if(!hit||!META_ST[hit.status])return `<span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span>`;
+  const [label,cls,tip]=META_ST[hit.status];
+  let out=`<span class="cst cst-${cls}" title="${esc(tip)} · Meta:${esc(hit.status)}">${label}</span>`;
+  if(hit.status==='DISAPPROVED'&&(S.accDis[hit.acc]||0)>=3)
+    out+=` <span class="sub" style="display:inline" title="同账户 ${S.accDis[hit.acc]} 条同时被拒——大概率账户级事件连坐,先别当素材问题(判据:爆量启发式)">· 疑似账户事件</span>`;
+  const ah=S.health&&S.health[hit.acc];
+  if(ah&&ah!=='ACTIVE')out+=` <span class="mmr-badge mmr-r" title="所在广告账户:${esc(ACC_ST_ZH[ah]||ah)} —— 账户级问题,此广告状态可能已冻结失真">⚠ ${esc(ACC_ST_ZH[ah]||ah)}</span>`;
+  return out;
+}
 function renderCreatives(){
   fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
@@ -2238,7 +2261,7 @@ function renderCreatives(){
     <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${crTM(c,'visual_style')}${esc(c.vs||'—')}</span>${crVar(c,'visual_style')}</td>
     <td><span class="qt" title="${esc(ZH[c.offer]||c.offer||'')}">${crTM(c,'offer')}${esc(c.offer||'—')}</span>${crVar(c,'offer')}</td>
     <td><span class="qt" title="${esc(ZH[c.game_type]||c.game_type||'')}">${crTM(c,'game_type')}${esc(c.game_type||'—')}</span>${crVar(c,'game_type')}</td>
-    <td><span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span></td>
+    <td>${crStatusCell(c)}</td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
       ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
@@ -2940,7 +2963,29 @@ function isoWeekMonthLabel(w){const m=(''+w).match(/^(\d{4})-W(\d{1,2})$/);if(!m
   const simple=new Date(y,0,1+(wk-1)*7),dow=simple.getDay(),monday=new Date(simple);
   if(dow<=4)monday.setDate(simple.getDate()-dow+1);else monday.setDate(simple.getDate()+8-dow);
   return monday.toLocaleString('en-US',{month:'short'})+' '+monday.getFullYear();}
-function bgSpent(br,mo){let s=0;(creatives||[]).forEach(c=>{const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));if(!h||h.brand!==br)return;(c.runs||[]).forEach(r=>{if(isoWeekMonthLabel(r.week)===mo)s+=(+r.spend||0);});});return s;}
+/* v85(V 定,讨论一):已投放=spending 通道按「品牌×月」自动汇总(品牌用命名 detect,NULL 行不计入
+ * ——Spending 页 remark 标 TEST/IGNORE 的就是这些)。mock 跑 mock 数据同一条管道,live 即真数。
+ * 通道请求失败时回落素材周记旧法,页面不空白。 */
+let bgActual={};   // {'Aug 2026': {_ok:true, INZ9: 1234.5, ...}}
+async function bgLoadActual(mo){
+  if(!mo||bgActual[mo])return;
+  bgActual[mo]={_ok:false,_loading:true};
+  try{
+    const d0=new Date('1 '+mo);const y=d0.getFullYear(),m=d0.getMonth();
+    const iso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+    const from=iso(new Date(y,m,1)),to=iso(new Date(y,m+1,0));
+    const r=await metaApi('/api/analytics/spending?from='+from+'&to='+to+'&pageSize=all');
+    const t={_ok:true};
+    (r.rows||[]).forEach(row=>{const b=window.MISNaming?(MISNaming.parseAdName(row.ad_name).brand||null):null;if(b)t[b]=(t[b]||0)+Number(row.spending||0);});
+    bgActual[mo]=t;renderBudget();
+  }catch(e){bgActual[mo]={_ok:false};}
+}
+function bgSpent(br,mo){
+  const a=bgActual[mo];
+  if(a&&a._ok)return Math.round((a[br]||0)*100)/100;
+  if(a&&a._loading)return 0;   // 拉数中,回来会重画
+  let s=0;(creatives||[]).forEach(c=>{const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));if(!h||h.brand!==br)return;(c.runs||[]).forEach(r=>{if(isoWeekMonthLabel(r.week)===mo)s+=(+r.spend||0);});});return s;
+}
 // 状态 + 最终金额
 function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated),fin=bgNum(e.final_amount);
   if(fin!=null)return 'settled';
@@ -3032,6 +3077,7 @@ async function bgReopen(mo,br){
 }
 function renderBudget(){
   bgFillMonths();bgRenderDemoBar();
+  try{if(typeof metaApi==="function")bgLoadActual(bgMonth);}catch(e){}   // v85:月份定了才取真数(时序在 bgFillMonths 之后)
   const allBrands=allMktBrands();
   let tReq=0,tAll=0,tFin=0,tSp=0;
   document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{

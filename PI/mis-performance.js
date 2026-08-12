@@ -271,9 +271,32 @@
     a.click();
   }
 
+  /* ================= v85(V 定,讨论二):素材状态自动映射的数据源 =================
+   * 拉 /api/analytics/ads(现成 GET,E 节范围内)建 [广告基名 → {status,acc}] 映射 +
+   * 每账户 DISAPPROVED 计数(≥3 = 疑似账户级事件,爆量启发式) +
+   * 账户健康(占位通道 /api/mis/account-health,H 节拍板后接真)。
+   * 结果放 window._misAdStatus,Creatives 页 crStatusCell() 消费;拉完重画。 */
+  async function loadAdStatuses() {
+    try {
+      const d = await metaApi('/api/analytics/ads');
+      const map = {}, accDis = {};
+      (d.items || d.rows || []).forEach(a => {
+        const nm = a.name || a.ad_name; if (!nm) return;
+        const base = window.MISNaming ? MISNaming.stripVer(String(nm).trim()) : String(nm).trim();
+        map[base] = { status: a.status, acc: String(a.fb_ad_accounts_id || a.account_id || '') };
+        if (a.status === 'DISAPPROVED') { const k = String(a.fb_ad_accounts_id || ''); accDis[k] = (accDis[k] || 0) + 1; }
+      });
+      let health = {};
+      try { const h = await metaApi('/api/mis/account-health'); (h.accounts || []).forEach(x => { health[String(x.account_id)] = x.status; }); } catch (e) { /* H 节未接,先空 */ }
+      window._misAdStatus = { map, accDis, health };
+      try { const f = (0, eval)('typeof renderCreatives==="function"?renderCreatives:null'); if (f) f(); } catch (e) {}
+    } catch (e) { /* 通道不可用:素材保持人工状态 */ }
+  }
+
   /* ================= 注册 ================= */
   mount();
-  window.MISPerf = { loadLoop, loadSpending, saveRemark, exportCsv, spSize };
+  window.MISPerf = { loadLoop, loadSpending, saveRemark, exportCsv, spSize, loadAdStatuses };
   MIS_MODULES.register('perf-loop', loadLoop);
   MIS_MODULES.register('perf-spending', () => loadSpending(1));
+  MIS_MODULES.register('creatives', loadAdStatuses);
 })();

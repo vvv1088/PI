@@ -101,7 +101,29 @@ function isoWeekMonthLabel(w){const m=(''+w).match(/^(\d{4})-W(\d{1,2})$/);if(!m
   const simple=new Date(y,0,1+(wk-1)*7),dow=simple.getDay(),monday=new Date(simple);
   if(dow<=4)monday.setDate(simple.getDate()-dow+1);else monday.setDate(simple.getDate()+8-dow);
   return monday.toLocaleString('en-US',{month:'short'})+' '+monday.getFullYear();}
-function bgSpent(br,mo){let s=0;(creatives||[]).forEach(c=>{const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));if(!h||h.brand!==br)return;(c.runs||[]).forEach(r=>{if(isoWeekMonthLabel(r.week)===mo)s+=(+r.spend||0);});});return s;}
+/* v85(V 定,讨论一):已投放=spending 通道按「品牌×月」自动汇总(品牌用命名 detect,NULL 行不计入
+ * ——Spending 页 remark 标 TEST/IGNORE 的就是这些)。mock 跑 mock 数据同一条管道,live 即真数。
+ * 通道请求失败时回落素材周记旧法,页面不空白。 */
+let bgActual={};   // {'Aug 2026': {_ok:true, INZ9: 1234.5, ...}}
+async function bgLoadActual(mo){
+  if(!mo||bgActual[mo])return;
+  bgActual[mo]={_ok:false,_loading:true};
+  try{
+    const d0=new Date('1 '+mo);const y=d0.getFullYear(),m=d0.getMonth();
+    const iso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+    const from=iso(new Date(y,m,1)),to=iso(new Date(y,m+1,0));
+    const r=await metaApi('/api/analytics/spending?from='+from+'&to='+to+'&pageSize=all');
+    const t={_ok:true};
+    (r.rows||[]).forEach(row=>{const b=window.MISNaming?(MISNaming.parseAdName(row.ad_name).brand||null):null;if(b)t[b]=(t[b]||0)+Number(row.spending||0);});
+    bgActual[mo]=t;renderBudget();
+  }catch(e){bgActual[mo]={_ok:false};}
+}
+function bgSpent(br,mo){
+  const a=bgActual[mo];
+  if(a&&a._ok)return Math.round((a[br]||0)*100)/100;
+  if(a&&a._loading)return 0;   // 拉数中,回来会重画
+  let s=0;(creatives||[]).forEach(c=>{const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));if(!h||h.brand!==br)return;(c.runs||[]).forEach(r=>{if(isoWeekMonthLabel(r.week)===mo)s+=(+r.spend||0);});});return s;
+}
 // 状态 + 最终金额
 function bgStatus(e){e=e||{};const req=bgNum(e.requested),all=bgNum(e.allocated),fin=bgNum(e.final_amount);
   if(fin!=null)return 'settled';
@@ -193,6 +215,7 @@ async function bgReopen(mo,br){
 }
 function renderBudget(){
   bgFillMonths();bgRenderDemoBar();
+  try{if(typeof metaApi==="function")bgLoadActual(bgMonth);}catch(e){}   // v85:月份定了才取真数(时序在 bgFillMonths 之后)
   const allBrands=allMktBrands();
   let tReq=0,tAll=0,tFin=0,tSp=0;
   document.getElementById('budgetBody').innerHTML=allBrands.map(br=>{

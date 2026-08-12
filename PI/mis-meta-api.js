@@ -411,6 +411,10 @@ window.MIS_MOCK = (function () {
     /* 素材注册表（真实版来自 Supabase creatives 表，此处 mock 便于闭环页独立开发） */
     if (base === '/api/mis/creative-registry') return { creatives: CREATIVES, hypotheses: HYPS };
 
+    /* v85 账户健康占位通道 —— 对接清单 H 节需求 1(账户真实状态出口)拍板后在此接 live;
+     * mock 演示:账户 4 欠款(UNSETTLED)→ 该账户下素材挂 ⚠ 账户角标 */
+    if (base === '/api/mis/account-health') return { accounts: [{ account_id: '4', status: 'UNSETTLED' }] };
+
     throw new Error('mock 未实现该路径: ' + base);
   }
 

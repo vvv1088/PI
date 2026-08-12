@@ -1,5 +1,14 @@
 # Changelog — Marketing Intelligence System
 
+## [v85] — 2026-08-12 · Budget 真数汇总 + 素材状态两层映射(讨论一/二落地,V 定)
+
+- **Budget 已投放 = spending 通道自动汇总**(品牌×月,命名 detect 归品;NULL 行不计入——与 Spending 页 TEST/IGNORE remark 同一口径);Utilization 跟随。mock 即演示同管道,live 即真数,零虚拟数字;通道失败回落素材周记旧法。
+- **素材状态两层映射**:登记 ads code 对上系统 2 广告(/api/analytics/ads)后自动映射——审核中(PENDING_REVIEW/IN_PROCESS)/上线中(ACTIVE)/被拒(DISAPPROVED,红)/已暂停(三种 PAUSED 合并,title 见层级)/有问题(WITH_ISSUES);未发布素材保持人工「待上线」。
+- **连坐判据(爆量启发式)**:同账户 ≥3 条 DISAPPROVED → 状态旁标「疑似账户事件」(六周数据验证可拦 46% 假被拒)。
+- **账户健康角标框架**:⚠ 账户被封/欠款 角标 + 占位通道 /api/mis/account-health(mock 有演示;对接清单 H 节拍板后接真数据,零改版)。
+- mock 新增新式 7 段广告样本(与 demo 素材登记码一致)演示四种状态 + 爆量 + 角标。
+- 验证:35 视图 + 11 项引擎检查零报错;定向实测(四种映射/疑似账户事件/账户角标/待上线保留/Budget 月度真数逐品牌)全过。
+
 ## [v84.3] — 2026-08-12 · 素材格显示真 ads code + 字典去使用次数/补短码(V 定)
 
 - Creatives 页 ASSET·ADS CODE 格:显示登记的**新式 7 段 ads code**;未生成显示灰字「未生成 · 打开素材 ⚙ 生成」。demo 种子同步改为按命名契约 v2 生成(旧 USC-001-V1 假样式清除)。

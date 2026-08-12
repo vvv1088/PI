@@ -242,6 +242,14 @@ window.MIS_MOCK_ADMIN = (function () {
     mk('USC_OK18_TRSA_IM_KH0311', '3', 'PAUSED', 12, null);
     mk('USC_SBKH_TRSA_IM_KH0401', '4', 'ACTIVE', 27, svg('#db2777'));
     mk('USC_SBKH_TRSA_VD_KH0402', '4', 'ACTIVE', 15, null);
+    /* v85:命名契约 v2 的新式广告(与 demo 素材登记码一致)——演示素材状态自动映射:
+     * 上线中/被拒(含同账户批量翻拒=疑似账户事件)/审核中/系列暂停 各一 */
+    mk('USC_OK18_SA_VD_HK_WD_001',  '3', 'ACTIVE', 33, svg('#16a34a'));
+    mk('USC_OK18_SA_VD_HK_FP_001',  '3', 'DISAPPROVED', 21, svg('#dc2626'));
+    mk('USC_OK18_TRSA_VD_WD9_KH02', '3', 'DISAPPROVED', 8, null);   // 同账户陪拒 ×2 → 触发爆量启发式
+    mk('USC_OK18_TRSA_IM_BW2_KH01', '3', 'DISAPPROVED', 5, null);
+    mk('USC_WIKH_SA_VD_FM_VD_001',  '2', 'PENDING_REVIEW', 9, svg('#d97706'));
+    mk('USC_SBKH_SA_VD_VS_GS_001',  '4', 'CAMPAIGN_PAUSED', 11, svg('#7c3aed'));
   })();
   const BRAND_OF_AD = name =>
     name.indexOf('_INZ9_') >= 0 ? 'INZ9' : name.indexOf('_WIKH_') >= 0 ? '17WINKH'

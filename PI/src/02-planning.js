@@ -1049,6 +1049,29 @@ function crVar(c,k){const v=c.variants&&c.variants[k];return v?`<div style="font
 // 在测维度标记(v67):列表行内 🧪 = 这条素材这次测的维度,一眼看 overview
 function crTestDims(c){const h=hypos.find(x=>(c.hyp||'').startsWith(x.id));return (h&&h.testDims)||[];}
 function crTM(c,k){return crTestDims(c).includes(k)?'<span title="本次测试维度">🧪</span> ':'';}
+/* v85(V 定,讨论二):素材状态两层映射 ——
+ * 第 1 层:没 publish 就是人工状态(待上线等,不变);登记的 ads code 对上系统 2 广告后,
+ *   Meta effective_status 自动映射:审核中/上线中/被拒/已暂停(三层合并,title 见层级)/有问题。
+ * 第 2 层:账户健康角标(⚠ 被封/欠款,数据等 H 节;mock 有演示)+ 爆量启发式(同账户 ≥3 拒 = 疑似账户事件)。
+ * 数据由 MISPerf.loadAdStatuses() 喂进 window._misAdStatus(进 Creatives 页自动拉)。 */
+const META_ST={PENDING_REVIEW:['审核中','live','Meta 审核排队中'],IN_PROCESS:['审核中','live','Meta 处理中(刚发布/刚修改)'],
+  ACTIVE:['上线中','scale','Meta 在投'],DISAPPROVED:['被拒','alarm','素材审核被拒'],
+  PAUSED:['已暂停','done','广告自身被暂停'],ADSET_PAUSED:['已暂停','done','广告组被暂停(传导)'],
+  CAMPAIGN_PAUSED:['已暂停','done','广告系列被暂停(传导)'],WITH_ISSUES:['有问题','live','投放受阻(WITH_ISSUES)']};
+const ACC_ST_ZH={DISABLED:'账户被封',UNSETTLED:'账户欠款'};
+function crStatusCell(c){
+  const S=window._misAdStatus;
+  const base=(c.ads&&window.MISNaming)?MISNaming.stripVer(String(c.ads).trim()):null;
+  const hit=(S&&base&&S.map[base])||null;
+  if(!hit||!META_ST[hit.status])return `<span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span>`;
+  const [label,cls,tip]=META_ST[hit.status];
+  let out=`<span class="cst cst-${cls}" title="${esc(tip)} · Meta:${esc(hit.status)}">${label}</span>`;
+  if(hit.status==='DISAPPROVED'&&(S.accDis[hit.acc]||0)>=3)
+    out+=` <span class="sub" style="display:inline" title="同账户 ${S.accDis[hit.acc]} 条同时被拒——大概率账户级事件连坐,先别当素材问题(判据:爆量启发式)">· 疑似账户事件</span>`;
+  const ah=S.health&&S.health[hit.acc];
+  if(ah&&ah!=='ACTIVE')out+=` <span class="mmr-badge mmr-r" title="所在广告账户:${esc(ACC_ST_ZH[ah]||ah)} —— 账户级问题,此广告状态可能已冻结失真">⚠ ${esc(ACC_ST_ZH[ah]||ah)}</span>`;
+  return out;
+}
 function renderCreatives(){
   fillCHypFilter();
   const fb=document.getElementById('f-cbrand').value,fh=document.getElementById('f-chyp').value;
@@ -1068,7 +1091,7 @@ function renderCreatives(){
     <td><span class="qt" title="${esc(ZH[c.vs]||c.vs||'')}">${crTM(c,'visual_style')}${esc(c.vs||'—')}</span>${crVar(c,'visual_style')}</td>
     <td><span class="qt" title="${esc(ZH[c.offer]||c.offer||'')}">${crTM(c,'offer')}${esc(c.offer||'—')}</span>${crVar(c,'offer')}</td>
     <td><span class="qt" title="${esc(ZH[c.game_type]||c.game_type||'')}">${crTM(c,'game_type')}${esc(c.game_type||'—')}</span>${crVar(c,'game_type')}</td>
-    <td><span class="cst cst-${c.stc||'wait'}">${esc(c.st||'待上线')}</span></td>
+    <td>${crStatusCell(c)}</td>
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       ${(!c.versions||c.versions.length===0)?`<button class="btn ghost sm" data-perm="creative:edit" onclick="firstVersion(${creatives.indexOf(c)})">Setup</button>`:`<button class="btn ghost sm" data-perm="creative:edit" onclick="editCreativeCopy(${creatives.indexOf(c)})">Edit</button>`}
       ${c.act==='upload'?`<button class="btn ghost sm" onclick="toast('原型演示:选择文件 → 存 Supabase Storage → 缩略图出现在本行')">上传</button>`:''}
