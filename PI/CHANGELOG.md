@@ -1,4 +1,10 @@
-# Changelog — Marketing Intelligent System
+# Changelog — Marketing Intelligence System
+
+## [v84.2] — 2026-08-12 · 系统名纠正 + 启动导航全收起(V 反馈)
+
+- 系统名:Marketing **Intelligent** System → Marketing **Intelligence** System(标题栏 + 侧栏 brand)。
+- 启动时不再自动展开当前视图所在组:六组全部收起(此前 CI 组默认打开);用户点导航或跨页跳转时才展开。
+- 验证:35 视图零报错;实测 title/brand 已改、启动 openGroups=0。
 
 ## [v84.1] — 2026-08-12 · Spending 排版/分页 + 闭环报表排版(V 反馈)
 

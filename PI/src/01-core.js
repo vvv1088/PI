@@ -33,7 +33,8 @@ function go(v,el){
   window.scrollTo(0,0);
 }
 /* v72: 导航默认全收起,启动时只展开初始视图所在组 */
-(function(){const ni=document.querySelector('.nitem.on');if(ni){const g=ni.closest('.grp');if(g)g.classList.remove('closed');}})();
+/* v84.2(V 定):启动时不自动展开当前视图所在组 —— 六组全部收起,和其他板块一致;
+ * 用户点导航/跨页跳转(go)时才展开目标组 */
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 function filterOverdue(){overdueOnly=!overdueOnly;renderPool();}
