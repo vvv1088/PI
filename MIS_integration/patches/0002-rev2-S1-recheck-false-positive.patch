@@ -1,0 +1,77 @@
+From ca92f71194b2dc1ea98d6d45b2bf063134486802 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 19 Aug 2026 08:08:52 +0000
+Subject: [PATCH] =?UTF-8?q?S1=20rev2:=E8=84=B1=E6=95=8F=E6=B8=85=E6=B4=97?=
+ =?UTF-8?q?=20SQL=20=E5=A4=8D=E6=A0=B8=E8=AF=AF=E6=8A=A5=E4=BF=AE=E6=AD=A3?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+rev1 的检测模式 [^"]{9,} 会把已脱敏值(前 8 位+省略号=11 字符)也判为
+明文残留,DRY-RUN/UPDATE WHERE/复核三处同病:复核永远返回与清洗前相同
+的行数,误报「未生效」。
+
+rev2 在三处检测条件加 ICU 负向前瞻 (?![^"]{8}\.\.\.") 排除已脱敏格式;
+按值逐个判断,同一行内已脱敏与残留明文混存仍正确命中。REGEXP_REPLACE
+替换模式不变(对已脱敏值本就等值替换)。需 MySQL 8.0+(与 rev1 相同)。
+---
+ .../20260811_redact_action_logs_secrets.sql   | 19 +++++++++++++------
+ ...30\346\233\264\350\256\260\345\275\225.md" |  1 +
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/db/manual-migrations/20260811_redact_action_logs_secrets.sql b/db/manual-migrations/20260811_redact_action_logs_secrets.sql
+index 4c4682c..ae5255c 100644
+--- a/db/manual-migrations/20260811_redact_action_logs_secrets.sql
++++ b/db/manual-migrations/20260811_redact_action_logs_secrets.sql
+@@ -1,13 +1,20 @@
+ -- S1 存量清洗:action_logs.details 里的 token / appSecret / passwordHash 明文
+ -- 截断为前 8 位 + "..."。配套代码修复见 patch 0002(新增写入已脱敏)。
+ -- 先跑 DRY-RUN 看影响面,确认后再跑 UPDATE。生产实测(2026-08-09)预期 33 条。
++--
++-- rev2(2026-08-19):三处检测条件加负向前瞻 (?![^"]{8}\.\.\.") 排除已脱敏格式。
++-- rev1 的 [^"]{9,} 会把脱敏后的值(前 8 位+省略号 = 11 字符,如 abcd1234...)
++-- 也算作"还有明文",导致复核永远返回与清洗前相同的行数,误报「未生效」。
++-- 前瞻按"值"逐个判断,同一行里已脱敏与残留明文混存时仍能正确命中残留项。
++-- (?!...) 为 ICU 语法,需 MySQL 8.0+;本项目 docker-compose 固定 mysql:8.0,
++-- 且本文件的 REGEXP_REPLACE 本就要求 8.0+,无新增版本要求。
+ 
+--- DRY-RUN:哪些行会被改
++-- DRY-RUN:哪些行会被改(已脱敏的值不再命中)
+ SELECT id, entity_type, action_type, created_at
+ FROM action_logs
+-WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"(?![^"]{8}\\.\\.\\.")[^"]{9,}"';
+ 
+--- 正式清洗(可重复执行,幂等)
++-- 正式清洗(可重复执行,幂等;已脱敏的行不再被 WHERE 命中)
+ UPDATE action_logs
+ SET details = CAST(
+   REGEXP_REPLACE(
+@@ -18,9 +25,9 @@ SET details = CAST(
+       '"appSecret" *: *"([^"]{8})[^"]{1,}"',      '"appSecret":"\\1..."'),
+     '"passwordHash" *: *"([^"]{8})[^"]{1,}"',     '"passwordHash":"\\1..."')
+   AS JSON)
+-WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"(?![^"]{8}\\.\\.\\.")[^"]{9,}"';
+ 
+--- 复核:应返回 0 行
++-- 复核:应返回 0(仅统计"仍是明文"的值;{8}+"..." 的已脱敏值不计入)
+ SELECT COUNT(*) AS remaining
+ FROM action_logs
+-WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"[^"]{9,}"';
++WHERE CAST(details AS CHAR) REGEXP '"(token|appSecret|passwordHash)" *: *"(?![^"]{8}\\.\\.\\.")[^"]{9,}"';
+diff --git "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md" "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+index 0b90cf5..3b697c7 100644
+--- "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
++++ "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+@@ -35,6 +35,7 @@ null → `getSessionUserId()` null → `writeActionLog` 的 `if (!userId) return
+ | **原状** | `serializeForLog` 把整条记录原样入 `action_logs.details`，生产实测 17 条含 token 明文、16 条含 appSecret 明文；任何有 `action-logs: view` 权限的人可读 |
+ | **影响** | 全部 CAPI token 与 app secret 通过审计页/接口泄露；也是 MIS P1 不敢开放 #15/16/#27 的直接原因 |
+ | **修复** | `action-log.ts` 的序列化对键名 `token` / `appSecret` / `passwordHash` 做脱敏（保留前 8 位 + `...`），任意嵌套深度生效；存量清洗 SQL 见 `db/manual-migrations/20260811_redact_action_logs_secrets.sql`（含 dry-run 查询，先看后改） |
++| **rev2（2026-08-19）** | 清洗 SQL 的检测条件修正：rev1 的 `[^"]{9,}` 把已脱敏值（8 位+`...`=11 字符）也当明文，复核误报「未生效」；rev2 三处条件加负向前瞻排除已脱敏格式，复核归 0 才是真干净 |
+ | **验证** | 本地单测:嵌套 before/after 中的三类键均被截断,其余字段原样;tsc 见 patch 说明 |
+ | **文档影响** | `06-API接口手册.md` §3.6/§3.7/§8.2 的 S1 警告在部署+清洗后消除;MIS 侧待此部署后才申请开放 #15/16(脱敏返回)与 #27 |
+ 
+-- 
+2.43.0
+

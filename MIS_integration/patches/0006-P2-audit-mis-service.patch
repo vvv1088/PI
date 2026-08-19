@@ -1,0 +1,191 @@
+From 047578b9c50e64bb8904e1e50e6a2aa974655dd2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 19 Aug 2026 08:07:58 +0000
+Subject: [PATCH] =?UTF-8?q?P2=20=E5=AE=A1=E8=AE=A1=E9=97=AD=E7=8E=AF:mis-s?=
+ =?UTF-8?q?ervice=20=E6=9C=8D=E5=8A=A1=E8=B4=A6=E5=8F=B7,MIS=20=E5=86=99?=
+ =?UTF-8?q?=E6=93=8D=E4=BD=9C=E8=BF=9B=20action=5Flogs?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+修复 0004 交付后确认的审计静默失效:MIS 请求无 cookie,
+getSessionUserId() 返回 null,writeActionLog 早退,misOperatorFromHeaders
+不可达,X-MIS-User 成死代码。
+
+方案(Jayden 方案一):
+- users 表建 mis-service 账号(INACTIVE/不可登录/permissions={} 非 NULL),
+  建号 SQL: db/manual-migrations/20260819_create_mis_service_user.sql
+- verifyMisToken 合成 session 的 uid 改用该账号数字 id(MIS_SERVICE_USER_ID)
+- getSessionUser() cookie 无会话时回落 Authorization 头重验 MIS token;
+  方法/路径限制仍由 middleware misRequestViolation 把关,不放宽任何面
+- 连带修复:requireView/requireEdit 对 MIS 身份此前 401,回落后可用
+
+开关与回滚:MIS_SERVICE_USER_ID 不设 = 行为与 0005 完全一致;
+回滚只需删该环境变量并重启。
+
+含 migration:20260819_create_mis_service_user.sql(先建号,再填 env,再重启)
+---
+ .env.example                                  |  4 +++
+ .../20260819_create_mis_service_user.sql      | 29 +++++++++++++++++++
+ ...30\346\233\264\350\256\260\345\275\225.md" | 18 ++++++++++++
+ src/lib/mis-access.ts                         | 18 ++++++++++--
+ src/lib/server/auth.ts                        | 16 ++++++++--
+ 5 files changed, 81 insertions(+), 4 deletions(-)
+ create mode 100644 db/manual-migrations/20260819_create_mis_service_user.sql
+
+diff --git a/.env.example b/.env.example
+index bbb868e..ddd117c 100644
+--- a/.env.example
++++ b/.env.example
+@@ -14,3 +14,7 @@ MIS_ALLOW_REMARK_PUT=0
+ # P2 写通道第二把钥匙(可选;≥48 位随机、必须与 MIS_API_TOKEN 不同):持它才可写白名单内接口
+ # (资产CRUD/轮转/SOP;tokens/users/action-logs 永远拒绝)。不设 = 全系统只读。
+ MIS_API_WRITE_TOKEN=replace-with-another-48-char-random
++# mis-service 服务账号的 users.id(建号 SQL:db/manual-migrations/20260819_create_mis_service_user.sql)。
++# 配置后 MIS 写操作进 action_logs,操作人由 X-MIS-User 头写进 details.misOperator
++# (合法值:v / bryan / joey / gg / mis-auto;格式校验 ^[\w.@-]{1,64}$)。不设 = 不记审计(旧行为)。
++MIS_SERVICE_USER_ID=
+diff --git a/db/manual-migrations/20260819_create_mis_service_user.sql b/db/manual-migrations/20260819_create_mis_service_user.sql
+new file mode 100644
+index 0000000..96ef4ca
+--- /dev/null
++++ b/db/manual-migrations/20260819_create_mis_service_user.sql
+@@ -0,0 +1,29 @@
++-- MIS 审计服务账号（patch 0006 配套，Jayden 方案一）。
++-- 目的：writeActionLog 要求 userId 指向 users 表真实行；给 MIS 建一个
++-- 不可登录的占位账号，verifyMisToken 用它的数字 id 合成 session，
++-- MIS 写操作从此进 action_logs（操作人在 details.misOperator）。
++--
++-- 三重不可登录保险：
++--   1. status='INACTIVE' —— 登录查询限定 status='ACTIVE'（login/route.ts）
++--   2. password_hash 不是合法 bcrypt 值 —— bcrypt.compare 恒 false
++--   3. permissions='{}'（空对象）—— 注意绝不能是 NULL：NULL = superadmin 全通行，
++--      这是 users 表最大的坑
++-- 不占席位：INACTIVE 账号不参与正常使用；用户管理页会显示这一行，属预期。
++
++-- 建号（幂等：已存在则跳过）
++INSERT INTO users (username, password_hash, display_name, permissions, status, created_at, updated_at)
++SELECT 'mis-service', 'LOCKED:mis-service-cannot-login', 'MIS Service (API audit)',
++       JSON_OBJECT(), 'INACTIVE', NOW(3), NOW(3)
++FROM DUAL
++WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'mis-service');
++
++-- 取 id → 填进 .env 的 MIS_SERVICE_USER_ID，然后重启应用
++SELECT id AS mis_service_user_id, username, status
++FROM users WHERE username = 'mis-service';
++
++-- 复核（应各返回 1 行 / 0 行）
++SELECT COUNT(*) AS should_be_1 FROM users
++WHERE username = 'mis-service' AND status = 'INACTIVE'
++  AND JSON_TYPE(permissions) = 'OBJECT' AND JSON_LENGTH(permissions) = 0;
++SELECT COUNT(*) AS should_be_0 FROM users
++WHERE username = 'mis-service' AND (status = 'ACTIVE' OR permissions IS NULL);
+diff --git "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md" "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+index c7319e5..0b90cf5 100644
+--- "a/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
++++ "b/docs/handover/_\345\217\230\346\233\264\350\256\260\345\275\225.md"
+@@ -5,6 +5,24 @@
+ 
+ ---
+ 
++## 2026-08-19　MIS 写操作审计闭环：mis-service 服务账号（patch 0006，待部署）
++
++由 MIS 侧开发交付，Jayden 审核部署。修复对象是 patch 0004 交付后确认的
++「审计静默失效」：MIS 请求无 cookie → `getSessionUser()` 只读 cookie 返回
++null → `getSessionUserId()` null → `writeActionLog` 的 `if (!userId) return`
++早退 → `misOperatorFromHeaders()` 永远执行不到，X-MIS-User 成死代码。
++
++| | |
++|---|---|
++| **方案** | Jayden 方案一：users 表建 `mis-service` 服务账号（INACTIVE、不可登录、permissions=`{}` 非 NULL），`verifyMisToken` 通过后合成 session 的 uid 用该账号数字 id（环境变量 `MIS_SERVICE_USER_ID`） |
++| **改动** | ① `mis-access.ts`：新增 `misServiceUserId()`，`verifyMisToken` 的 uid 优先用它；② `auth.ts`：`getSessionUser()` cookie 无会话时回落 Authorization 头重验 MIS token（方法/路径闸仍在 middleware，不放宽任何面）；③ 建号 SQL `db/manual-migrations/20260819_create_mis_service_user.sql`；④ `.env.example` 新增 `MIS_SERVICE_USER_ID` |
++| **连带修复** | `requireView`/`requireEdit` 此前对 MIS 身份返回 401（getSessionUser 为 null）——带路由级权限检查的写接口（如 spending remark PUT）对 MIS 实际不可用；回落后同步解决 |
++| **X-MIS-User 合法值** | `v` / `bryan` / `joey` / `gg` / `mis-auto`（MIS 侧契约；代码只做格式校验 `^[\w.@-]{1,64}$`，新增人名不需要改本系统） |
++| **开关** | `MIS_SERVICE_USER_ID` 不设 = 行为与 0005 完全一致（写操作不记审计）。回滚 = 删掉该环境变量重启 |
++| **部署顺序** | 先跑建号 SQL → 把返回的 id 填进 `.env` 的 `MIS_SERVICE_USER_ID` → 重启应用 → 按 patch 说明的「生产验证步骤」取证 |
++
++---
++
+ ## 2026-08-11　MIS 接入配套：审计脱敏 + 轮转/停用残留缺陷修复（待部署）
+ 
+ 由 MIS 侧开发交付（patch 0002 / 0003），Jayden 审核部署。两条均为 06 手册
+diff --git a/src/lib/mis-access.ts b/src/lib/mis-access.ts
+index b2f59f8..943d66e 100644
+--- a/src/lib/mis-access.ts
++++ b/src/lib/mis-access.ts
+@@ -22,14 +22,26 @@
+  *                        离线保管、不进前端。到开写阶段 MIS 自己换用写 token 重新发版
+  *                        即可——本系统侧零改动、零重启、零二次排期。
+  *                        tokens / users / action-logs / auth 无论持哪把钥匙永远拒绝。
++ *   MIS_SERVICE_USER_ID  users 表里 mis-service 服务账号的数字 id（建号 SQL 见
++ *                        db/manual-migrations/20260819_create_mis_service_user.sql）。
++ *                        配置后合成 session 的 uid 用它，writeActionLog 的 userId
++ *                        检查得以通过，MIS 写操作进 action_logs（操作人在
++ *                        details.misOperator，由 X-MIS-User 头透传）。
++ *                        不配置 = 行为与旧版一致：MIS 写操作不记审计（静默跳过）。
+  */
+ import type { PermissionMap, SessionPayload } from "@/lib/session";
+ 
+ /** token 身份在 action_logs / 排查时显示的名字 */
+ export const MIS_SERVICE_NAME = "mis-service";
+-/** 合成 session 的 uid（users 表里不存在的保留值，仅用于标识） */
++/** 未配置 MIS_SERVICE_USER_ID 时合成 session 的占位 uid（非数字，审计照旧跳过） */
+ export const MIS_SERVICE_UID = "mis-service";
+ 
++/** mis-service 服务账号的数字 uid（users.id）。未配置或非纯数字 → null */
++export function misServiceUserId(): string | null {
++  const v = process.env.MIS_SERVICE_USER_ID?.trim();
++  return v && /^\d+$/.test(v) ? v : null;
++}
++
+ /**
+  * MIS token 的权限面（全部 view）。
+  * 刻意排除（连 view 都不给）：
+@@ -170,7 +182,9 @@ export function verifyMisToken(authorization: string | null): SessionPayload | n
+     for (const k of MIS_WRITE_EDIT_KEYS) perms[k] = "edit";
+   }
+   return {
+-    uid: MIS_SERVICE_UID,
++    // 有服务账号就用它的数字 id：getSessionUserId() 能 BigInt 化，
++    // writeActionLog 不再早退（FK 指向 mis-service 行，操作人看 details.misOperator）
++    uid: misServiceUserId() ?? MIS_SERVICE_UID,
+     name: MIS_SERVICE_NAME,
+     perms,
+     iat: now,
+diff --git a/src/lib/server/auth.ts b/src/lib/server/auth.ts
+index de54146..c0c4719 100644
+--- a/src/lib/server/auth.ts
++++ b/src/lib/server/auth.ts
+@@ -1,7 +1,8 @@
+ import bcrypt from "bcryptjs";
+-import { cookies } from "next/headers";
++import { cookies, headers } from "next/headers";
+ import { Prisma } from "@prisma/client";
+ import { prisma } from "@/lib/prisma";
++import { verifyMisToken } from "@/lib/mis-access";
+ import { SESSION_COOKIE_NAME, verifySession, type SessionPayload } from "@/lib/session";
+ 
+ export async function ensureDefaultAdmin(): Promise<void> {
+@@ -21,7 +22,18 @@ export async function ensureDefaultAdmin(): Promise<void> {
+ export async function getSessionUser(): Promise<SessionPayload | null> {
+   const store = await cookies();
+   const token = store.get(SESSION_COOKIE_NAME)?.value;
+-  return verifySession(token);
++  const session = await verifySession(token);
++  if (session) return session;
++  // MIS service token 请求没有 cookie：回落到 Authorization 头，让路由层
++  // （requireView/requireEdit/writeActionLog）看到与 middleware 相同的合成身份。
++  // 不放宽任何面：能走到路由的 MIS 请求都已过 middleware 的 misRequestViolation
++  // 方法/路径闸，且这里对 token 本身重新校验。
++  try {
++    const h = await headers();
++    return verifyMisToken(h.get("authorization"));
++  } catch {
++    return null; // 非请求上下文（脚本/定时任务）没有 headers
++  }
+ }
+ 
+ export async function getSessionUserId(): Promise<bigint | null> {
+-- 
+2.43.0
+
