@@ -97,26 +97,4 @@ grant usage, select on sequence cdf_events_id_seq to jayden_cdf;  -- identity �
 - 该 role **无 select/update/delete on cdf_events、无其他任何表权限**;想扩权限必须回到本契约改版。
 - MIS 前端自己(anon key / PostgREST)对这两张表的访问不受影响——GRANT 只加不减。
 
-## 4c. Format 映射表((MIS Format × Visual Style) → Jira Format 菜单选项)
-
-**用途**:开票计价(消费方 Alden)。开票时按 `payload` 素材清单里每条素材的 `format` × `visual_style` 组合,查表得 Jira 票的 Format 菜单选项(默认档)。定稿(V 定):
-
-| MIS Format | Visual Style | → Jira Format 选项(默认档) |
-|---|---|---|
-| IMAGE | ai_avatar | AI Image – Standard |
-| IMAGE | deepfake | Deepfake – Single face |
-| IMAGE | real_person / ugc / game_screenshot / winner_showcase / official_design | Single Image |
-| IMAGE | animation | GIF Animation |
-| VIDEO | ai_avatar | AI Avatar Video – Single |
-| VIDEO | deepfake | Deepfake – Single face |
-| VIDEO | real_person / ugc | Video Editing – Full edit |
-| VIDEO | game_screenshot / winner_showcase | Video Editing – Simple cut |
-| VIDEO | animation / official_design | Motion Graphics |
-| CAROUSEL | 任意 | Carousel (set of 6) |
-| DCO | 任意 | 按 payload 素材清单逐条映射(DCO 是投放格式非素材形态) |
-
-**规则三条**:
-
-1. 映射给的是**默认档**,Designer 拉票时改选类型/档位是合法动作;
-2. **GIF 不进 MIS Format 字典**(PI 与 CI scraper 对齐,GIF 类需求归 VIDEO;Jira 菜单保留 GIF Animation 选项供改选);
-3. 新增字典值 = 改此表 + 通知 Alden。
+> 注:Format 映射表((MIS Format × Visual Style) → Jira Format 选项)不在本文档——那是流 A 自动开票的翻译表,消费方是 Alden 的开票 automation,与 Jayden 的链路无关(他的链路在事件产生前就结束),单独归入 Alden 的交付材料(`契约文档-Alden附录-Format映射表.md`)。

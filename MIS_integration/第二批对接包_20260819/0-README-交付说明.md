@@ -11,7 +11,7 @@
 | `patches/0006-P2-audit-mis-service.patch` | 修复 MIS 写操作审计静默失效:建 mis-service 服务账号(SQL 在 patch 内 `db/manual-migrations/20260819_create_mis_service_user.sql`),verifyMisToken 合成 session 改用其数字 uid,getSessionUser 回落 Authorization 头;X-MIS-User 从死代码变生效。**验证步骤在本文件下方「0006 部署后生产验证」一节** |
 | `patches/0002-rev2-S1-recheck-false-positive.patch` | 0002 脱敏清洗 SQL 的复核误报修正:原 `[^"]{9,}` 把已脱敏值(8 位+`...`)也当明文,DRY-RUN/UPDATE/复核三处条件加负向前瞻排除;**验证 = 跑文件末尾复核查询,归 0 才算干净**(rev1 下永远不归 0) |
 | `specs/H节-账户状态流水与告警规格.md` | H 节实现规格:`account_status_log` 建表 DDL、30 分钟独立轮询的正确读写顺序(先读后 upsert,别复刻 A1 旧链的顺序 bug)、`/api/ad-accounts` 透出 `accountStatus`/`accountStatusText`、变更告警走 Alert 认领机制;**验收标准在该文件 §4** |
-| `specs/契约文档v1-cdf_events与brand_notify_roster.md` | 两张 Supabase 新表的契约:名册表(你的告警层只读 @ 人)、cdf_events 建表 + 「升级 Designer」按钮的精确 INSERT(过渡期孤票规则)+ 你的专用写入凭据方案(只能 INSERT cdf_events + SELECT 名册,其他全无)+ Format 映射表 |
+| `specs/契约文档v1-cdf_events与brand_notify_roster.md` | 两张 Supabase 新表的契约:名册表(你的告警层只读 @ 人)、cdf_events 建表 + 「升级 Designer」按钮的精确 INSERT(过渡期孤票规则)+ 你的专用写入凭据方案(只能 INSERT cdf_events + SELECT 名册,其他全无) |
 | `specs/样品测试事件.sql` | 5 条 `is_test=true` 的 cdf_events 样品(五种 trigger_type 各一),给 Alden 联调;不会被生产轮询捡走 |
 
 Supabase 侧(建表/建 role/样品数据)由 MIS 侧在自己项目里执行,你只拿 §4b 的凭据连接;MySQL 侧(0006 建号 SQL、0002 rev2 清洗)在你的库执行。
