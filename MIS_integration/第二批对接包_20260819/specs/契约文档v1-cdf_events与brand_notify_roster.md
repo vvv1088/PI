@@ -97,14 +97,26 @@ grant usage, select on sequence cdf_events_id_seq to jayden_cdf;  -- identity �
 - 该 role **无 select/update/delete on cdf_events、无其他任何表权限**;想扩权限必须回到本契约改版。
 - MIS 前端自己(anon key / PostgREST)对这两张表的访问不受影响——GRANT 只加不减。
 
-## 4c. Format 映射表(CDF 票 → 设计产物规格)
+## 4c. Format 映射表((MIS Format × Visual Style) → Jira Format 菜单选项)
 
-`payload` 素材清单里的 `format` 取值 = MIS 素材库 Format 维度的现行枚举(生产实查:`DCO` / `IMAGE` / `VIDEO`)。开票时按此表翻译成设计交付要求:
+**用途**:开票计价(消费方 Alden)。开票时按 `payload` 素材清单里每条素材的 `format` × `visual_style` 组合,查表得 Jira 票的 Format 菜单选项(默认档)。定稿(V 定):
 
-| MIS format | 设计产物 | 默认规格(占位,**V 确认后定稿**) |
+| MIS Format | Visual Style | → Jira Format 选项(默认档) |
 |---|---|---|
-| `IMAGE` | 静态图 | 1080×1080 与 1080×1920 各 1 张 |
-| `VIDEO` | 视频 | 15–30s,9:16 为主,另出 1:1 裁切 |
-| `DCO`   | 动态素材组 | 图 3–5 张 + 主文案 3–5 条(Meta DCO 组合投放) |
+| IMAGE | ai_avatar | AI Image – Standard |
+| IMAGE | deepfake | Deepfake – Single face |
+| IMAGE | real_person / ugc / game_screenshot / winner_showcase / official_design | Single Image |
+| IMAGE | animation | GIF Animation |
+| VIDEO | ai_avatar | AI Avatar Video – Single |
+| VIDEO | deepfake | Deepfake – Single face |
+| VIDEO | real_person / ugc | Video Editing – Full edit |
+| VIDEO | game_screenshot / winner_showcase | Video Editing – Simple cut |
+| VIDEO | animation / official_design | Motion Graphics |
+| CAROUSEL | 任意 | Carousel (set of 6) |
+| DCO | 任意 | 按 payload 素材清单逐条映射(DCO 是投放格式非素材形态) |
 
-新增 format 枚举 = 改这张表 + 通知 Alden,MIS 字典侧同步加值。
+**规则三条**:
+
+1. 映射给的是**默认档**,Designer 拉票时改选类型/档位是合法动作;
+2. **GIF 不进 MIS Format 字典**(PI 与 CI scraper 对齐,GIF 类需求归 VIDEO;Jira 菜单保留 GIF Animation 选项供改选);
+3. 新增字典值 = 改此表 + 通知 Alden。
