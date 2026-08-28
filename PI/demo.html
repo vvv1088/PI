@@ -593,7 +593,7 @@ window.supabase={createClient:function(){return __mockClient;}};
       <option value="">All Markets</option><option value="USC">USC</option><option value="MY">MY</option><option value="SG">SG</option>
     </select>
     <select id="f-hbrand" onchange="renderHypo()">
-      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option><option>Foz</option>
     </select>
     <select id="f-month" onchange="renderHypo()">
       <option value="" selected>All Months</option>
@@ -641,7 +641,7 @@ window.supabase={createClient:function(){return __mockClient;}};
         <div class="row3">
           <div class="fld"><label>品牌</label>
             <select id="hf-brand" onchange="onBrandChange()">
-              <option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+              <option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option><option>Foz</option>
             </select>
           </div>
           <div class="fld"><label>市场</label>
@@ -776,7 +776,7 @@ window.supabase={createClient:function(){return __mockClient;}};
 
   <div class="tablebar">
     <select id="f-cbrand" onchange="renderCreatives()">
-      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+      <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option><option>Foz</option>
     </select>
     <select id="f-chyp" onchange="renderCreatives()">
       <option value="">All Hypotheses</option>
@@ -803,7 +803,7 @@ window.supabase={createClient:function(){return __mockClient;}};
     </div>
     <div class="filters">
       <select id="mp-brand" onchange="renderMonthlyPlan()">
-        <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option>
+        <option value="">All Brands</option><option>OK188KH</option><option>17WINKH</option><option>SBKH</option><option>INZ9</option><option>Foz</option>
       </select>
       <select id="mp-month" onchange="mpMonth=this.value;renderMonthlyPlan()"></select>
     </div>
@@ -1037,7 +1037,7 @@ const DICT_NOTES={
 let data={
  'OK188KH':{FDC:{base:10,cost:15,unit:'周均'},REG:{base:97,cost:3.2,unit:'月'},AFDA:{base:6.87,cost:null,unit:'$'},FDAMT:{base:68,cost:null,unit:'$/周'},'7-Day High-Value Rate':{base:8,cost:null,unit:'%',placeholder:true}},
  'INZ9':{FDC:{base:14,cost:11,unit:'周均'},REG:{base:140,cost:2.4,unit:'月'},AFDA:{base:9.2,cost:null,unit:'$'},FDAMT:{base:128,cost:null,unit:'$/周'}},
- '17WINKH':null,'SBKH':null
+ '17WINKH':null,'SBKH':null,'Foz':null
 };
 const sibling={'17WINKH':'OK188KH','SBKH':'OK188KH'};
 let overdueOnly=false,dictTab='Format';
@@ -1524,7 +1524,7 @@ async function saveHypothesis(status){
 
 /* v76:品牌×市场从 brand_aliases 主数据来(登录后 MISNaming.syncFromDb 会调 refreshMktBrands 覆盖),
  * 此处为离线/mock fallback。市场词汇统一为 USC/MY/SG(存量 'KH' 读侧归一为 USC,库已迁移)。 */
-const MKT_BRANDS={USC:['OK188KH','17WINKH','SBKH'],MY:['INZ9'],SG:['INZ9']};
+const MKT_BRANDS={USC:['OK188KH','17WINKH','SBKH'],MY:['INZ9','Foz'],SG:['INZ9']};
 function allMktBrands(){return [...new Set(Object.values(MKT_BRANDS).flat())];}
 function brandMarkets(b){return Object.keys(MKT_BRANDS).filter(m=>MKT_BRANDS[m].includes(b));}
 function refreshMktBrands(){
@@ -2940,7 +2940,8 @@ const BG_DEFAULT_ASSIGN={
   'OK188KH':{mkt:'joey',usc:'anna',decider:'zq'},
   '17WINKH':{mkt:'bryan',usc:'jk',decider:'zq'},
   'SBKH':{mkt:'bryan',usc:'wj',decider:'zq'},
-  'INZ9':{mkt:'joey',usc:'',decider:'zq'}
+  'INZ9':{mkt:'joey',usc:'',decider:'zq'},
+  'Foz':{mkt:'',usc:'',decider:'zq'}   // 新项目(MY),分工待 V 在 UI 指定
 };
 function bgCurMonth(){const n=new Date();return n.toLocaleString('en-US',{month:'short'})+' '+n.getFullYear();}
 async function loadBudgets(){

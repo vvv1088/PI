@@ -32,12 +32,13 @@ window.MISNaming = (function () {
   };
   const LEGACY_MARKET_SEG = { MYR: 'MY', SGD: 'SG' };   // v73–v76 过渡期市场段写法
 
-  /* 品牌缩写(brand_aliases 表 15 行;现役 4 个,retired 只解析不生成) */
+  /* 品牌缩写(brand_aliases 表 16 行;现役 5 个,retired 只解析不生成) */
   const BRANDS = [
     { code: 'INZ9',       short: 'INZ9', status: 'active',  markets: ['MY', 'SG'] },
     { code: '17WINKH',    short: 'WIKH', status: 'active',  markets: ['USC'] },
     { code: 'OK188KH',    short: 'OK18', status: 'active',  markets: ['USC'] },
     { code: 'SBKH',       short: 'SBKH', status: 'active',  markets: ['USC'] },
+    { code: 'Foz',        short: 'FOZ',  status: 'active',  markets: ['MY'] },
     { code: '17WIN168',   short: 'W168', status: 'retired' },
     { code: 'OK888KH',    short: 'OK88', status: 'retired' },
     { code: 'SBKH99',     short: 'SB99', status: 'retired' },

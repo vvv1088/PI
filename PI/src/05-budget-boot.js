@@ -78,7 +78,8 @@ const BG_DEFAULT_ASSIGN={
   'OK188KH':{mkt:'joey',usc:'anna',decider:'zq'},
   '17WINKH':{mkt:'bryan',usc:'jk',decider:'zq'},
   'SBKH':{mkt:'bryan',usc:'wj',decider:'zq'},
-  'INZ9':{mkt:'joey',usc:'',decider:'zq'}
+  'INZ9':{mkt:'joey',usc:'',decider:'zq'},
+  'Foz':{mkt:'',usc:'',decider:'zq'}   // 新项目(MY),分工待 V 在 UI 指定
 };
 function bgCurMonth(){const n=new Date();return n.toLocaleString('en-US',{month:'short'})+' '+n.getFullYear();}
 async function loadBudgets(){

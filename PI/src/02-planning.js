@@ -354,7 +354,7 @@ async function saveHypothesis(status){
 
 /* v76:品牌×市场从 brand_aliases 主数据来(登录后 MISNaming.syncFromDb 会调 refreshMktBrands 覆盖),
  * 此处为离线/mock fallback。市场词汇统一为 USC/MY/SG(存量 'KH' 读侧归一为 USC,库已迁移)。 */
-const MKT_BRANDS={USC:['OK188KH','17WINKH','SBKH'],MY:['INZ9'],SG:['INZ9']};
+const MKT_BRANDS={USC:['OK188KH','17WINKH','SBKH'],MY:['INZ9','Foz'],SG:['INZ9']};
 function allMktBrands(){return [...new Set(Object.values(MKT_BRANDS).flat())];}
 function brandMarkets(b){return Object.keys(MKT_BRANDS).filter(m=>MKT_BRANDS[m].includes(b));}
 function refreshMktBrands(){

@@ -1,6 +1,12 @@
 # Changelog — Marketing Intelligence System
 
-## [v85] — 2026-08-12 · Budget 真数汇总 + 素材状态两层映射(讨论一/二落地,V 定)
+## [v85.1] — 2026-08-19 · 新增品牌 Foz(MY 新项目,V 定)
+
+- **品牌主数据**:Supabase `brand_aliases` 加第 5 个现役品牌 `Foz`(短码 **FOZ**,市场 MY,sort 5);`budget_assignments` 插空分工行(决策人 zq,申请/核批留空待 V 在 UI 指定——留空期间瓶颈催办对 Foz 静默,不误 @)。
+- **前端同步**(库是权威,常量为离线/mock fallback):mis-naming.js BRANDS、MKT_BRANDS(MY 组)、BG_DEFAULT_ASSIGN、基线 data(`Foz:null` 同 17WINKH/SBKH 待定形态);模板 4 处写死的品牌下拉(假设筛选/假设表单/素材筛选/花费筛选)补 Foz 项。
+- **自动跟上的链路**(无需改动,验证过):预算表/分工表行遍历 `allMktBrands()`;花费归品走 `MISNaming.parseAdName`(`MY_FOZ_…` → Foz);月度计划、市场下拉、提醒 RPC(读 budget_assignments)。
+- **不在本次**(需要时另做):基线数值与主指标方向(BRAND_METRIC 未加,默认全指标可选);brand_notify_roster 无 Foz 行(CDF @ 人名册,要 V 给 Slack 人选);系统 2 侧(Jayden 的 brands 表与 ad_name 品牌归因 `BRAND_CODE_CASE` 15 条里没有 `%_FOZ_%`)——**Foz 开始投放前要让 Jayden 加**,否则他那边报表归因是 NULL。
+- 验证:35 视图无头冒烟零报错;定向检查 7 项全过(预算行/分工行/表单下拉/筛选/月度计划/基线字典/命名解析);demo.html 再生。
 
 - **Budget 已投放 = spending 通道自动汇总**(品牌×月,命名 detect 归品;NULL 行不计入——与 Spending 页 TEST/IGNORE remark 同一口径);Utilization 跟随。mock 即演示同管道,live 即真数,零虚拟数字;通道失败回落素材周记旧法。
 - **素材状态两层映射**:登记 ads code 对上系统 2 广告(/api/analytics/ads)后自动映射——审核中(PENDING_REVIEW/IN_PROCESS)/上线中(ACTIVE)/被拒(DISAPPROVED,红)/已暂停(三种 PAUSED 合并,title 见层级)/有问题(WITH_ISSUES);未发布素材保持人工「待上线」。

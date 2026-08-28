@@ -16,7 +16,7 @@ const DICT_NOTES={
 let data={
  'OK188KH':{FDC:{base:10,cost:15,unit:'周均'},REG:{base:97,cost:3.2,unit:'月'},AFDA:{base:6.87,cost:null,unit:'$'},FDAMT:{base:68,cost:null,unit:'$/周'},'7-Day High-Value Rate':{base:8,cost:null,unit:'%',placeholder:true}},
  'INZ9':{FDC:{base:14,cost:11,unit:'周均'},REG:{base:140,cost:2.4,unit:'月'},AFDA:{base:9.2,cost:null,unit:'$'},FDAMT:{base:128,cost:null,unit:'$/周'}},
- '17WINKH':null,'SBKH':null
+ '17WINKH':null,'SBKH':null,'Foz':null
 };
 const sibling={'17WINKH':'OK188KH','SBKH':'OK188KH'};
 let overdueOnly=false,dictTab='Format';
